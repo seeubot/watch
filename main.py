@@ -23,7 +23,7 @@ if not BOT_TOKEN or not CHANNEL_USERNAME or not ADMIN_ID:
 bot = Bot(token=BOT_TOKEN)
 
 # Track users (For simplicity, we're just using a list. In a production system, you'd want a persistent database.)
-user_list = []  # This is a simple mock for tracking users
+user_list = []
 
 # Check if a user is a member of the channel
 async def is_member(user_id):
@@ -45,28 +45,20 @@ def extract_metadata(html_content):
 
 # Extract unique code from TeraBox link
 def extract_code(link):
-    match = re.search(r'/s/1([a-zA-Z0-9_-]+)', link)
+    match = re.search(r'/s/1?([a-zA-Z0-9_-]+)', link)
     return match.group(1) if match else None
 
 # Send admin notification
 async def send_admin_notification(user, message_date):
     try:
-        hh = f"⏰ {str(message_date.strftime('%Y-%m-%d %H:%M:%S'))}"  # Format message date
         message = (
-            f"➕ <b>New User Notification</b> ➕\n\n"
-            f"👤 <b>User:</b> <a href='tg://user?id={user.id}'>@{user.username}</a> {hh}\n\n"
-            f"🆔 <b>User ID:</b> <code>{user.id}</code>\n\n"
+            f"➕ <b>New User Notification</b>\n\n"
+            f"👤 <b>User:</b> <a href='tg://user?id={user.id}'>{user.username}</a>\n"
+            f"🆔 <b>User ID:</b> <code>{user.id}</code>\n"
+            f"⏰ <b>Date:</b> {message_date.strftime('%Y-%m-%d %H:%M:%S')}"
         )
-
-        # Add a button to view user count
-        user_count_button = InlineKeyboardButton("👥 View User Count", callback_data="user_count")
-
-        await bot.send_message(
-            chat_id=ADMIN_ID, 
-            text=message, 
-            parse_mode="HTML", 
-            reply_markup=InlineKeyboardMarkup([[user_count_button]])
-        )
+        buttons = [[InlineKeyboardButton("👥 View User Count", callback_data="user_count")]]
+        await bot.send_message(chat_id=ADMIN_ID, text=message, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(buttons))
     except Exception as e:
         print(f"Error in send_admin_notification: {e}")
 
@@ -79,9 +71,7 @@ async def send_video_request_to_channel(user, original_url, api_url, thumbnail_u
             f"👤 <b>User Name:</b> @{user.username}\n"
             f"🔗 <b>Original URL:</b> {original_url}\n"
         )
-
         buttons = [[InlineKeyboardButton("📺 Watch Now", url=api_url)]]
-
         if thumbnail_url:
             await bot.send_photo(
                 chat_id=PRIVATE_CHANNEL_USERNAME,
@@ -113,10 +103,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
 
-    user_list.append(update.message.from_user)  # Add the user to the list
+    user_list.append(update.message.from_user)
     await update.message.reply_text("👋 Welcome to the TeraBox Video Bot! Send a TeraBox link to start.")
-
-    # Pass the message date to the admin notification function
     await send_admin_notification(update.message.from_user, update.message.date)
 
 # Refresh membership handler
@@ -125,31 +113,23 @@ async def check_membership(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     user_id = query.from_user.id
     await query.answer()
 
-    try:
-        is_member_status = await is_member(user_id)
-        if is_member_status:
-            await query.message.edit_text(
-                "✅ You're now a member! Send a TeraBox link to proceed.",
-            )
-        else:
-            buttons = [
-                [InlineKeyboardButton("💀 Join Channel Again", url=f"https://t.me/{CHANNEL_USERNAME}")],
-                [InlineKeyboardButton("🔄 Try Refresh Again", callback_data="check_membership")]
-            ]
-            await query.message.edit_text(
-                "⚠️ You're not a member. Please join our channel to use this bot.",
-                reply_markup=InlineKeyboardMarkup(buttons)
-            )
-    except Exception as e:
-        print(f"Error in check_membership: {e}")
+    if await is_member(user_id):
+        await query.message.edit_text("✅ You're now a member! Send a TeraBox link to proceed.")
+    else:
+        buttons = [
+            [InlineKeyboardButton("💀 Join Channel Again", url=f"https://t.me/{CHANNEL_USERNAME}")],
+            [InlineKeyboardButton("🔄 Try Refresh Again", callback_data="check_membership")]
+        ]
+        await query.message.edit_text(
+            "⚠️ You're not a member. Please join our channel to use this bot.",
+            reply_markup=InlineKeyboardMarkup(buttons)
+        )
 
 # Handle user count request
 async def handle_user_count(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user_count = len(user_list)  # Get the current user count
+    user_count = len(user_list)
     await update.callback_query.answer()
-    await update.callback_query.message.edit_text(
-        f"👥 Total Users: {user_count}"
-    )
+    await update.callback_query.message.edit_text(f"👥 Total Users: {user_count}")
 
 # Process TeraBox link
 async def process_link(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -202,7 +182,7 @@ async def process_link(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 # Main function to run the bot
 def main():
-    keep_alive()  # Start the keep_alive function (your existing one)
+    keep_alive()
     app = Application.builder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))

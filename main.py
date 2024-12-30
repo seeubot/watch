@@ -5,16 +5,14 @@ from bs4 import BeautifulSoup
 from telegram import Bot, Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, filters
 from keep_alive import keep_alive  # Import the keep_alive function
-from dotenv import load_dotenv  # Import dotenv for loading environment variables
 
-# Load environment variables from .env file
-load_dotenv()
-
-# Get environment variables
+# Load environment variables
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME")  # Channel username without '@'
 PRIVATE_CHANNEL_USERNAME = "@privateteraboxchannel"  # Private channel username
 ADMIN_ID = int(os.getenv("ADMIN_ID"))  # Admin user ID
+
+bot = Bot(token=BOT_TOKEN)
 
 if not BOT_TOKEN or not CHANNEL_USERNAME or not ADMIN_ID:
     raise ValueError("BOT_TOKEN, CHANNEL_USERNAME, or ADMIN_ID is missing. Please define them in environment variables.")
@@ -39,18 +37,13 @@ def extract_metadata(html_content):
     thumbnail_meta = soup.find('meta', property='og:image')
     thumbnail_url = thumbnail_meta['content'] if thumbnail_meta else None
     return title, thumbnail_url
-
-# Extract unique code from TeraBox link and remove the '1' if present
-def extract_code(link):
-    match = re.search(r'/s/(1?[a-zA-Z0-9_-]+)', link)  # Allow for the code with or without the leading '1'
-    if match:
-        unique_code = match.group(1)
-        # If the code starts with '1', remove it
-        if unique_code.startswith("1"):
-            unique_code = unique_code[1:]
-        return unique_code
-    return None
-
+    
+# Process TeraBox link
+async def process_link(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    link = update.message.text.strip()
+    unique_code = re.search(r'/s/1?([a-zA-Z0-9_-]+)', link)
+    if unique_code:
+        code = unique_code.group(1)  # Extract the code without the leading "1"
 # Send admin notification
 async def send_admin_notification(user, message_date):
     try:
@@ -175,8 +168,7 @@ async def process_link(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         return
 
     try:
-        # Form the API URL with the unique code
-        api_url = f"https://www.terabox.com/sharing/embed?surl={unique_code}"
+        api_url = f"https://terabox.com/sharing/embed?surl={unique_code}"
         response = requests.get(api_url)
         if response.ok:
             title, thumbnail_url = extract_metadata(response.text)
@@ -215,4 +207,8 @@ def main():
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, process_link))
 
     print("🤖 Bot is running...")
-    app.run_polling
+    app.run_polling()
+
+if __name__ == "__main__":
+    main()
+    

@@ -4,8 +4,8 @@ import requests
 from bs4 import BeautifulSoup
 from telegram import Bot, Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, filters
+from dotenv import load_dotenv
 from keep_alive import keep_alive  # Import the keep_alive function
-from dotenv import load_dotenv  # Import dotenv for loading environment variables
 
 # Load environment variables from .env file
 load_dotenv()
@@ -18,6 +18,9 @@ ADMIN_ID = int(os.getenv("ADMIN_ID"))  # Admin user ID
 
 if not BOT_TOKEN or not CHANNEL_USERNAME or not ADMIN_ID:
     raise ValueError("BOT_TOKEN, CHANNEL_USERNAME, or ADMIN_ID is missing. Please define them in environment variables.")
+
+# Initialize the bot
+bot = Bot(token=BOT_TOKEN)
 
 # Track users (For simplicity, we're just using a list. In a production system, you'd want a persistent database.)
 user_list = []  # This is a simple mock for tracking users
@@ -199,7 +202,7 @@ async def process_link(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 # Main function to run the bot
 def main():
-    keep_alive()  # Start the keep_alive function
+    keep_alive()  # Start the keep_alive function (your existing one)
     app = Application.builder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
@@ -212,5 +215,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-    

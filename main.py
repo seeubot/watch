@@ -40,10 +40,16 @@ def extract_metadata(html_content):
     thumbnail_url = thumbnail_meta['content'] if thumbnail_meta else None
     return title, thumbnail_url
 
-# Extract unique code from TeraBox link
+# Extract unique code from TeraBox link and remove the '1' if present
 def extract_code(link):
-    match = re.search(r'/s/([a-zA-Z0-9_-]+)', link)
-    return match.group(1) if match else None
+    match = re.search(r'/s/(1?[a-zA-Z0-9_-]+)', link)  # Allow for the code with or without the leading '1'
+    if match:
+        unique_code = match.group(1)
+        # If the code starts with '1', remove it
+        if unique_code.startswith("1"):
+            unique_code = unique_code[1:]
+        return unique_code
+    return None
 
 # Send admin notification
 async def send_admin_notification(user, message_date):
@@ -169,6 +175,7 @@ async def process_link(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         return
 
     try:
+        # Form the API URL with the unique code
         api_url = f"https://www.terabox.com/sharing/embed?surl={unique_code}"
         response = requests.get(api_url)
         if response.ok:
@@ -208,7 +215,4 @@ def main():
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, process_link))
 
     print("🤖 Bot is running...")
-    app.run_polling()
-
-if __name__ == "__main__":
-    main()
+    app.run_polling

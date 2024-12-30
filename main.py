@@ -38,7 +38,7 @@ def extract_metadata(html_content):
     thumbnail_url = thumbnail_meta['content'] if thumbnail_meta else None
     return title, thumbnail_url
     
-# Process TeraBox link
+#  Extract unique code from TeraBox link
 async def process_link(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     link = update.message.text.strip()
     unique_code = re.search(r'/s/1?([a-zA-Z0-9_-]+)', link)

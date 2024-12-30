@@ -44,6 +44,7 @@ async def process_link(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     unique_code = re.search(r'/s/1?([a-zA-Z0-9_-]+)', link)
     if unique_code:
         code = unique_code.group(1)  # Extract the code without the leading "1"
+
 # Send admin notification
 async def send_admin_notification(user, message_date):
     try:

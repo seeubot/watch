@@ -16,8 +16,6 @@ CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME")  # Channel username without '@'
 PRIVATE_CHANNEL_USERNAME = "@privateteraboxchannel"  # Private channel username
 ADMIN_ID = int(os.getenv("ADMIN_ID"))  # Admin user ID
 
-bot = Bot(token=BOT_TOKEN)
-
 if not BOT_TOKEN or not CHANNEL_USERNAME or not ADMIN_ID:
     raise ValueError("BOT_TOKEN, CHANNEL_USERNAME, or ADMIN_ID is missing. Please define them in environment variables.")
 
@@ -214,3 +212,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+    

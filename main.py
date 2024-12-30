@@ -18,7 +18,7 @@ if not BOT_TOKEN or not CHANNEL_USERNAME or not ADMIN_ID:
     raise ValueError("BOT_TOKEN, CHANNEL_USERNAME, or ADMIN_ID is missing. Please define them in environment variables.")
 
 # Track users (For simplicity, we're just using a list. In a production system, you'd want a persistent database.)
-user_list = []  # This is a simple mock for tracking users
+user_list = []
 
 # Check if a user is a member of the channel
 async def is_member(user_id):
@@ -37,13 +37,11 @@ def extract_metadata(html_content):
     thumbnail_meta = soup.find('meta', property='og:image')
     thumbnail_url = thumbnail_meta['content'] if thumbnail_meta else None
     return title, thumbnail_url
-    
-#  Extract unique code from TeraBox link
-async def process_link(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    link = update.message.text.strip()
-    unique_code = re.search(r'/s/1?([a-zA-Z0-9_-]+)', link)
-    if unique_code:
-        code = unique_code.group(1)  # Extract the code without the leading "1"
+
+# Extract unique code from TeraBox link
+def extract_code(link):
+    match = re.search(r'/s/1?([a-zA-Z0-9_-]+)', link)
+    return match.group(1) if match else None
 
 # Send admin notification
 async def send_admin_notification(user, message_date):
@@ -59,9 +57,9 @@ async def send_admin_notification(user, message_date):
         user_count_button = InlineKeyboardButton("👥 View User Count", callback_data="user_count")
 
         await bot.send_message(
-            chat_id=ADMIN_ID, 
-            text=message, 
-            parse_mode="HTML", 
+            chat_id=ADMIN_ID,
+            text=message,
+            parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup([[user_count_button]])
         )
     except Exception as e:
@@ -110,10 +108,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
 
-    user_list.append(update.message.from_user)  # Add the user to the list
+    user_list.append(update.message.from_user)
     await update.message.reply_text("👋 Welcome to the TeraBox Video Bot! Send a TeraBox link to start.")
 
-    # Pass the message date to the admin notification function
     await send_admin_notification(update.message.from_user, update.message.date)
 
 # Refresh membership handler
@@ -142,7 +139,7 @@ async def check_membership(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 # Handle user count request
 async def handle_user_count(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user_count = len(user_list)  # Get the current user count
+    user_count = len(user_list)
     await update.callback_query.answer()
     await update.callback_query.message.edit_text(
         f"👥 Total Users: {user_count}"
@@ -199,7 +196,7 @@ async def process_link(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 # Main function to run the bot
 def main():
-    keep_alive()  # Start the keep_alive function
+    keep_alive()
     app = Application.builder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
@@ -212,4 +209,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    

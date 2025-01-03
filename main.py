@@ -147,7 +147,7 @@ async def process_link(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 title, thumbnail_url = extract_metadata(response.text)
                 buttons = [
                     [InlineKeyboardButton("📺 Watch Now", url=api_url)],
-                    [InlineKeyboardButton("👨🏻‍💻 Developer", url="https://t.me/Teraboxadmin")]
+                    [InlineKeyboardButton("👨🏻‍💻 Developer", url="https://t.me/+qdLjzK5bWoViOWQ1")]
                 ]
                 if thumbnail_url:
                     await update.message.reply_photo(

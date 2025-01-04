@@ -146,7 +146,7 @@ async def process_link(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             if response.ok:
                 title, thumbnail_url = extract_metadata(response.text)
                 buttons = [
-                    [InlineKeyboardButton("📺 Watch Now", url=api_url)],
+                    [[InlineKeyboardButton("Open Web App", web_app=WebAppInfo(url=api_url))]],
                     [InlineKeyboardButton("👨🏻‍💻 Developer", url="https://t.me/+qdLjzK5bWoViOWQ1")]
                 ]
                 if thumbnail_url:
@@ -169,17 +169,6 @@ async def process_link(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             await update.message.reply_text(f"⚠️ Error processing the link: {e}")
     else:
         await update.message.reply_text("⚠️ Invalid TeraBox link. Please send a valid link.")
-
-async def start(update: Update, context: CallbackContext) -> None:
-    # Define the Web App link you want to open inside Telegram as a modal
-    web_app_url = "api_url"
-
-    # Creates a button that opens the Web App in Telegram
-    keyboard = [[InlineKeyboardButton("Open Web App", web_app=WebAppInfo(url=web_app_url))]]
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text('Click the button below to open the Web App:', reply_markup=reply_markup)
-
 
 # Main function to start the bot
 def main():

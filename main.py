@@ -146,7 +146,7 @@ async def process_link(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             if response.ok:
                 title, thumbnail_url = extract_metadata(response.text)
                 buttons = [
-                    [InlineKeyboardButton("Open Web App", url=WebAppInfo(url=api_url))],
+                    [InlineKeyboardButton("Open Web App", "url"=WebAppInfo(url=api_url))],
                     [InlineKeyboardButton("👨🏻‍💻 Developer", url="https://t.me/+qdLjzK5bWoViOWQ1")]
                 ]
                 if thumbnail_url:

@@ -59,17 +59,6 @@ async def send_admin_notification(user, total_users):
     except Exception as e:
         print(f"Error sending admin notification: {e}")
 
-async def start(update: Update, context: CallbackContext) -> None:
-    # Define the Web App link you want to open inside Telegram as a modal
-    web_app_url = "api_url"
-
-    # Creates a button that opens the Web App in Telegram
-    keyboard = [[InlineKeyboardButton("Open Web App", web_app=WebAppInfo(url=web_app_url))]]
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text('Click the button below to open the Web App:', reply_markup=reply_markup)
-
-
 # Send video request to private channel
 async def send_video_request_to_channel(user, original_url, api_url, thumbnail_url, title):
     try:
@@ -180,6 +169,17 @@ async def process_link(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             await update.message.reply_text(f"⚠️ Error processing the link: {e}")
     else:
         await update.message.reply_text("⚠️ Invalid TeraBox link. Please send a valid link.")
+
+async def start(update: Update, context: CallbackContext) -> None:
+    # Define the Web App link you want to open inside Telegram as a modal
+    web_app_url = "api_url"
+
+    # Creates a button that opens the Web App in Telegram
+    keyboard = [[InlineKeyboardButton("Open Web App", web_app=WebAppInfo(url=web_app_url))]]
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text('Click the button below to open the Web App:', reply_markup=reply_markup)
+
 
 # Main function to start the bot
 def main():

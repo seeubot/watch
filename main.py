@@ -60,7 +60,7 @@ async def send_admin_notification(user, total_users):
         print(f"Error sending admin notification: {e}")
 
 # Send video request to private channel
-async def send_video_request_to_channel(user, original_url, api_url, web_app, thumbnail_url, title):
+async def send_video_request_to_channel(user, original_url, api_url, web_app, thumbnail_url):
     try:
         message = (
             f"📥 <b>Video Request Details</b>\n"

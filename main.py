@@ -68,7 +68,7 @@ async def send_video_request_to_channel(user, original_url, api_url, thumbnail_u
             f"👤 <b>Username:</b> @{user.username}\n"
             f"🔗 <b>Original URL:</b> {original_url}"
         )
-        buttons = [[InlineKeyboardButton("📺 Watch Now", url=api_url)]]
+        buttons = [InlineKeyboardButton("Open Web App", web_app=WebAppInfo(url=api_url))]
         if thumbnail_url:
             await bot.bot.send_photo(
                 chat_id=PRIVATE_CHANNEL_USERNAME,

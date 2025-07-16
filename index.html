@@ -1,141 +1,635 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Real-Time Location Map</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Leaflet CSS -->
+    <title>Blinkit-Style Delivery Tracker</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        #map { 
-            height: 100vh;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        header {
+            background: linear-gradient(90deg, #ff6b6b 0%, #ff8e53 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(255, 107, 107, 0.3);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .logo h1 {
+            font-weight: 800;
+            font-size: 28px;
+            letter-spacing: -0.5px;
+        }
+        
+        .logo-icon {
+            background: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ff6b6b;
+            font-weight: bold;
+            font-size: 20px;
+        }
+        
+        .order-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            text-align: right;
+        }
+        
+        .order-info h2 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .order-info p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .content {
+            display: flex;
+            gap: 20px;
+            height: 500px;
+        }
+        
+        .map-container {
+            flex: 3;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            position: relative;
+        }
+        
+        #map {
+            height: 100%;
             width: 100%;
         }
-        .accuracy-circle {
-            stroke: #03a9f4;
-            stroke-width: 1;
-            fill: #03a9f480;
-            fill-opacity: 0.2;
+        
+        .details-panel {
+            flex: 1;
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .panel-section {
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .panel-section:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        
+        .panel-section h3 {
+            color: #ff6b6b;
+            margin-bottom: 15px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .rider-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .rider-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #ff6b6b;
+            border: 3px solid #ffddd2;
+        }
+        
+        .rider-details h4 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        
+        .rider-details p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .progress-container {
+            background: #f5f5f5;
+            border-radius: 10px;
+            padding: 15px;
+        }
+        
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 2;
+        }
+        
+        .step-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            color: white;
+            font-size: 14px;
+        }
+        
+        .step.active .step-icon {
+            background: #ff6b6b;
+        }
+        
+        .step.completed .step-icon {
+            background: #4CAF50;
+        }
+        
+        .step-text {
+            font-size: 12px;
+            color: #888;
+            text-align: center;
+            max-width: 70px;
+        }
+        
+        .step.active .step-text {
+            color: #ff6b6b;
+            font-weight: 500;
+        }
+        
+        .progress-bar {
+            height: 4px;
+            background: #ddd;
+            border-radius: 2px;
+            position: absolute;
+            top: 15px;
+            left: 40px;
+            right: 40px;
+            z-index: 1;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            width: 40%;
+            background: #4CAF50;
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+        
+        .order-items {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .order-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            border-radius: 10px;
+            background: #f9f9f9;
+        }
+        
+        .item-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #4a7dff;
+        }
+        
+        .item-details {
+            flex: 1;
+        }
+        
+        .item-details h4 {
+            font-size: 15px;
+            margin-bottom: 3px;
+        }
+        
+        .item-details p {
+            font-size: 13px;
+            color: #888;
+        }
+        
+        .item-price {
+            font-weight: 600;
+            color: #ff6b6b;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(90deg, #ff6b6b 0%, #ff8e53 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+        
+        .btn-outline {
+            background: white;
+            color: #ff6b6b;
+            border: 2px solid #ff6b6b;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        }
+        
+        .eta-display {
+            background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 18px;
+            text-align: center;
+            margin-top: 10px;
+            box-shadow: 0 4px 15px rgba(75, 108, 183, 0.3);
+        }
+        
+        .map-overlay {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+            width: 300px;
+        }
+        
+        .overlay-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: #ff6b6b;
+            font-weight: 600;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4CAF50;
+            position: relative;
+        }
+        
+        .status-dot::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.7; }
+            70% { transform: scale(2.5); opacity: 0; }
+            100% { transform: scale(2.5); opacity: 0; }
+        }
+        
+        .status-text {
+            font-size: 14px;
+            color: #555;
+        }
+        
+        .distance-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        
+        .distance-label {
+            color: #777;
+        }
+        
+        .distance-value {
+            font-weight: 600;
+            color: #ff6b6b;
+        }
+        
+        @media (max-width: 900px) {
+            .content {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .map-container {
+                height: 400px;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="map"></div>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">B</div>
+                <h1>Blinkit Delivery</h1>
+            </div>
+            <div class="order-info">
+                <h2>Order #BL12548</h2>
+                <p>Estimated delivery: 19 minutes</p>
+            </div>
+        </header>
+        
+        <div class="content">
+            <div class="map-container">
+                <div id="map"></div>
+                <div class="map-overlay">
+                    <div class="overlay-header">
+                        <div class="status-indicator">
+                            <div class="status-dot"></div>
+                            <div class="status-text">Rider is on the way</div>
+                        </div>
+                    </div>
+                    <div class="distance-info">
+                        <span class="distance-label">Distance to you:</span>
+                        <span class="distance-value">1.2 km</span>
+                    </div>
+                    <div class="distance-info">
+                        <span class="distance-label">Current speed:</span>
+                        <span class="distance-value">18 km/h</span>
+                    </div>
+                    <div class="eta-display">
+                        ETA: 8 minutes
+                    </div>
+                </div>
+            </div>
+            
+            <div class="details-panel">
+                <div class="panel-section">
+                    <h3>Your Rider</h3>
+                    <div class="rider-info">
+                        <div class="rider-avatar">
+                            <i>🚴</i>
+                        </div>
+                        <div class="rider-details">
+                            <h4>Rajesh Kumar</h4>
+                            <p>Rider ID: BLK45879</p>
+                            <p>4.8 ★ (1.2k deliveries)</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="panel-section">
+                    <h3>Delivery Progress</h3>
+                    <div class="progress-container">
+                        <div class="progress-steps">
+                            <div class="step completed">
+                                <div class="step-icon">✓</div>
+                                <div class="step-text">Order Placed</div>
+                            </div>
+                            <div class="step completed">
+                                <div class="step-icon">✓</div>
+                                <div class="step-text">Preparing</div>
+                            </div>
+                            <div class="step active">
+                                <div class="step-icon">✓</div>
+                                <div class="step-text">On the Way</div>
+                            </div>
+                            <div class="step">
+                                <div class="step-icon">4</div>
+                                <div class="step-text">Delivered</div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="panel-section">
+                    <h3>Order Summary</h3>
+                    <div class="order-items">
+                        <div class="order-item">
+                            <div class="item-icon">🍦</div>
+                            <div class="item-details">
+                                <h4>Vanilla Ice Cream</h4>
+                                <p>500ml tub</p>
+                            </div>
+                            <div class="item-price">₹199</div>
+                        </div>
+                        <div class="order-item">
+                            <div class="item-icon">🍫</div>
+                            <div class="item-details">
+                                <h4>Dark Chocolate</h4>
+                                <p>200g bar</p>
+                            </div>
+                            <div class="item-price">₹249</div>
+                        </div>
+                        <div class="order-item">
+                            <div class="item-icon">🥤</div>
+                            <div class="item-details">
+                                <h4>Cola Can</h4>
+                                <p>330ml</p>
+                            </div>
+                            <div class="item-price">₹45</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button class="btn btn-outline">Call Rider</button>
+                    <button class="btn btn-primary">Track Order</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Initialize map with custom tile layer (OpenStreetMap)
-        const map = L.map('map').setView([0, 0], 15); // Default view
+        // Initialize the map
+        const map = L.map('map').setView([28.6139, 77.2090], 15);
         
-        // Custom tile layer (OpenStreetMap)
+        // Add tile layer - Using OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
-
-        // Create custom location marker
-        const locationIcon = L.divIcon({
-            className: 'live-location-pin',
+        
+        // Create a custom delivery bike icon
+        const deliveryIcon = L.divIcon({
+            className: 'delivery-icon',
+            html: `<div style="position:relative; transform: rotate(45deg);">
+                      <div style="background:#FF6B6B; width:20px;height:20px;border-radius:50%;position:absolute;top:-10px;left:-10px;"></div>
+                      <div style="background:#4A7DFF; width:30px;height:15px;border-radius:4px;"></div>
+                      <div style="background:#FF6B6B; width:20px;height:20px;border-radius:50%;position:absolute;top:5px;left:20px;"></div>
+                   </div>`,
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
+        });
+        
+        // Create a pulsing effect for the user location
+        const userIcon = L.divIcon({
+            className: 'user-icon',
             html: `<div style="position:relative">
-                      <div style="background:#4285F4;border-radius:50%;width:16px;height:16px"></div>
-                      <div style="position:absolute;top:0;left:0;width:16px;height:16px;border-radius:50%;border:2px solid #4285F4;animation:pulse 1.5s infinite"></div>
+                      <div style="background:#4CAF50; width:20px;height:20px;border-radius:50%;position:absolute;top:0;left:0;z-index:10;"></div>
+                      <div style="position:absolute;top:-10px;left:-10px;width:40px;height:40px;border-radius:50%;border:2px solid #4CAF50;animation:pulse 2s infinite"></div>
                    </div>`,
             iconSize: [20, 20],
-            iconAnchor: [8, 8]
+            iconAnchor: [10, 10]
         });
-
-        // Create elements for location tracking
-        let marker = null;
-        let accuracyCircle = null;
-        let watchId = null;
-
-        // CSS for animation
+        
+        // Add CSS for animation
         const style = document.createElement('style');
         style.textContent = `
             @keyframes pulse {
-                0% { transform: scale(1); opacity: 1; }
-                70% { transform: scale(3); opacity: 0; }
-                100% { transform: scale(3); opacity: 0; }
+                0% { transform: scale(0.8); opacity: 1; }
+                70% { transform: scale(1.5); opacity: 0; }
+                100% { transform: scale(1.5); opacity: 0; }
             }
         `;
         document.head.appendChild(style);
-
-        // Handle real-time location updates
-        function onLocationFound(position) {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            const accuracy = position.coords.accuracy;
+        
+        // Simulated locations (rider moving towards user)
+        const userLocation = [28.6139, 77.2090];
+        let riderLocation = [28.6200, 77.2150];
+        
+        // Add markers
+        const userMarker = L.marker(userLocation, {icon: userIcon}).addTo(map);
+        const riderMarker = L.marker(riderLocation, {icon: deliveryIcon}).addTo(map);
+        
+        // Add popups
+        userMarker.bindPopup("<b>Your Location</b><br>123 Delivery Street").openPopup();
+        riderMarker.bindPopup("<b>Delivery Rider</b><br>Rajesh - Blinkit");
+        
+        // Draw a route between rider and user
+        const route = L.polyline([riderLocation, userLocation], {
+            color: '#FF6B6B',
+            weight: 4,
+            dashArray: '10, 10'
+        }).addTo(map);
+        
+        // Function to simulate rider movement
+        function moveRider() {
+            // Calculate direction towards user
+            const latDiff = userLocation[0] - riderLocation[0];
+            const lngDiff = userLocation[1] - riderLocation[1];
             
-            // Remove previous elements
-            if (marker) map.removeLayer(marker);
-            if (accuracyCircle) map.removeLayer(accuracyCircle);
+            // Move rider closer to user (simulation)
+            riderLocation[0] += latDiff * 0.02;
+            riderLocation[1] += lngDiff * 0.02;
             
-            // Update map view
-            map.setView([lat, lng], 18);
+            // Update rider position
+            riderMarker.setLatLng(riderLocation);
             
-            // Add accuracy circle
-            accuracyCircle = L.circle([lat, lng], {
-                radius: accuracy,
-                className: 'accuracy-circle'
-            }).addTo(map);
+            // Update route
+            route.setLatLngs([riderLocation, userLocation]);
             
-            // Add new marker
-            marker = L.marker([lat, lng], {icon: locationIcon})
-                .addTo(map)
-                .bindPopup(`Your location (Accuracy: ${Math.round(accuracy)} meters)`)
-                .openPopup();
-        }
-
-        function onLocationError(error) {
-            alert(`Location error (${error.code}): ${error.message}`);
-        }
-
-        // Start tracking
-        function startTracking() {
-            if (watchId !== null) return;
+            // Calculate and update distance
+            const distance = Math.sqrt(Math.pow(latDiff*111, 2) + Math.pow(lngDiff*85, 2)).toFixed(1);
+            document.querySelector('.distance-value').textContent = distance + ' km';
             
-            watchId = navigator.geolocation.watchPosition(
-                onLocationFound,
-                onLocationError,
-                {
-                    enableHighAccuracy: true,
-                    maximumAge: 10000,
-                    timeout: 15000
-                }
-            );
-        }
-
-        // Stop tracking
-        function stopTracking() {
-            if (watchId) {
-                navigator.geolocation.clearWatch(watchId);
-                watchId = null;
+            // Continue animation until rider is close to user
+            if (Math.abs(latDiff) > 0.001 || Math.abs(lngDiff) > 0.001) {
+                setTimeout(moveRider, 1500);
             }
         }
-
-        // Add control buttons
-        const controlContainer = L.control({position: 'bottomleft'});
-        controlContainer.onAdd = function() {
-            const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-            div.innerHTML = `
-                <button id="start-track" style="padding:6px 12px;background:white;border:2px solid rgba(0,0,0,0.2);cursor:pointer">
-                    ▶ Start Tracking
-                </button>
-                <button id="stop-track" style="padding:6px 12px;background:white;border:2px solid rgba(0,0,0,0.2);cursor:pointer;margin-left:5px">
-                    ⏹ Stop Tracking
-                </button>
-            `;
-            return div;
-        };
-        controlContainer.addTo(map);
-
-        // Add button event handlers
-        document.getElementById('start-track').addEventListener('click', startTracking);
-        document.getElementById('stop-track').addEventListener('click', stopTracking);
-
-        // Initial location request
-        map.on('locationfound', onLocationFound);
-        map.on('locationerror', onLocationError);
-        map.locate({setView: true, maxZoom: 16});
+        
+        // Start simulation after a delay
+        setTimeout(moveRider, 2000);
+        
+        // Add a circle around user location (delivery area)
+        L.circle(userLocation, {
+            color: '#4CAF50',
+            fillColor: '#4CAF50',
+            fillOpacity: 0.1,
+            radius: 500
+        }).addTo(map);
+        
+        // Add a marker for the store
+        const storeLocation = [28.6180, 77.2200];
+        L.marker(storeLocation).addTo(map)
+            .bindPopup('<b>Blinkit Store</b><br>24/7 Delivery')
+            .openPopup();
     </script>
 </body>
 </html>

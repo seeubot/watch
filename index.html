@@ -1,293 +1,141 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
+    <title>Real-Time Location Map</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blinkit-like Delivery Map</title>
-    <!-- Tailwind CSS for modern styling and responsiveness -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Inter font from Google Fonts for a clean look -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzxH+iP Mart5hYk/aF7gC6VAhS/oR/d8FvW/vH0I5g=="
-        crossorigin=""/>
-    <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
-        xintegrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0V4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* Base styles for body and font */
-        body {
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            background-color: #f8fafc; /* Light background */
-            color: #334155; /* Darker text for readability */
+        #map { 
+            height: 100vh;
+            width: 100%;
         }
-
-        /* Map container styling */
-        #map {
-            height: 75vh; /* Larger map area */
-            width: 95%; /* Fluid width */
-            margin: 2.5vh auto; /* Center the map with vertical margin */
-            border-radius: 1.25rem; /* More rounded corners */
-            box-shadow: 0 15px 30px rgba(0,0,0,0.15); /* Stronger, softer shadow */
-            z-index: 0; /* Ensure map is behind other elements if any */
-            overflow: hidden; /* Ensures rounded corners are applied correctly */
-        }
-
-        /* Leaflet specific overrides for better UI/UX */
-        .leaflet-popup-content-wrapper {
-            border-radius: 0.75rem; /* Rounded corners for popups */
-            font-family: 'Inter', sans-serif;
-            font-size: 0.9rem;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        .leaflet-popup-content {
-            padding: 0.75rem 1rem;
-            line-height: 1.4;
-        }
-        .leaflet-popup-tip {
-            background: #fff; /* Match popup background */
-        }
-        .leaflet-control-container {
-            z-index: 1; /* Ensure controls are above the map */
-        }
-
-        /* Custom marker styling using Font Awesome icons */
-        .custom-div-icon {
-            background-color: #fff;
-            border: 2px solid #6366f1; /* Indigo border */
-            border-radius: 50%; /* Circular shape */
-            width: 38px; /* Size of the icon container */
-            height: 38px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Smooth transition */
-        }
-        .custom-div-icon i {
-            color: #6366f1; /* Indigo icon color */
-            font-size: 1.2rem;
-        }
-        .custom-div-icon:hover {
-            transform: scale(1.1); /* Slight grow effect on hover */
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-
-        /* User location marker */
-        .user-location-icon {
-            background-color: #3b82f6; /* Blue for user location */
-            border: 2px solid #1d4ed8;
-        }
-        .user-location-icon i {
-            color: #fff;
-        }
-
-        /* Custom button styling */
-        .map-control-button {
-            background-color: #4f46e5; /* Indigo */
-            color: white;
-            padding: 0.75rem 1.25rem;
-            border-radius: 0.75rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .map-control-button:hover {
-            background-color: #4338ca; /* Darker indigo on hover */
-            transform: translateY(-2px);
-        }
-        .map-control-button:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        /* Responsive adjustments for smaller screens */
-        @media (max-width: 768px) {
-            #map {
-                height: 65vh; /* Adjust height for mobile */
-                width: 98%;
-                margin: 1.5vh auto;
-            }
-            .map-control-button {
-                padding: 0.6rem 1rem;
-                font-size: 0.9rem;
-            }
+        .accuracy-circle {
+            stroke: #03a9f4;
+            stroke-width: 1;
+            fill: #03a9f480;
+            fill-opacity: 0.2;
         }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
-    <header class="bg-white shadow-lg p-4 text-center rounded-b-2xl">
-        <h1 class="text-3xl md:text-4xl font-extrabold text-indigo-700">
-            <i class="fas fa-map-marked-alt mr-2 text-indigo-500"></i> Delivery Zone Map
-        </h1>
-        <p class="text-gray-600 mt-2 text-lg">Find your nearest delivery points and service areas.</p>
-    </header>
+<body>
+    <div id="map"></div>
 
-    <main class="flex-grow flex flex-col items-center justify-center p-4">
-        <div id="map"></div>
-        <div class="mt-4 flex flex-wrap justify-center gap-4">
-            <button id="locateUser" class="map-control-button">
-                <i class="fas fa-crosshairs"></i> Locate Me
-            </button>
-            <button id="resetView" class="map-control-button bg-gray-600 hover:bg-gray-700">
-                <i class="fas fa-sync-alt"></i> Reset View
-            </button>
-        </div>
-    </main>
-
-    <footer class="bg-white shadow-lg p-4 text-center rounded-t-2xl mt-auto">
-        <p class="text-gray-500 text-sm">
-            &copy; 2025 Custom Delivery Map. Powered by <a href="https://leafletjs.com/" target="_blank" class="text-indigo-500 hover:underline">Leaflet</a> & <a href="https://www.openstreetmap.org/" target="_blank" class="text-indigo-500 hover:underline">OpenStreetMap</a>.
-        </p>
-    </footer>
-
-    <!-- Leaflet JavaScript -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nEFjM2L+A/d+oB+t5hB+iP/oR/d8FvW/vH0I5g=="
-        crossorigin=""></script>
-
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize the map
-            // Centered around a common Indian city (e.g., Bengaluru) for a relevant example
-            const initialLat = 12.9716;
-            const initialLng = 77.5946;
-            const initialZoom = 12; // A good zoom level to start with
+        // Initialize map with custom tile layer (OpenStreetMap)
+        const map = L.map('map').setView([0, 0], 15); // Default view
+        
+        // Custom tile layer (OpenStreetMap)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
 
-            const map = L.map('map').setView([initialLat, initialLng], initialZoom);
-
-            // Add a cleaner base map layer (CartoDB Positron for a light, modern look)
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-                subdomains: 'abcd',
-                maxZoom: 19
-            }).addTo(map);
-
-            // --- Custom Icon Definitions using Font Awesome ---
-            // Function to create a custom divIcon with Font Awesome
-            function createCustomIcon(iconClass, extraClasses = '') {
-                return L.divIcon({
-                    className: `custom-div-icon ${extraClasses}`,
-                    html: `<i class="${iconClass}"></i>`,
-                    iconSize: [38, 38], // Size of the icon container
-                    iconAnchor: [19, 38], // Point of the icon which will correspond to marker's location (bottom center)
-                    popupAnchor: [0, -38] // Point from which the popup should open relative to the iconAnchor
-                });
-            }
-
-            const storeIcon = createCustomIcon('fas fa-store');
-            const hubIcon = createCustomIcon('fas fa-warehouse');
-            const userLocationIcon = createCustomIcon('fas fa-user-circle', 'user-location-icon');
-
-            // --- Adding Delivery Points (Markers) ---
-            const deliveryPoints = [
-                { lat: 12.9716 + 0.01, lng: 77.5946 + 0.01, name: 'Central Hub', type: 'hub', description: 'Main distribution center.' },
-                { lat: 12.9716 - 0.01, lng: 77.5946 - 0.02, name: 'Store A', type: 'store', description: 'Quick pick-up and delivery.' },
-                { lat: 12.9716 + 0.02, lng: 77.5946 - 0.01, name: 'Store B', type: 'store', description: 'Specialty items available.' },
-                { lat: 12.9716 - 0.005, lng: 77.5946 + 0.03, name: 'North Depot', type: 'hub', description: 'Serving northern areas.' }
-            ];
-
-            deliveryPoints.forEach(point => {
-                let iconToUse;
-                if (point.type === 'hub') {
-                    iconToUse = hubIcon;
-                } else if (point.type === 'store') {
-                    iconToUse = storeIcon;
-                }
-
-                L.marker([point.lat, point.lng], { icon: iconToUse })
-                    .addTo(map)
-                    .bindPopup(`
-                        <div class="text-center">
-                            <h3 class="font-bold text-lg text-indigo-700 mb-1">${point.name}</h3>
-                            <p class="text-gray-700">${point.description}</p>
-                            <button class="mt-3 px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 transition-colors text-sm">
-                                Order Now
-                            </button>
-                        </div>
-                    `);
-            });
-
-            // --- Adding Service Areas (Polygons) ---
-            // Example service area (a polygon representing a neighborhood)
-            const serviceArea1Coords = [
-                [12.9650, 77.5850],
-                [12.9650, 77.6050],
-                [12.9800, 77.6050],
-                [12.9800, 77.5850],
-                [12.9650, 77.5850]
-            ];
-
-            L.polygon(serviceArea1Coords, {
-                color: '#818cf8', /* Lighter indigo stroke */
-                fillColor: '#c7d2fe', /* Very light indigo fill */
-                fillOpacity: 0.4,
-                weight: 3,
-                dashArray: '8, 8' /* More pronounced dashed border */
-            }).addTo(map)
-              .bindPopup('<b>Primary Delivery Zone</b><br>Fastest delivery available here!');
-
-            // Example of a circular service area
-            L.circle([12.9716 - 0.02, 77.5946 + 0.01], {
-                color: '#f87171', /* Red stroke */
-                fillColor: '#fecaca', /* Light red fill */
-                fillOpacity: 0.4,
-                weight: 3
-            }).addTo(map)
-              .bindPopup('<b>Limited Service Area</b><br>Deliveries might take longer.');
-
-
-            // --- User Location Feature ---
-            let userMarker; // To store the user's location marker
-
-            document.getElementById('locateUser').addEventListener('click', function() {
-                map.locate({setView: true, maxZoom: 16, enableHighAccuracy: true}); // Request user's location
-            });
-
-            // Event listener for when location is found
-            map.on('locationfound', function(e) {
-                if (userMarker) {
-                    map.removeLayer(userMarker); // Remove previous marker if exists
-                }
-                userMarker = L.marker(e.latlng, { icon: userLocationIcon }).addTo(map)
-                    .bindPopup("<b>Your Current Location</b>").openPopup();
-                map.setView(e.latlng, 16); // Center map on user and zoom in
-                console.log("User location found:", e.latlng);
-            });
-
-            // Event listener for when location is not found
-            map.on('locationerror', function(e) {
-                console.error("Location error:", e.message);
-                // In a real app, you'd show a user-friendly message here
-                alert("Could not retrieve your location. Please ensure location services are enabled.");
-            });
-
-            // --- Reset View Button ---
-            document.getElementById('resetView').addEventListener('click', function() {
-                map.setView([initialLat, initialLng], initialZoom);
-                if (userMarker) {
-                    map.removeLayer(userMarker); // Remove user marker on reset
-                    userMarker = null;
-                }
-            });
-
-            // Handle map resize to ensure it always fits its container
-            window.addEventListener('resize', function() {
-                map.invalidateSize();
-            });
+        // Create custom location marker
+        const locationIcon = L.divIcon({
+            className: 'live-location-pin',
+            html: `<div style="position:relative">
+                      <div style="background:#4285F4;border-radius:50%;width:16px;height:16px"></div>
+                      <div style="position:absolute;top:0;left:0;width:16px;height:16px;border-radius:50%;border:2px solid #4285F4;animation:pulse 1.5s infinite"></div>
+                   </div>`,
+            iconSize: [20, 20],
+            iconAnchor: [8, 8]
         });
+
+        // Create elements for location tracking
+        let marker = null;
+        let accuracyCircle = null;
+        let watchId = null;
+
+        // CSS for animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0% { transform: scale(1); opacity: 1; }
+                70% { transform: scale(3); opacity: 0; }
+                100% { transform: scale(3); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Handle real-time location updates
+        function onLocationFound(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const accuracy = position.coords.accuracy;
+            
+            // Remove previous elements
+            if (marker) map.removeLayer(marker);
+            if (accuracyCircle) map.removeLayer(accuracyCircle);
+            
+            // Update map view
+            map.setView([lat, lng], 18);
+            
+            // Add accuracy circle
+            accuracyCircle = L.circle([lat, lng], {
+                radius: accuracy,
+                className: 'accuracy-circle'
+            }).addTo(map);
+            
+            // Add new marker
+            marker = L.marker([lat, lng], {icon: locationIcon})
+                .addTo(map)
+                .bindPopup(`Your location (Accuracy: ${Math.round(accuracy)} meters)`)
+                .openPopup();
+        }
+
+        function onLocationError(error) {
+            alert(`Location error (${error.code}): ${error.message}`);
+        }
+
+        // Start tracking
+        function startTracking() {
+            if (watchId !== null) return;
+            
+            watchId = navigator.geolocation.watchPosition(
+                onLocationFound,
+                onLocationError,
+                {
+                    enableHighAccuracy: true,
+                    maximumAge: 10000,
+                    timeout: 15000
+                }
+            );
+        }
+
+        // Stop tracking
+        function stopTracking() {
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+        }
+
+        // Add control buttons
+        const controlContainer = L.control({position: 'bottomleft'});
+        controlContainer.onAdd = function() {
+            const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+            div.innerHTML = `
+                <button id="start-track" style="padding:6px 12px;background:white;border:2px solid rgba(0,0,0,0.2);cursor:pointer">
+                    ▶ Start Tracking
+                </button>
+                <button id="stop-track" style="padding:6px 12px;background:white;border:2px solid rgba(0,0,0,0.2);cursor:pointer;margin-left:5px">
+                    ⏹ Stop Tracking
+                </button>
+            `;
+            return div;
+        };
+        controlContainer.addTo(map);
+
+        // Add button event handlers
+        document.getElementById('start-track').addEventListener('click', startTracking);
+        document.getElementById('stop-track').addEventListener('click', stopTracking);
+
+        // Initial location request
+        map.on('locationfound', onLocationFound);
+        map.on('locationerror', onLocationError);
+        map.locate({setView: true, maxZoom: 16});
     </script>
 </body>
 </html>
-

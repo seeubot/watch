@@ -8,59 +8,174 @@
   <style>
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f7f7fa;
+      font-family: 'Inter', Arial, sans-serif;
+      background: #f5f6fa;
+      color: #222;
+      box-sizing: border-box;
     }
     #map {
       height: 100vh;
       width: 100vw;
+      position: absolute;
+      left: 0; top: 0;
+      z-index: 1;
     }
     .loader {
       position: fixed;
-      top: 50%;
-      left: 50%;
+      top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      background: rgba(255,255,255,0.9);
-      border-radius: 12px;
+      background: rgba(255,255,255,0.95);
+      border-radius: 14px;
       padding: 2em 3em;
-      font-size: 1.3em;
-      z-index: 9999;
-      box-shadow: 0 2px 12px rgba(100,100,100,0.1);
+      font-size: 1.15em;
+      box-shadow: 0 2px 12px rgba(80,80,80,0.06);
+      z-index: 2001;
       display: none;
+      font-weight: 500;
     }
-    #center-btn {
-      position: absolute;
-      top: 1em;
-      right: 1em;
+    /* Bottom navigation bar */
+    .bottom-nav {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      display: flex; justify-content: space-around;
+      background: #fff;
+      border-top: 1px solid #ececec;
+      height: 56px;
+      z-index: 1300;
+      box-shadow: 0 1px 14px rgba(44,85,138,0.03);
+    }
+    .nav-btn {
+      flex: 1;
+      border: none;
+      background: none;
+      font: inherit;
+      color: #8d8d8d;
+      font-size: 1.1em;
+      padding: 0;
+      outline: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.1s;
+      cursor: pointer;
+      height: 100%;
+    }
+    .nav-btn.active {
+      color: #4a90e2;
+      font-weight: bold;
+      background: #f3f8fe;
+    }
+    /* Floating action button (FAB) */
+    .fab {
+      position: fixed;
+      bottom: 72px;
+      right: 16px;
+      width: 56px;
+      height: 56px;
+      font-size: 2.1em;
       background: #4a90e2;
       color: #fff;
       border: none;
       border-radius: 50%;
-      width: 52px;
-      height: 52px;
-      font-size: 1.7em;
+      box-shadow: 0 2px 8px rgba(54,129,228,0.19);
+      z-index: 1500;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: background .18s;
       cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-      transition: background 0.2s;
     }
-    #center-btn:active {
-      background: #357ab8;
+    .fab:active { background: #357ab8; }
+    /* Status/Info Bottom Card */
+    .bottom-card {
+      position: fixed;
+      left: 50%;
+      bottom: 68px;
+      transform: translateX(-50%);
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 14px rgba(80,80,80,0.08);
+      padding: 1em 2.4em;
+      min-width: 180px;
+      min-height: 50px;
+      z-index: 1200;
+      font-size: 1em;
+      display: none;
+      align-items: center;
+      gap: 0.7em;
+      color: #357ab8;
     }
+    /* Toast for feedback */
+    .toast {
+      position: fixed;
+      bottom: 130px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #222;
+      color: #fff;
+      font-size: 1em;
+      border-radius: 8px;
+      padding: 1em 2em;
+      opacity: 0;
+      z-index: 2003;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    .toast.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    /* Responsive styles */
     @media (max-width: 600px) {
       #map { height: 100vh; }
-      #center-btn { top: 0.75em; right: 0.75em; width: 44px; height:44px; font-size:1.2em; }
+      .fab {
+        width: 44px; height: 44px; bottom: 66px; font-size: 1.6em;
+      }
+      .bottom-nav { height: 49px; }
+      .bottom-card { padding: 1em 1.1em; min-width: 130px; font-size: .95em; }
+      .toast { padding: .7em 1.3em; bottom: 100px; font-size: 0.98em; }
     }
   </style>
 </head>
 <body>
-  <div id="loader" class="loader">Getting your location...</div>
+  <div id="loader" class="loader">Getting your location…</div>
   <div id="map"></div>
-  <button id="center-btn" aria-label="Re-center map">📍 Center</button>
+  <!-- Info card for status/accuracy -->
+  <div id="bottom-card" class="bottom-card"></div>
+  <!-- Floating action button for recentering -->
+  <button id="center-btn" class="fab" aria-label="Re-center map">📍</button>
+  <!-- Toast message -->
+  <div id="toast" class="toast"></div>
+  <!-- Bottom navigation bar -->
+  <nav class="bottom-nav" aria-label="primary">
+    <button class="nav-btn active" tabindex="0" aria-label="Home">
+      <span>🏠</span>
+      <span style="font-size:.82em;">Home</span>
+    </button>
+    <button class="nav-btn" tabindex="0" aria-label="Location">
+      <span>📌</span>
+      <span style="font-size:.82em;">Location</span>
+    </button>
+    <button class="nav-btn" tabindex="0" aria-label="Orders">
+      <span>🛒</span>
+      <span style="font-size:.82em;">Orders</span>
+    </button>
+    <button class="nav-btn" tabindex="0" aria-label="Profile">
+      <span>👤</span>
+      <span style="font-size:.82em;">Profile</span>
+    </button>
+  </nav>
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
+    // UI elements
     const loader = document.getElementById('loader');
+    const toast = document.getElementById('toast');
+    const bottomCard = document.getElementById('bottom-card');
     loader.style.display = 'block';
-    const map = L.map('map').setView([0,0], 13);
+
+    // Map setup
+    const map = L.map('map', { zoomControl: false, attributionControl: true }).setView([0,0], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OSM contributors'
     }).addTo(map);
@@ -68,62 +183,91 @@
     let userMarker = null, userCircle = null;
     let lastCoords = null;
 
-    function updateMap(coords, accuracy) {
+    // UX: Custom marker icon
+    const userIcon = L.icon({
+      iconUrl: 'https://cdn-icons-png.flaticon.com/512/854/854878.png',
+      iconSize: [40, 40],
+      iconAnchor: [20, 40],
+    });
+
+    function showToast(msg, duration = 2500) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), duration);
+    }
+
+    function animateBottomCard(show, msg = '') {
+      if (show && msg) {
+        bottomCard.style.display = 'flex';
+        bottomCard.textContent = msg;
+      } else {
+        bottomCard.style.display = 'none';
+      }
+    }
+
+    function updateMap(coords, accuracy, isInitial = false) {
       if (userMarker) map.removeLayer(userMarker);
       if (userCircle) map.removeLayer(userCircle);
-      userMarker = L.marker([coords.latitude, coords.longitude], {
-        icon: L.icon({
-          iconUrl: 'https://cdn-icons-png.flaticon.com/512/854/854878.png',
-          iconSize: [38, 38],
-          iconAnchor: [19, 38]
-        })
-      }).addTo(map).bindPopup(`You're within ${Math.round(accuracy)} meters.`);
+      userMarker = L.marker([coords.latitude, coords.longitude], {icon: userIcon})
+        .addTo(map)
+        .bindPopup(`You're within ${Math.round(accuracy)} meters.`);
       userCircle = L.circle([coords.latitude, coords.longitude], {
         radius: accuracy,
         color: '#4a90e2',
         fillColor: '#7ebeff55',
-        fillOpacity: 0.3
+        fillOpacity: 0.29
       }).addTo(map);
-      map.setView([coords.latitude, coords.longitude], 16);
+      if (isInitial) {
+        map.setView([coords.latitude, coords.longitude], 16);
+      }
       lastCoords = coords;
+      animateBottomCard(true, `Accuracy: ±${Math.round(accuracy)} m`);
     }
 
-    function showToast(msg) {
-      const toast = document.createElement('div');
-      toast.className = 'loader';
-      toast.style.padding = "1em 2em";
-      toast.textContent = msg;
-      toast.style.zIndex = 99999;
-      document.body.appendChild(toast);
-      toast.style.display = 'block';
-      setTimeout(() => {
-        toast.style.display = 'none';
-        document.body.removeChild(toast);
-      }, 2500);
-    }
-
+    // Geolocation logic
+    let isFirst = true;
     if ('geolocation' in navigator) {
       navigator.geolocation.watchPosition(
         position => {
           loader.style.display = 'none';
-          updateMap(position.coords, position.coords.accuracy);
+          updateMap(position.coords, position.coords.accuracy, isFirst);
+          isFirst = false;
+          showToast("Location found!");
         },
         error => {
           loader.textContent = "Location error: " + error.message;
-          showToast("Location error: " + error.message);
+          animateBottomCard(true, "Location error!");
+          showToast("Location error: " + error.message, 3400);
         },
         { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
       );
     } else {
       loader.textContent = "Geolocation not supported.";
+      animateBottomCard(true, "Geolocation not supported.");
     }
 
+    // Recenter FAB logic
     document.getElementById('center-btn').onclick = () => {
       if (lastCoords) {
-        map.setView([lastCoords.latitude, lastCoords.longitude], 16);
-        if (userMarker) userMarker.openPopup();
+        map.setView([lastCoords.latitude, lastCoords.longitude], 16, { animate: true });
+        if (userMarker && userMarker.getPopup()) userMarker.openPopup();
+        showToast("Centered on your location!", 1700);
       }
     };
+
+    // Bottom navigation: for demonstration only, highlight active on click
+    document.querySelectorAll('.nav-btn').forEach(btn =>
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        showToast(`Switched to "${this.ariaLabel}"`);
+      })
+    );
+
+    // UX: Hide status card after 6s
+    setInterval(() => {
+      animateBottomCard(false);
+    }, 6000);
   </script>
 </body>
 </html>

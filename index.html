@@ -1,124 +1,214 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <title>Leaflet Colour Map – Custom Live & Pin Icons</title>
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <title>Delicious Bites - Map Live Tracking</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    html, body { height:100%; margin:0; background:#f9f9f9; color:#222;}
-    #map { width:100vw; height:100vh; position:absolute; top:0; left:0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #000;
+      color: #fff;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 50;
+    }
+
+    #map {
+      height: 360px;
+      width: 100%;
+      border-radius: 0.75rem;
+    }
+
+    .leaflet-container {
+      background-color: #333;
+    }
+
     .fab {
-      position:fixed; bottom:24px; left:26px; width:56px; height:56px;
-      border-radius:50%; border:none; color:#fff; background:#1976d2; z-index:1102;
-      display:flex; align-items:center; justify-content:center; font-size:2em;
-      box-shadow:0 2px 14px #0003; cursor:pointer; transition: background .14s;
+      position: absolute;
+      bottom: 24px;
+      right: 24px;
+      height: 48px;
+      width: 48px;
+      border-radius: 9999px;
+      background-color: #1976d2;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      z-index: 1000;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
     }
-    .fab:active { background:#0d47a1; }
-    .leaflet-control, .leaflet-pane { filter:none; }
-    .live-marker-anim { animation: livepulse 1.25s infinite;
-      border-radius:50%; box-shadow:0 0 0 0 #1e88e5cc;
+
+    .live-marker-anim {
+      animation: livepulse 1.25s infinite;
+      border-radius: 50%;
+      box-shadow: 0 0 0 0 #1e88e5cc;
     }
+
     @keyframes livepulse {
-      0% {box-shadow:0 0 0 0 #1e88e5cc;}
-      70% {box-shadow:0 0 0 18px transparent;}
-      100% {box-shadow:0 0 0 0 transparent;}
-    }
-    @media (max-width:600px){
-      .fab { width:44px; height:44px; font-size:1.14em;}
+      0% {
+        box-shadow: 0 0 0 0 #1e88e5cc;
+      }
+      70% {
+        box-shadow: 0 0 0 18px transparent;
+      }
+      100% {
+        box-shadow: 0 0 0 0 transparent;
+      }
     }
   </style>
 </head>
-<body>
-  <div id="map"></div>
-  <button id="center-btn" class="fab" title="Go to live location" aria-label="Go to live location">
-    <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
-      <circle cx="13" cy="13" r="11" stroke="#fff" stroke-width="2"/>
-      <circle cx="13" cy="13" r="5" fill="#fff" stroke="#1976d2" stroke-width="3"/>
-      <g stroke="#1976d2" stroke-width="2">
-        <line x1="13" x2="13" y1="0" y2="5"/>
-        <line x1="13" x2="13" y1="21" y2="26"/>
-        <line x1="0" x2="5" y1="13" y2="13"/>
-        <line x1="21" x2="26" y1="13" y2="13"/>
-      </g>
-    </svg>
-  </button>
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script>
-    // Full-colour OpenStreetMap tiles
-    const tile = L.tileLayer(
-      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-      { attribution:'© OpenStreetMap contributors', maxZoom:19 }
-    );
-    const map = L.map("map", {
-      zoomControl:true, attributionControl:true, layers:[tile]
-    }).setView([20.59,78.96], 5);
 
-    // Custom animated blue live marker
+<body class="p-6">
+  <h1 class="text-3xl font-bold mb-6">🍽️ Delicious Bites - Live Tracking</h1>
+
+  <div class="modal max-w-3xl w-full bg-gray-800 p-6 rounded-lg shadow-xl relative">
+    <h2 class="text-xl font-bold mb-4">📍 Select Your Delivery Location</h2>
+    <div id="map" class="mb-4"></div>
+    <p id="locationStatus" class="text-sm text-gray-300 text-center">Waiting for location…</p>
+
+    <!-- FAB to recenter -->
+    <button id="center-btn" class="fab" title="Recenter">
+      📍
+    </button>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    let map;
+    let liveMarker = null;
+    let userCircle = null;
+    let geolocationWatcherId = null;
+    let lastKnownLiveCoords = null;
+
+    function initMap() {
+      map = L.map('map').setView([20.5937, 78.9629], 5); // Default: India
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 18,
+      }).addTo(map);
+    }
+
     function liveSVGIcon() {
       return L.divIcon({
-        className:"live-marker-anim",
-        iconSize:[40,40], iconAnchor:[20,20],
-        html:`<svg width="40" height="40" viewBox="0 0 40 40">
-          <circle cx="20" cy="20" r="16" fill="#1976d2" opacity="0.10"/>
-          <circle cx="20" cy="20" r="12" fill="#1976d2" opacity="0.22"/>
-          <circle cx="20" cy="20" r="8" fill="#1976d2" stroke="#fff" stroke-width="2"/>
-        </svg>`
+        className: 'live-marker-anim',
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+        html: `<svg width="40" height="40" viewBox="0 0 40 40">
+        <circle cx="20" cy="20" r="16" fill="#1976d2" opacity="0.1" />
+        <circle cx="20" cy="20" r="12" fill="#1976d2" opacity="0.2" />
+        <circle cx="20" cy="20" r="8" fill="#1976d2" stroke="#fff" stroke-width="2"/>
+      </svg>`
       });
     }
 
-    // Custom colourful pin icon (teal, no red)
-    const pinIcon = L.divIcon({
-      className:"",
-      iconSize:[38,38], iconAnchor:[19,38],
-      html: `<svg viewBox="0 0 38 38" width="38" height="38">
-        <ellipse cx="19" cy="24" rx="11" ry="9.8" fill="#fff" stroke="#009688" stroke-width="2.1"/>
-        <circle cx="19" cy="16" r="7" fill="#009688" stroke="#116b5b" stroke-width="1.1"/>
-      </svg>`
-    });
+    function startLiveTracking() {
+      const status = document.getElementById('locationStatus');
+      status.textContent = '📡 Acquiring location...';
 
-    let liveMarker=null, userCircle=null, lastCoords=null, pinMarker=null;
+      if (!navigator.geolocation) {
+        status.textContent = '⚠️ Geolocation not supported.';
+        return;
+      }
 
-    // Pin custom location on tap/click
-    map.on('click', function(e) {
-      if (pinMarker) map.removeLayer(pinMarker);
-      pinMarker = L.marker(e.latlng, {icon:pinIcon})
-                   .addTo(map)
-                   .bindPopup("Delivery location").openPopup();
-    });
+      clearGeolocationWatcher(); // Ensure clean state
 
-    // Live GPS with blue animated marker, accuracy circle
-    if ("geolocation" in navigator) {
-      navigator.geolocation.watchPosition(
-        pos=>{
-          const {latitude:lat, longitude:lng, accuracy} = pos.coords;
-          if (liveMarker) map.removeLayer(liveMarker);
-          if (userCircle) map.removeLayer(userCircle);
-          liveMarker = L.marker([lat,lng], {icon:liveSVGIcon()})
-                         .addTo(map)
-                         .bindPopup(`You're here!<br>Accuracy: ±${Math.round(accuracy)}m`);
-          userCircle = L.circle([lat,lng], {
-            radius:accuracy, color:'#1976d2', fillColor:'#90caf9', fillOpacity:0.12, opacity:0.19
-          }).addTo(map);
-          if (!lastCoords) map.setView([lat,lng], 17, {animate:true});
-          lastCoords = { lat, lng };
+      geolocationWatcherId = navigator.geolocation.watchPosition(
+        (pos) => {
+          const { latitude, longitude, accuracy } = pos.coords;
+          const newCoords = { latitude, longitude };
+
+          if (!lastKnownLiveCoords || getDistance(lastKnownLiveCoords, newCoords) > 10) {
+            lastKnownLiveCoords = newCoords;
+
+            if (!liveMarker) {
+              liveMarker = L.marker([latitude, longitude], { icon: liveSVGIcon() })
+                .addTo(map).bindPopup("You are here").openPopup();
+            } else {
+              liveMarker.setLatLng([latitude, longitude]);
+            }
+
+            if (!userCircle) {
+              userCircle = L.circle([latitude, longitude], {
+                radius: accuracy || 20,
+                color: '#1976d2',
+                fillColor: '#1e88e5',
+                fillOpacity: 0.15
+              }).addTo(map);
+            } else {
+              userCircle.setLatLng([latitude, longitude]);
+              userCircle.setRadius(accuracy || 20);
+            }
+
+            if (!map._liveCenteredOnce) {
+              map.setView([latitude, longitude], 16);
+              map._liveCenteredOnce = true;
+            }
+
+            status.textContent = `✅ Location detected: Lat ${latitude.toFixed(4)}, Lng ${longitude.toFixed(4)}`;
+          }
         },
-        ()=>{}, // Ignore errors (no toast)
-        { enableHighAccuracy:true, maximumAge:0, timeout:12000 }
+        (err) => {
+          status.textContent = {
+            1: '❌ Permission denied.',
+            2: '❌ Position unavailable.',
+            3: '❌ Timeout fetching location.'
+          }[err.code] || '⚠️ Unknown error.';
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 5000
+        }
       );
     }
 
-    // Live button behaviour: recenter + ripple highlight
-    document.getElementById('center-btn').onclick = () => {
-      if (lastCoords) {
-        map.setView([lastCoords.lat, lastCoords.lng], map.getZoom(), { animate:true });
-        if (liveMarker) {
-          liveMarker._icon.classList.add("live-marker-anim");
-          liveMarker.openPopup();
-          setTimeout(()=>liveMarker._icon.classList.remove("live-marker-anim"), 1200);
-        }
+    function getDistance(coord1, coord2) {
+      const R = 6371e3;
+      const toRad = deg => deg * Math.PI / 180;
+      const dLat = toRad(coord2.latitude - coord1.latitude);
+      const dLng = toRad(coord2.longitude - coord1.longitude);
+      const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(coord1.latitude)) *
+        Math.cos(toRad(coord2.latitude)) *
+        Math.sin(dLng / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function clearGeolocationWatcher() {
+      if (geolocationWatcherId !== null) {
+        navigator.geolocation.clearWatch(geolocationWatcherId);
+        geolocationWatcherId = null;
       }
-    };
+    }
+
+    // FAB recenter
+    document.getElementById('center-btn').addEventListener('click', () => {
+      if (lastKnownLiveCoords) {
+        map.setView([lastKnownLiveCoords.latitude, lastKnownLiveCoords.longitude], 16);
+      }
+    });
+
+    // Init on load
+    document.addEventListener('DOMContentLoaded', () => {
+      initMap();
+      startLiveTracking();
+    });
   </script>
 </body>
 </html>

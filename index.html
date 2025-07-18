@@ -3,165 +3,88 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Real-Time Location Map</title>
+  <title>Blinkit-Style Map with Address Input</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    body {
-      margin: 0;
-      font-family: 'Inter', Arial, sans-serif;
-      background: #f5f6fa;
-      color: #222;
-      box-sizing: border-box;
-    }
-    #map {
-      height: 100vh;
-      width: 100vw;
-      position: absolute;
-      left: 0; top: 0;
-      z-index: 1;
-    }
-    .loader {
-      position: fixed;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(255,255,255,0.95);
-      border-radius: 14px;
-      padding: 2em 3em;
-      font-size: 1.15em;
-      box-shadow: 0 2px 12px rgba(80,80,80,0.06);
-      z-index: 2001;
-      display: none;
-      font-weight: 500;
-    }
-    /* Bottom navigation bar */
-    .bottom-nav {
-      position: fixed;
-      left: 0; right: 0; bottom: 0;
-      display: flex; justify-content: space-around;
-      background: #fff;
-      border-top: 1px solid #ececec;
-      height: 56px;
-      z-index: 1300;
-      box-shadow: 0 1px 14px rgba(44,85,138,0.03);
-    }
-    .nav-btn {
-      flex: 1;
-      border: none;
-      background: none;
-      font: inherit;
-      color: #8d8d8d;
-      font-size: 1.1em;
-      padding: 0;
-      outline: none;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      transition: color 0.1s;
-      cursor: pointer;
-      height: 100%;
-    }
-    .nav-btn.active {
-      color: #4a90e2;
-      font-weight: bold;
-      background: #f3f8fe;
-    }
-    /* Floating action button (FAB) */
-    .fab {
-      position: fixed;
-      bottom: 72px;
-      right: 16px;
-      width: 56px;
-      height: 56px;
-      font-size: 2.1em;
-      background: #4a90e2;
-      color: #fff;
-      border: none;
-      border-radius: 50%;
-      box-shadow: 0 2px 8px rgba(54,129,228,0.19);
-      z-index: 1500;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      transition: background .18s;
-      cursor: pointer;
-    }
-    .fab:active { background: #357ab8; }
-    /* Status/Info Bottom Card */
-    .bottom-card {
-      position: fixed;
-      left: 50%;
-      bottom: 68px;
-      transform: translateX(-50%);
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 2px 14px rgba(80,80,80,0.08);
-      padding: 1em 2.4em;
-      min-width: 180px;
-      min-height: 50px;
-      z-index: 1200;
-      font-size: 1em;
-      display: none;
-      align-items: center;
-      gap: 0.7em;
-      color: #357ab8;
-    }
-    /* Toast for feedback */
-    .toast {
-      position: fixed;
-      bottom: 130px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #222;
-      color: #fff;
-      font-size: 1em;
-      border-radius: 8px;
-      padding: 1em 2em;
-      opacity: 0;
-      z-index: 2003;
-      transition: opacity 0.3s;
-      pointer-events: none;
-    }
-    .toast.show {
-      opacity: 1;
-      pointer-events: auto;
-    }
-    /* Responsive styles */
-    @media (max-width: 600px) {
-      #map { height: 100vh; }
-      .fab {
-        width: 44px; height: 44px; bottom: 66px; font-size: 1.6em;
-      }
-      .bottom-nav { height: 49px; }
-      .bottom-card { padding: 1em 1.1em; min-width: 130px; font-size: .95em; }
-      .toast { padding: .7em 1.3em; bottom: 100px; font-size: 0.98em; }
+    body { margin: 0; font-family:'Inter',Arial,sans-serif; background: #f5f6fa; color:#222; box-sizing:border-box;}
+    #map { height:100vh; width:100vw; position:absolute; left:0; top:0; z-index:1; }
+    .loader { position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+      background:rgba(255,255,255,0.95);border-radius:14px;padding:2em 3em;font-size:1.15em;
+      box-shadow:0 2px 12px rgba(80,80,80,0.06);z-index:2001;display:none;font-weight:500;}
+    .bottom-nav { position:fixed; left:0; right:0; bottom:0; display:flex; justify-content:space-around;
+      background:#fff; border-top:1px solid #ececec; height:56px; z-index:1300; box-shadow:0 1px 14px rgba(44,85,138,0.03);}
+    .nav-btn { flex:1; border:none; background:none; font:inherit; color:#8d8d8d; font-size:1.1em;padding:0;
+      outline:none;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:color .1s;cursor:pointer;height:100%;}
+    .nav-btn.active { color:#4a90e2;font-weight:bold;background:#f3f8fe; }
+    .fab { position:fixed; bottom:120px; right:16px; width:56px; height:56px; font-size:2.1em;
+      background:#4a90e2; color:#fff; border:none; border-radius:50%; box-shadow:0 2px 8px rgba(54,129,228,0.19);
+      z-index:1500; display:flex; justify-content:center;align-items:center;transition:background .18s;cursor:pointer;}
+    .fab:active { background:#357ab8;}
+    .side-action { position:fixed; top:16px; left:16px; z-index:1500; background:#fff; color:#4a90e2;
+      border:none; border-radius:10px; padding:0.9em 1.7em; font-size:1em; font-weight:600; box-shadow:0 2px 8px rgba(54,129,228,0.10); cursor:pointer; }
+    .side-action:active { background:#e9f0fa;color:#357ab8;}
+    .toast { position:fixed; bottom:140px; left:50%; transform:translateX(-50%);
+      background:#222; color:#fff; font-size:1em; border-radius:8px; padding:1em 2em; opacity:0;
+      z-index:2003; transition:opacity 0.3s; pointer-events:none;}
+    .toast.show { opacity:1; pointer-events:auto;}
+    .modal-bg { display:none; position:fixed; top:0;left:0;right:0;bottom:0;z-index:2100;
+      background:rgba(0,0,0,0.22);}
+    .modal { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+      z-index:2200; background:#fff; border-radius:16px; box-shadow:0 4px 44px rgba(0,0,0,0.17);
+      padding:2.2em 2.2em 2em 2.2em; min-width:270px;}
+    .modal h2 { margin-top:0; font-size:1.22em; margin-bottom:1.1em; color:#357ab8;}
+    .modal label { display:block; margin-bottom:0.7em; }
+    .modal input { width:100%; padding:0.7em; font-size:1em; margin-bottom:1.1em; border:1px solid #ccc; border-radius:8px;}
+    .modal .modal-actions { text-align:right;}
+    .modal button { background:#4a90e2; color:#fff; border:none; border-radius:8px; padding:0.7em 1.5em;
+      font-size:1em; font-weight:500; cursor:pointer;}
+    .modal button.cancel { background:#f6f6f6; color:#4a90e2;}
+    .modal p {margin:.5em 0; color:#999; font-size:.95em;}
+    .layer-toggle {margin:0 0 .6em 16px; position:fixed; top:80px; left:15px; background:#fff; color:#0068ae;
+      border:none; border-radius:8px; font-size:1em; font-weight:500; padding:.5em 1.2em; box-shadow:0 2px 8px rgba(54,129,228,0.12); cursor:pointer; z-index:1400;}
+    @media (max-width:600px){
+      #map {height:100vh;}
+      .fab { width:44px; height:44px; bottom:111px; font-size:1.7em;}
+      .bottom-nav {height:48px;}
+      .side-action { padding:.7em 1em; font-size:.93em;}
+      .modal {padding:1.4em 1em 1.1em 1em;}
     }
   </style>
 </head>
 <body>
   <div id="loader" class="loader">Getting your location…</div>
   <div id="map"></div>
-  <!-- Info card for status/accuracy -->
-  <div id="bottom-card" class="bottom-card"></div>
-  <!-- Floating action button for recentering -->
+  <button id="add-location" class="side-action" aria-label="Add delivery location">Add Delivery Location</button>
+  <button id="layer-toggle" class="layer-toggle">Satellite</button>
   <button id="center-btn" class="fab" aria-label="Re-center map">📍</button>
-  <!-- Toast message -->
   <div id="toast" class="toast"></div>
-  <!-- Bottom navigation bar -->
+  <div id="modal-bg" class="modal-bg"></div>
+  <div id="modal" class="modal" aria-modal="true" aria-labelledby="modal-title">
+    <h2 id="modal-title">Set Delivery Location</h2>
+    <form id="location-form">
+      <label for="address">Address:</label>
+      <input id="address" name="address" required placeholder="Enter delivery address"/>
+      <div class="modal-actions">
+        <button type="submit">Set Location</button>
+        <button type="button" class="cancel" id="cancel-modal">Cancel</button>
+      </div>
+      <p>📍 Address will be geocoded and displayed on the map.</p>
+    </form>
+  </div>
   <nav class="bottom-nav" aria-label="primary">
-    <button class="nav-btn active" tabindex="0" aria-label="Home">
+    <button class="nav-btn active" aria-label="Home">
       <span>🏠</span>
       <span style="font-size:.82em;">Home</span>
     </button>
-    <button class="nav-btn" tabindex="0" aria-label="Location">
+    <button class="nav-btn" aria-label="Location">
       <span>📌</span>
       <span style="font-size:.82em;">Location</span>
     </button>
-    <button class="nav-btn" tabindex="0" aria-label="Orders">
+    <button class="nav-btn" aria-label="Orders">
       <span>🛒</span>
       <span style="font-size:.82em;">Orders</span>
     </button>
-    <button class="nav-btn" tabindex="0" aria-label="Profile">
+    <button class="nav-btn" aria-label="Profile">
       <span>👤</span>
       <span style="font-size:.82em;">Profile</span>
     </button>
@@ -171,103 +94,113 @@
     // UI elements
     const loader = document.getElementById('loader');
     const toast = document.getElementById('toast');
-    const bottomCard = document.getElementById('bottom-card');
-    loader.style.display = 'block';
+    loader.style.display='block';
 
-    // Map setup
-    const map = L.map('map', { zoomControl: false, attributionControl: true }).setView([0,0], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OSM contributors'
-    }).addTo(map);
+    // Map setup: street & satellite layers
+    const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ attribution:'© OSM contributors' });
+    const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { attribution:'Tiles © Esri, Maxar, Earthstar Geographics', maxZoom:19 });
+    const map = L.map('map', { zoomControl:false, attributionControl:true, layers:[street] }).setView([0,0], 13);
 
-    let userMarker = null, userCircle = null;
-    let lastCoords = null;
+    // Layer toggle
+    let onSatellite = false;
+    const layerToggle = document.getElementById('layer-toggle');
+    layerToggle.onclick = function(){
+      onSatellite ? (map.addLayer(street),map.removeLayer(satellite),this.textContent="Satellite",onSatellite=false)
+                  : (map.addLayer(satellite),map.removeLayer(street),this.textContent="Streets",onSatellite=true)
+    };
 
     // UX: Custom marker icon
     const userIcon = L.icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/512/854/854878.png',
-      iconSize: [40, 40],
-      iconAnchor: [20, 40],
+      iconUrl:'https://cdn-icons-png.flaticon.com/512/854/854878.png',
+      iconSize:[40,40], iconAnchor:[20,40]
     });
+    let userMarker=null, userCircle=null, lastCoords=null, deliveryMarker=null;
 
-    function showToast(msg, duration = 2500) {
-      toast.textContent = msg;
+    function showToast(msg, duration=2500){
+      toast.textContent=msg;
       toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), duration);
+      setTimeout(()=>toast.classList.remove('show'), duration);
     }
-
-    function animateBottomCard(show, msg = '') {
-      if (show && msg) {
-        bottomCard.style.display = 'flex';
-        bottomCard.textContent = msg;
-      } else {
-        bottomCard.style.display = 'none';
-      }
-    }
-
-    function updateMap(coords, accuracy, isInitial = false) {
-      if (userMarker) map.removeLayer(userMarker);
-      if (userCircle) map.removeLayer(userCircle);
-      userMarker = L.marker([coords.latitude, coords.longitude], {icon: userIcon})
-        .addTo(map)
-        .bindPopup(`You're within ${Math.round(accuracy)} meters.`);
-      userCircle = L.circle([coords.latitude, coords.longitude], {
-        radius: accuracy,
-        color: '#4a90e2',
-        fillColor: '#7ebeff55',
-        fillOpacity: 0.29
-      }).addTo(map);
-      if (isInitial) {
-        map.setView([coords.latitude, coords.longitude], 16);
-      }
-      lastCoords = coords;
-      animateBottomCard(true, `Accuracy: ±${Math.round(accuracy)} m`);
-    }
-
-    // Geolocation logic
-    let isFirst = true;
-    if ('geolocation' in navigator) {
+    // Real-time location
+    if('geolocation' in navigator){
       navigator.geolocation.watchPosition(
-        position => {
-          loader.style.display = 'none';
-          updateMap(position.coords, position.coords.accuracy, isFirst);
-          isFirst = false;
+        position=>{
+          loader.style.display='none';
+          if(userMarker) map.removeLayer(userMarker);
+          if(userCircle) map.removeLayer(userCircle);
+          userMarker=L.marker([position.coords.latitude, position.coords.longitude],{icon:userIcon})
+            .addTo(map).bindPopup(`You're within ${Math.round(position.coords.accuracy)} meters.`);
+          userCircle=L.circle([position.coords.latitude, position.coords.longitude], {
+            radius:position.coords.accuracy, color:'#4a90e2',
+            fillColor:'#7ebeff55', fillOpacity:0.29
+          }).addTo(map);
+          if(!lastCoords) map.setView([position.coords.latitude, position.coords.longitude], 16);
+          lastCoords=position.coords;
           showToast("Location found!");
         },
-        error => {
-          loader.textContent = "Location error: " + error.message;
-          animateBottomCard(true, "Location error!");
+        error=>{
+          loader.textContent="Location error: " + error.message;
           showToast("Location error: " + error.message, 3400);
         },
-        { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
+        { enableHighAccuracy:true, maximumAge:0, timeout:15000 }
       );
     } else {
-      loader.textContent = "Geolocation not supported.";
-      animateBottomCard(true, "Geolocation not supported.");
+      loader.textContent="Geolocation not supported.";
     }
 
-    // Recenter FAB logic
-    document.getElementById('center-btn').onclick = () => {
-      if (lastCoords) {
-        map.setView([lastCoords.latitude, lastCoords.longitude], 16, { animate: true });
-        if (userMarker && userMarker.getPopup()) userMarker.openPopup();
+    document.getElementById('center-btn').onclick=()=>{
+      if(lastCoords){
+        map.setView([lastCoords.latitude,lastCoords.longitude], 16, { animate:true });
+        if(userMarker && userMarker.getPopup()) userMarker.openPopup();
         showToast("Centered on your location!", 1700);
       }
     };
 
-    // Bottom navigation: for demonstration only, highlight active on click
-    document.querySelectorAll('.nav-btn').forEach(btn =>
-      btn.addEventListener('click', function() {
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    // Delivery location modal logic
+    const modal=document.getElementById('modal');
+    const modalBg=document.getElementById('modal-bg');
+    function showModal(show=true){
+      if(show){ modalBg.style.display=modal.style.display='block'; }
+      else{ modalBg.style.display=modal.style.display='none'; }
+    }
+    document.getElementById('add-location').onclick=()=>showModal(true);
+    document.getElementById('cancel-modal').onclick=()=>showModal(false);
+    modalBg.onclick=()=>showModal(false);
+
+    // Geocoding with OpenStreetMap's Nominatim API demo (no API key needed for basic demo)
+    document.getElementById('location-form').onsubmit=async function(ev){
+      ev.preventDefault();
+      const addr=document.getElementById('address').value.trim();
+      if(!addr) return;
+      loader.textContent="Locating address…";
+      loader.style.display='block';
+      try{
+        const q=encodeURIComponent(addr);
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`);
+        const data=await res.json();
+        loader.style.display='none';
+        if(data && data[0]){
+          const lat=+data[0].lat, lon=+data[0].lon;
+          if(deliveryMarker) map.removeLayer(deliveryMarker);
+          deliveryMarker=L.marker([lat,lon],{
+            icon:L.icon({iconUrl:'https://cdn-icons-png.flaticon.com/512/684/684908.png',iconSize:[38,38],iconAnchor:[19,38]})
+          }).addTo(map).bindPopup("Delivery Location: " + addr).openPopup();
+          map.setView([lat,lon],17,{animate:true});
+          showModal(false);
+          showToast("Delivery address pinned!");
+        }else showToast("Address not found. Please try another one.",3500);
+      }catch{loader.style.display='none'; showToast("Error finding address.",3000);}
+    };
+
+    // Bottom navigation highlight for demo only
+    document.querySelectorAll('.nav-btn').forEach(btn=>
+      btn.addEventListener('click',function(){
+        document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
         this.classList.add('active');
         showToast(`Switched to "${this.ariaLabel}"`);
-      })
-    );
+    }));
 
-    // UX: Hide status card after 6s
-    setInterval(() => {
-      animateBottomCard(false);
-    }, 6000);
   </script>
 </body>
 </html>

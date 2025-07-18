@@ -2,197 +2,208 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <title>Leaflet Mono Map – GPS, Pin, and Search</title>
+  <title>Satellite Live Map – Advanced Live & Zoom UI</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
   <style>
-    html, body { height:100%; margin:0; background:#111; color:#fff;}
+    html, body { height:100%; margin:0; background:#151516; }
     #map { width:100vw; height:100vh; position:absolute; top:0; left:0; }
-    .searchbox {
-      position:fixed; top:24px; left:50%; transform:translateX(-50%); z-index:1101;
-      background:#fff; color:#232323; border:2px solid #232323; border-radius:16px;
-      padding:.7em 1em; font-size:1em; min-width:250px; outline:none; font-weight:500;
-      box-shadow:0 2px 12px #0003;
-    }
-    .suggestions {
-      position: absolute; left:50%; transform:translateX(-50%); top:64px;
-      background:#fafafa; color:#232323; border-radius:13px; box-shadow:0 2px 16px #0004;
-      min-width:250px; z-index:1200; font-size:1em; max-height:220px; overflow-y:auto; display:none;
-      border:1.5px solid #e1e1e1;
-    }
-    .suggestions.show { display:block; }
-    .suggestions div { padding:.55em 1em; cursor:pointer; border-bottom:1px solid #ececec;}
-    .suggestions div:last-child { border-bottom:none; }
-    .suggestions div:hover { background:#efefef; color:#111;}
     .fab {
-      position:fixed; bottom:24px; left:26px; width:56px; height:56px;
-      border-radius:50%; border:none; color:#fff; background:#232323; z-index:1102;
-      display:flex; align-items:center; justify-content:center; font-size:2em;
-      box-shadow:0 2px 7px #0002; cursor:pointer; transition: background .18s;
+      position:fixed; bottom:24px; left:26px; width:58px; height:58px;
+      border-radius:50%; border:none; color:#f3f3f3; background:#222;
+      z-index:1102; display:flex; align-items:center; justify-content:center;
+      font-size:2em; box-shadow:0 2px 14px #0007; cursor:pointer;
+      transition: background .14s;
     }
-    .fab:active, .fab.flash { background:#888; }
-    .toast {
-      position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
-      background: #232323; color: #fff; font-size: 1em;
-      border-radius:9px; padding:1em 2em; opacity:0; z-index:1302;
-      transition:opacity 0.3s; pointer-events: none;
-      box-shadow: 0px 2px 8px #0003;
+    .fab:active { background:#555; }
+    .zoom-dialog {
+      position:fixed; right:26px; bottom:24px; width:170px; background:#222c;
+      border-radius:14px; box-shadow:0 2px 16px #0007; z-index:1300;
+      display:none; flex-direction:column; align-items:center; padding:1.6em 1.6em 1em 1.6em;
     }
-    .toast.show { opacity:1; pointer-events:auto; }
-    /* Live marker pulse highlight */
-    .live-pulse { box-shadow:0 0 0 6px #fff8 !important; transition:box-shadow 0.2s; }
-    /* B&W map controls */
-    .leaflet-control, .leaflet-pane { filter: grayscale(1) contrast(1.08) brightness(.99); }
-    @media (max-width:600px){
-      .fab { width:44px; height:44px; font-size:1.4em; }
-      .searchbox, .suggestions { min-width:140px;}
+    .zoom-dialog.active { display:flex; animation: pop-in .15s cubic-bezier(.7,.2,.18,.95); }
+    .zoom-level-label {
+      font:500 1.05em "Inter",Arial,sans-serif;
+      color:#fff; letter-spacing:.01em; margin-bottom:.5em;
+    }
+    .zoom-slider {
+      width:120px; margin:0.2em 0 0.7em 0; height:5px;
+      background:#393941; border-radius:7px; position:relative;
+    }
+    .zoom-slider input[type="range"] {
+      width:100%; height:22px; background:transparent; appearance:none; outline:none; margin:0;
+    }
+    .zoom-slider input[type="range"]::-webkit-slider-thumb {
+      width:20px;height:20px;background:#fff;border-radius:50%;border:2.5px solid #232323;
+      appearance:none; box-shadow:0 0 8px #0004;
+    }
+    .zoom-slider input[type="range"]::-moz-range-thumb {
+      width:20px;height:20px;background:#fff;border-radius:50%;border:2.5px solid #232323;
+      box-shadow:0 0 8px #0004;
+    }
+    .zoom-values {
+      display:flex; width:120px; justify-content:space-between; font-size:.97em; color:#bbb;
+      font-family:monospace; margin-bottom:.5em;
+    }
+    .dialog-close {
+      width:38px; height:38px; border:none; border-radius:50%; background:#232325;
+      color:#fff; font-size:1.23em; align-self:flex-end; cursor:pointer; margin-left:auto;
+      transition:background .11s;
+    }
+    .dialog-close:active { background:#525258; }
+    @keyframes pop-in { from { transform:scale(.77) translateY(35px); opacity:0;}
+                         to { transform:scale(1) translateY(0); opacity:1;} }
+    .leaflet-control, .leaflet-pane { filter: grayscale(1) contrast(1.19) brightness(.95); }
+    /* Live marker animation */
+    .live-marker-anim { animation: livepulse 1.25s infinite;
+      border-radius:50%; box-shadow:0 0 0 0 #fff7;}
+    @keyframes livepulse {
+      0% {box-shadow:0 0 0 0 #fff8;}
+      70% {box-shadow:0 0 0 24px transparent;}
+      100% {box-shadow:0 0 0 0 transparent;}
+    }
+    @media (max-width:550px){
+      .fab { width:42px; height:42px; font-size:1.13em;}
+      .zoom-dialog { width:98vw; left:1vw; right:auto; bottom:17px; padding:1.2em .7em 1em .7em;}
+      .zoom-values, .zoom-slider { width:90vw; max-width:250px;}
     }
   </style>
 </head>
 <body>
-  <input id="search" class="searchbox" type="text" autocomplete="off" placeholder="Search for a place..."/>
-  <div id="suggestions" class="suggestions"></div>
   <div id="map"></div>
   <button id="center-btn" class="fab" title="Go to live location" aria-label="Go to live location">
-    <svg viewBox="0 0 38 38" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
+    <svg width="28" height="28" viewBox="0 0 38 38">
       <circle cx="19" cy="19" r="19" fill="#fff"/>
       <polygon points="19,7 23,30 19,25 15,30"
         fill="#232323" stroke="#151515" stroke-width="1.7"/>
     </svg>
   </button>
-  <div id="toast" class="toast"></div>
+  <div id="zoom-dialog" class="zoom-dialog">
+    <button class="dialog-close" title="Close" aria-label="Close">&times;</button>
+    <div class="zoom-level-label">Map Zoom Level</div>
+    <div class="zoom-values">
+      <span id="zoom-min">1</span>
+      <span id="zoom-current" style="color:#f8db3c;"></span>
+      <span id="zoom-max">20</span>
+    </div>
+    <div class="zoom-slider">
+      <input id="zoom-range" type="range" min="1" max="20" step="1">
+    </div>
+  </div>
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    // Toast notifications
-    function showToast(msg, duration=2300){
-      const toast = document.getElementById('toast');
-      toast.textContent = msg;
-      toast.classList.add('show');
-      setTimeout(()=>toast.classList.remove('show'), duration);
-    }
-
-    // Black & White Stamen Toner base tiles WITH labels
-    const bwtile = L.tileLayer(
-      "https://stamen-tiles.a.ssl.fastly.net/toner/{z}/{x}/{y}.png",
-      { attribution:'Map tiles by Stamen Design, CC BY 3.0 — Map data © OpenStreetMap contributors', maxZoom:20 }
+    // Satellite-only tile layer (Esri World Imagery)
+    const satelliteTiles = L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", 
+      { attribution:"Tiles © Esri, Maxar, Earthstar Geographics", maxZoom:20 }
     );
     const map = L.map("map", {
-      zoomControl:true, attributionControl:true, layers:[bwtile]
-    }).setView([20.59,78.96], 5);
+      zoomControl: false, attributionControl: true, layers: [satelliteTiles]
+    }).setView([20.59, 78.96], 4);
 
-    // Custom monochrome SVG icons for live and pins
-    function svgIcon(svg, size, className) {
-      return L.divIcon({ html:svg, iconSize:size, iconAnchor:[size[0]/2,size[1]], className });
+    // Custom live marker (animated)
+    function svgLiveMarker() {
+      return L.divIcon({
+        className: "live-marker-anim",
+        iconSize: [38,38], iconAnchor: [19,19],
+        html: `<svg viewBox="0 0 38 38" width="38" height="38">
+          <circle cx="19" cy="19" r="19" fill="#fff" stroke="#232323" stroke-width="2.2"/>
+          <circle cx="19" cy="19" r="9" fill="#232323" />
+        </svg>`
+      });
     }
-    const liveIcon = svgIcon(
-      `<svg viewBox="0 0 38 38" width="38" height="38">
-        <circle cx="19" cy="19" r="19" fill="#fff"/>
-        <polygon points="19,7 23,30 19,25 15,30"
-          fill="#232323" stroke="#151515" stroke-width="1.7"/>
-      </svg>`, [38,38], "live-marker"
-    );
-    const pinIcon = L.divIcon({
-      className:"", iconSize:[36,36], iconAnchor:[18,36],
-      html: `<svg width="36" height="36" viewBox="0 0 36 36">
-        <ellipse cx="18" cy="23.3" rx="11" ry="9.6" fill="#fff" stroke="#232323" stroke-width="2.1"/>
-        <circle cx="18" cy="16" r="6" fill="#232323" stroke="#232323" stroke-width="1.6"/>
-      </svg>`
-    });
 
-    let liveMarker=null, userCircle=null, lastCoords=null, pinMarker=null;
+    let liveMarker=null, liveCircle=null, lastCoords=null, pinMarker=null;
 
-    // Pin custom location on map tap/click
     map.on('click', function(e) {
       if (pinMarker) map.removeLayer(pinMarker);
-      pinMarker = L.marker(e.latlng, {icon:pinIcon})
-                   .addTo(map)
-                   .bindPopup("Delivery location").openPopup();
-      showToast("Delivery location pinned!");
+      pinMarker = L.marker(e.latlng, {
+        icon: L.divIcon({
+          className:"",
+          iconSize:[34,34], iconAnchor:[17,34],
+          html:`<svg width="34" height="34" viewBox="0 0 36 36">
+            <ellipse cx="18" cy="23.3" rx="11" ry="9.7" fill="#fff" stroke="#232323" stroke-width="2"/>
+            <circle cx="18" cy="16" r="6" fill="#232323" stroke="#232323" stroke-width="1.5"/>
+          </svg>`
+        })
+      }).addTo(map).bindPopup("Pinned location").openPopup();
     });
 
-    // Reliable, live GPS tracking
     if ("geolocation" in navigator) {
       navigator.geolocation.watchPosition(
         pos=>{
           const {latitude:lat, longitude:lng, accuracy} = pos.coords;
           if (liveMarker) map.removeLayer(liveMarker);
-          if (userCircle) map.removeLayer(userCircle);
-          liveMarker = L.marker([lat,lng], {icon:liveIcon})
+          if (liveCircle) map.removeLayer(liveCircle);
+          liveMarker = L.marker([lat,lng], {icon:svgLiveMarker()})
                           .addTo(map)
                           .bindPopup(`You're here!<br>Accuracy: ±${Math.round(accuracy)}m`);
-          userCircle = L.circle([lat,lng], {
-            radius:accuracy, color:'#232323', fillColor:'#fff', fillOpacity:0.09, opacity:0.28
+          liveCircle = L.circle([lat,lng], {
+            radius:accuracy, color:'#b9b9b9', fillColor:'#fff', fillOpacity:0.08, opacity:0.18
           }).addTo(map);
           if (!lastCoords) {
             map.setView([lat,lng], 17, {animate:true});
-            showToast("Live location found!");
           }
           lastCoords = { lat, lng };
         },
-        err=>showToast("Location error: "+err.message, 3200),
-        { enableHighAccuracy:true, maximumAge:0, timeout:14000 }
+        ()=>{}, // Do nothing on error
+        { enableHighAccuracy:true, maximumAge:0, timeout:12000 }
       );
-    } else {
-      showToast("Geolocation not supported.", 3000);
     }
 
-    // Floating "live" button with pulse effect
+    // Live button recenters map to current position with a subtle highlight
     document.getElementById('center-btn').onclick = () => {
       if (lastCoords) {
         map.setView([lastCoords.lat, lastCoords.lng], map.getZoom(), { animate:true });
         if (liveMarker) {
-          liveMarker._icon.classList.add("live-pulse");
-          setTimeout(()=>liveMarker._icon.classList.remove("live-pulse"), 1000);
+          liveMarker._icon.classList.add("live-marker-anim");
           liveMarker.openPopup();
+          setTimeout(()=>liveMarker._icon.classList.remove("live-marker-anim"), 1800);
         }
-        showToast("Jumped to live location!", 1200);
       }
     };
 
-    // --- Place search using OpenStreetMap Nominatim ---
-    const searchBox = document.getElementById('search');
-    const suggestions = document.getElementById('suggestions');
-    let searchTimeout;
-    searchBox.oninput = function() {
-      clearTimeout(searchTimeout);
-      const q = searchBox.value.trim();
-      if (!q) { suggestions.classList.remove("show"); return; }
-      searchTimeout = setTimeout(async ()=>{
-        try{
-          const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5`);
-          const data = await resp.json();
-          suggestions.innerHTML = "";
-          if(data.length){
-            data.forEach(item => {
-              const div = document.createElement("div");
-              div.textContent = item.display_name;
-              div.onclick = ()=>{
-                const lat=+item.lat, lon=+item.lon;
-                map.setView([lat,lon], 17, { animate:true });
-                if(pinMarker) map.removeLayer(pinMarker);
-                pinMarker = L.marker([lat,lon], {icon:pinIcon})
-                  .addTo(map)
-                  .bindPopup("Delivery location: "+item.display_name).openPopup();
-                suggestions.classList.remove("show"); searchBox.value="";
-                showToast("Location pinned & centered!",1400);
-              };
-              suggestions.appendChild(div);
-            });
-            suggestions.classList.add("show");
-          } else {
-            suggestions.innerHTML = "<div>No results found.</div>";
-            suggestions.classList.add("show");
-          }
-        }catch{
-          suggestions.innerHTML = "<div>Error searching location.</div>";
-          suggestions.classList.add("show");
-        }
-      }, 600);
-    };
-    document.body.addEventListener("click", e=>{
-      if(!searchBox.contains(e.target) && !suggestions.contains(e.target))
-        suggestions.classList.remove("show");
+    // --- Zoom dialog box implementation ---
+    const zoomDialog = document.getElementById("zoom-dialog");
+    const zoomRange = document.getElementById("zoom-range");
+    const zoomCurrent = document.getElementById("zoom-current");
+    const zoomMin = map.getMinZoom(), zoomMax = map.getMaxZoom();
+    zoomRange.min = zoomMin; zoomRange.max = zoomMax;
+    document.getElementById("zoom-min").textContent = zoomMin;
+    document.getElementById("zoom-max").textContent = zoomMax;
+
+    // Show the dialog box on map double click or on pressing "Z"
+    map.on("dblclick", () => showZoomDialog());
+    document.addEventListener("keydown", e => {
+      if (e.key.toLowerCase()==="z") showZoomDialog();
     });
+
+    // Dialog show/hide logic
+    function showZoomDialog() {
+      zoomDialog.classList.add("active");
+      updateZoomDialog();
+    }
+    function hideZoomDialog() {
+      zoomDialog.classList.remove("active");
+    }
+    document.querySelector(".dialog-close").onclick = hideZoomDialog;
+
+    // Actual link between dialog and Leaflet zoom
+    function updateZoomDialog() {
+      const z = map.getZoom();
+      zoomCurrent.textContent = z;
+      zoomRange.value = z;
+    }
+    zoomRange.oninput = function() {
+      map.setZoom(Number(this.value));
+    };
+    map.on("zoom", updateZoomDialog);
+
+    // Always keep dialog current if open
+    setInterval(() => {
+      if (zoomDialog.classList.contains("active")) updateZoomDialog();
+    }, 200);
+
   </script>
 </body>
 </html>

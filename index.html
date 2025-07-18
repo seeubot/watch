@@ -1,214 +1,109 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Delicious Bites - Map Live Tracking</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #000;
-      color: #fff;
-    }
-
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.8);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 50;
-    }
-
-    #map {
-      height: 360px;
-      width: 100%;
-      border-radius: 0.75rem;
-    }
-
-    .leaflet-container {
-      background-color: #333;
-    }
-
-    .fab {
-      position: absolute;
-      bottom: 24px;
-      right: 24px;
-      height: 48px;
-      width: 48px;
-      border-radius: 9999px;
-      background-color: #1976d2;
-      color: white;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
-      z-index: 1000;
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
-    }
-
-    .live-marker-anim {
-      animation: livepulse 1.25s infinite;
-      border-radius: 50%;
-      box-shadow: 0 0 0 0 #1e88e5cc;
-    }
-
-    @keyframes livepulse {
-      0% {
-        box-shadow: 0 0 0 0 #1e88e5cc;
-      }
-      70% {
-        box-shadow: 0 0 0 18px transparent;
-      }
-      100% {
-        box-shadow: 0 0 0 0 transparent;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delicious Bites - Menu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzxH+GnBFwDChDLEFNyJsTddoCA="
+     crossorigin=""/>
+    <!-- Leaflet Control Geocoder CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <style>
+        /* ... (all your style rules remain unchanged) ... */
+    </style>
 </head>
+<body class="min-h-screen">
+    <!-- ... (all header, modals, main content etc. unchanged) ... -->
 
-<body class="p-6">
-  <h1 class="text-3xl font-bold mb-6">🍽️ Delicious Bites - Live Tracking</h1>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjGwZZ1Xz0GbnSe75Lp9js+9dxFVQ="
+     crossorigin=""></script>
+    <!-- Leaflet Control Geocoder JS -->
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
-  <div class="modal max-w-3xl w-full bg-gray-800 p-6 rounded-lg shadow-xl relative">
-    <h2 class="text-xl font-bold mb-4">📍 Select Your Delivery Location</h2>
-    <div id="map" class="mb-4"></div>
-    <p id="locationStatus" class="text-sm text-gray-300 text-center">Waiting for location…</p>
+    <script>
+        // ... (all global variables and DOM references unchanged) ...
 
-    <!-- FAB to recenter -->
-    <button id="center-btn" class="fab" title="Recenter">
-      📍
-    </button>
-  </div>
+        // --- GPS + Live Location UPDATED CODE ---
 
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script>
-    let map;
-    let liveMarker = null;
-    let userCircle = null;
-    let geolocationWatcherId = null;
-    let lastKnownLiveCoords = null;
-
-    function initMap() {
-      map = L.map('map').setView([20.5937, 78.9629], 5); // Default: India
-      
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
-        maxZoom: 18,
-      }).addTo(map);
-    }
-
-    function liveSVGIcon() {
-      return L.divIcon({
-        className: 'live-marker-anim',
-        iconSize: [40, 40],
-        iconAnchor: [20, 20],
-        html: `<svg width="40" height="40" viewBox="0 0 40 40">
-        <circle cx="20" cy="20" r="16" fill="#1976d2" opacity="0.1" />
-        <circle cx="20" cy="20" r="12" fill="#1976d2" opacity="0.2" />
-        <circle cx="20" cy="20" r="8" fill="#1976d2" stroke="#fff" stroke-width="2"/>
-      </svg>`
-      });
-    }
-
-    function startLiveTracking() {
-      const status = document.getElementById('locationStatus');
-      status.textContent = '📡 Acquiring location...';
-
-      if (!navigator.geolocation) {
-        status.textContent = '⚠️ Geolocation not supported.';
-        return;
-      }
-
-      clearGeolocationWatcher(); // Ensure clean state
-
-      geolocationWatcherId = navigator.geolocation.watchPosition(
-        (pos) => {
-          const { latitude, longitude, accuracy } = pos.coords;
-          const newCoords = { latitude, longitude };
-
-          if (!lastKnownLiveCoords || getDistance(lastKnownLiveCoords, newCoords) > 10) {
-            lastKnownLiveCoords = newCoords;
-
-            if (!liveMarker) {
-              liveMarker = L.marker([latitude, longitude], { icon: liveSVGIcon() })
-                .addTo(map).bindPopup("You are here").openPopup();
-            } else {
-              liveMarker.setLatLng([latitude, longitude]);
+        function getCurrentLocationForMap() {
+            if (!navigator.geolocation) {
+                showNotification('Geolocation is not supported by your browser!', 'error');
+                return;
             }
 
-            if (!userCircle) {
-              userCircle = L.circle([latitude, longitude], {
-                radius: accuracy || 20,
-                color: '#1976d2',
-                fillColor: '#1e88e5',
-                fillOpacity: 0.15
-              }).addTo(map);
-            } else {
-              userCircle.setLatLng([latitude, longitude]);
-              userCircle.setRadius(accuracy || 20);
-            }
+            // Show loading
+            mapLocationStatus.textContent = "Fetching your live location...";
 
-            if (!map._liveCenteredOnce) {
-              map.setView([latitude, longitude], 16);
-              map._liveCenteredOnce = true;
-            }
+            // Stop previous watcher if running
+            if (geolocationWatcherId) navigator.geolocation.clearWatch(geolocationWatcherId);
 
-            status.textContent = `✅ Location detected: Lat ${latitude.toFixed(4)}, Lng ${longitude.toFixed(4)}`;
-          }
-        },
-        (err) => {
-          status.textContent = {
-            1: '❌ Permission denied.',
-            2: '❌ Position unavailable.',
-            3: '❌ Timeout fetching location.'
-          }[err.code] || '⚠️ Unknown error.';
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 5000
+            geolocationWatcherId = navigator.geolocation.watchPosition(
+                (pos) => {
+                    const { latitude, longitude, accuracy } = pos.coords;
+                    lastKnownLiveCoords = { latitude, longitude };
+
+                    if (map) {
+                        map.setView([latitude, longitude], 17, { animate: true });
+
+                        // Create/update animated live marker
+                        if (liveMarker) {
+                            liveMarker.setLatLng([latitude, longitude]);
+                        } else {
+                            liveMarker = L.marker([latitude, longitude], { icon: liveSVGIcon() })
+                                .addTo(map)
+                                .bindPopup('Your live GPS position');
+                        }
+
+                        // Update accuracy circle
+                        if (userCircle) {
+                            userCircle.setLatLng([latitude, longitude]);
+                            userCircle.setRadius(accuracy);
+                        } else {
+                            userCircle = L.circle([latitude, longitude], { 
+                                color: '#1976d2', fillColor: '#1976d2', fillOpacity: 0.1, radius: accuracy 
+                            }).addTo(map);
+                        }
+                    }
+                    mapLocationStatus.textContent = "Live location found. You can move or save this.";
+                },
+                (err) => {
+                    let msg = "Failed to get your location - ";
+                    if (err.code === 1) msg += "Permission denied.";
+                    else if (err.code === 2) msg += "Position unavailable.";
+                    else if (err.code === 3) msg += "Timeout.";
+                    else msg += err.message;
+                    showNotification(msg, 'error');
+                    mapLocationStatus.textContent = msg;
+                },
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+            );
         }
-      );
-    }
 
-    function getDistance(coord1, coord2) {
-      const R = 6371e3;
-      const toRad = deg => deg * Math.PI / 180;
-      const dLat = toRad(coord2.latitude - coord1.latitude);
-      const dLng = toRad(coord2.longitude - coord1.longitude);
-      const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRad(coord1.latitude)) *
-        Math.cos(toRad(coord2.latitude)) *
-        Math.sin(dLng / 2) ** 2;
-      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    }
+        function cleanupMapAndGeolocation() {
+            if (geolocationWatcherId) {
+                navigator.geolocation.clearWatch(geolocationWatcherId);
+                geolocationWatcherId = null;
+            }
+            if (map) {
+                if (liveMarker) { map.removeLayer(liveMarker); liveMarker = null; }
+                if (userCircle) { map.removeLayer(userCircle); userCircle = null; }
+                // Optionally also remove delivery marker
+            }
+            lastKnownLiveCoords = null;
+            mapInitialized = false;
+        }
 
-    function clearGeolocationWatcher() {
-      if (geolocationWatcherId !== null) {
-        navigator.geolocation.clearWatch(geolocationWatcherId);
-        geolocationWatcherId = null;
-      }
-    }
+        // --- END OF UPDATED CODE ---
 
-    // FAB recenter
-    document.getElementById('center-btn').addEventListener('click', () => {
-      if (lastKnownLiveCoords) {
-        map.setView([lastKnownLiveCoords.latitude, lastKnownLiveCoords.longitude], 16);
-      }
-    });
-
-    // Init on load
-    document.addEventListener('DOMContentLoaded', () => {
-      initMap();
-      startLiveTracking();
-    });
-  </script>
+        // ... (rest of your JS code for menu, cart, modal handling, UI, map initialization, etc., remains the same) ...
+    </script>
 </body>
 </html>

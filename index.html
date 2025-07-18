@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Modern OpenLayers Map – Google Search</title>
+  <title>OpenLayers Map – Simple GPS & Place Search</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- OpenLayers CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.4.0/ol.css">
@@ -15,17 +15,16 @@
       border-radius:16px; padding:.7em 1em; font-size:1em; min-width:240px;
       outline:none; box-shadow:0 2px 12px #0007;
     }
-    .pac-container {
-      background: #222 !important; color: #fff !important; border-radius: 13px !important;
-      border: 1px solid #fff !important; font-size: 1em; z-index: 1202 !important;
+    .suggestions {
+      position: absolute; left: 50%; transform: translateX(-50%); top: 65px;
+      background: #212121; color: #fff; border-radius: 12px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.19);
+      min-width: 240px; z-index: 1200; font-size: 1em;
+      max-height: 210px; overflow-y: auto; display: none;
     }
-    .pac-item {
-      background: #222 !important; color: #fff !important; border-bottom: 1px solid #393939 !important;
-      padding: .55em 1em !important;
-    }
-    .pac-item:hover, .pac-item-selected {
-      background: #2b2b2b !important; color: #fff !important;
-    }
+    .suggestions.show { display: block; }
+    .suggestions div { padding:.55em 1em; cursor:pointer; }
+    .suggestions div:hover { background:#232323; }
     .ol-zoom {
       top: auto; bottom:24px; right:22px; left: auto !important;
     }
@@ -47,11 +46,13 @@
     @media (max-width:600px){
       .fab { width:44px; height:44px; font-size:1.4em;}
       .searchbox { min-width:140px;}
+      .suggestions { min-width:140px;}
     }
   </style>
 </head>
 <body>
   <input id="search" class="searchbox" type="text" autocomplete="off" placeholder="Search for a place..."/>
+  <div id="suggestions" class="suggestions"></div>
   <div id="map"></div>
   <button id="center-btn" class="fab" title="Re-center map" aria-label="Re-center map">
     <svg viewBox="0 0 38 38" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
@@ -63,8 +64,6 @@
   <div id="toast" class="toast"></div>
   <!-- OpenLayers -->
   <script src="https://cdn.jsdelivr.net/npm/ol@v7.4.0/dist/ol.js"></script>
-  <!-- Google Maps JS API with Places Library -->
-  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=places"></script>
   <script>
     // Toast helper
     function showToast(msg, duration=2300){
@@ -74,7 +73,7 @@
       setTimeout(()=>toast.classList.remove('show'), duration);
     }
 
-    // Black & white OpenStreetMap tiles
+    // B&W OSM tiles
     const osmLayer = new ol.layer.Tile({
       source: new ol.source.OSM({
         url: "https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}.png",
@@ -149,7 +148,6 @@
           userLocFeature.setGeometry(new ol.geom.Point(coords));
           userLocFeature.setStyle(liveLocationStyle);
           pinLayer.getSource().addFeature(userLocFeature);
-
           // Accuracy circle (low opacity)
           accuracyCircle = new ol.Feature({ type:"accuracy" });
           accuracyCircle.setGeometry(new ol.geom.Circle(coords, pos.coords.accuracy));
@@ -158,7 +156,6 @@
             stroke: new ol.style.Stroke({ color: "#fff8", width: 2 })
           }));
           pinLayer.getSource().addFeature(accuracyCircle);
-
           // On first fix, center and toast
           if (!window._olLocFixed) {
             map.getView().animate({center:coords, zoom:17, duration:1200});
@@ -181,53 +178,58 @@
       }
     };
 
-    // Google Places Autocomplete integration for the search bar
-    function centerAndPinPlace(place) {
-      if (typeof place.geometry === 'object' && place.geometry && place.geometry.location) {
-        const lat = place.geometry.location.lat();
-        const lng = place.geometry.location.lng();
-        const coord = ol.proj.fromLonLat([lng, lat]);
-        map.getView().animate({ center: coord, zoom: 17, duration: 900 });
-        // Remove existing delivery pins
-        const feats = pinLayer.getSource().getFeatures().filter(f=>f.get("type")==="delivery");
-        feats.forEach(f=> pinLayer.getSource().removeFeature(f));
-        // Set pin
-        const feat = new ol.Feature({ type:"delivery" });
-        feat.setGeometry(new ol.geom.Point(coord));
-        feat.setStyle(pinStyle);
-        pinLayer.getSource().addFeature(feat);
-        showToast("Location pinned & centered!",1400);
-      } else {
-        showToast("Could not find precise location.", 2300);
-      }
-    }
-
-    // Bind Google Places Autocomplete to #search
-    function initializeAutocomplete() {
-      const input = document.getElementById('search');
-      if (!window.google || !window.google.maps || !window.google.maps.places) {
-        showToast("Google Places failed to load.", 3500);
+    // --- Search logic (OpenStreetMap Nominatim) ---
+    const searchBox = document.getElementById('search');
+    const suggestions = document.getElementById('suggestions');
+    let searchTimeout;
+    searchBox.oninput = function() {
+      clearTimeout(searchTimeout);
+      const q = searchBox.value.trim();
+      if (!q) {
+        suggestions.classList.remove("show");
         return;
       }
-      const autocomplete = new google.maps.places.Autocomplete(input, {
-        fields: ['geometry'],
-        // Optionally restrict results for local deployment with: componentRestrictions: { country: 'in' }
-      });
-      autocomplete.addListener('place_changed', function() {
-        const place = autocomplete.getPlace();
-        centerAndPinPlace(place);
-        input.value="";
-      });
-    }
-
-    // Wait for Google JS API, then run autocomplete
-    if (window.google && google.maps && google.maps.places) {
-      initializeAutocomplete();
-    } else {
-      // In rare cases, Google's script loads late
-      window.initMap = initializeAutocomplete;
-      setTimeout(initializeAutocomplete, 800);
-    }
+      searchTimeout = setTimeout(async ()=>{
+        try{
+          const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5`);
+          const data = await resp.json(); 
+          suggestions.innerHTML = "";
+          if(data.length){
+            data.forEach(item => {
+              const div = document.createElement("div");
+              div.textContent = item.display_name;
+              div.onclick = ()=>{
+                const c = ol.proj.fromLonLat([+item.lon, +item.lat]);
+                map.getView().animate({ center: c, zoom: 17, duration: 900 });
+                // Remove existing delivery pin
+                const feats = pinLayer.getSource().getFeatures().filter(f=>f.get("type")==="delivery");
+                feats.forEach(f=> pinLayer.getSource().removeFeature(f));
+                // Set pin
+                const feat = new ol.Feature({ type:"delivery" });
+                feat.setGeometry(new ol.geom.Point(c));
+                feat.setStyle(pinStyle);
+                pinLayer.getSource().addFeature(feat);
+                suggestions.classList.remove("show"); searchBox.value="";
+                showToast("Location pinned & centered!",1400);
+              };
+              suggestions.appendChild(div);
+            });
+            suggestions.classList.add("show");
+          } else {
+            suggestions.innerHTML = "<div>No results found.</div>";
+            suggestions.classList.add("show");
+          }
+        }catch{
+          suggestions.innerHTML = "<div>Error searching location.</div>";
+          suggestions.classList.add("show");
+        }
+      }, 600);
+    };
+    document.body.addEventListener("click", e=>{
+      if(!searchBox.contains(e.target) && !suggestions.contains(e.target))
+        suggestions.classList.remove("show");
+    });
+    // --- End search ---
   </script>
 </body>
 </html>

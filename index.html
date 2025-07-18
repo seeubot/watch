@@ -3,183 +3,132 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Delivery Location Map Demo</title>
+  <title>Delivery Location Picker</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
   <style>
-    body { background: #101010; color: #fff; font-family: sans-serif;}
-    #map { height: 300px; background: #222; border-radius: 8px;}
-    .modal { background: rgba(0,0,0,0.8);}
-    .leaflet-control-geocoder { color: #000; }
+    body { background: #191919; color: #fff; }
+    #map { height: 300px; border-radius: 8px; min-height: 200px; }
+    .modal-bg { background: rgba(0,0,0,0.7); }
+    .leaflet-control-zoom, .leaflet-control-attribution { display: none !important; }
   </style>
 </head>
-<body class="flex items-center justify-center min-h-screen">
-  <!-- Simple Modal Trigger -->
-  <button id="openMap" class="bg-white text-black px-4 py-2 rounded">Select Delivery Location</button>
+<body class="min-h-screen flex items-center justify-center">
+  
   <!-- Modal -->
-  <div id="mapModal" class="modal fixed inset-0 hidden items-center justify-center z-50">
-    <div class="bg-gray-800 rounded-lg p-5 w-full max-w-lg mx-3">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-bold text-white">Select Delivery Location</h2>
-        <button id="closeMap" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+  <div class="fixed inset-0 flex items-center justify-center z-50 modal-bg">
+    <div class="bg-gray-900 rounded-lg p-5 w-full max-w-md mx-2 shadow-lg">
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="text-xl font-bold">Select Delivery Location</h2>
+        <!-- Modal close button (add logic as needed) -->
+        <button onclick="window.location.reload()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
       </div>
       <div id="errorBanner" class="hidden bg-red-700 text-white p-4 mb-2 rounded text-center"></div>
-      <div id="map" class="mb-2"></div>
+      <div id="map" class="mb-3"></div>
       <p id="locationStatus" class="text-sm text-gray-300 text-center mb-2"></p>
-      <div class="flex gap-2 mb-2">
-        <button id="getLoc" class="flex-1 bg-white text-black px-4 py-2 rounded font-bold flex items-center justify-center">📍 Use My Current Location</button>
-        <button id="saveLoc" class="flex-1 bg-gray-600 text-white px-4 py-2 rounded">Save Location</button>
+      <div class="flex flex-col sm:flex-row gap-2 mb-1">
+        <button id="getLoc" class="bg-white text-black px-4 py-2 rounded font-semibold flex-1 flex items-center justify-center">📍 Use My Current Location</button>
+        <button id="saveLoc" class="bg-gray-600 text-white px-4 py-2 rounded font-semibold flex-1">Save Location</button>
       </div>
-      <div class="text-center text-gray-400 text-xs">
-        Coordinates: <span id="coordsDisp">—</span>
-      </div>
+      <div class="text-gray-400 text-xs text-center mt-2" id="coordsDisp">No pin placed</div>
     </div>
   </div>
-  <!-- Success Toast -->
-  <div id="toast" class="hidden fixed bottom-3 left-1/2 -translate-x-1/2 bg-green-600 text-white px-3 py-2 rounded shadow"></div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    // DOMs
-    const openMap = document.getElementById('openMap');
-    const mapModal = document.getElementById('mapModal');
-    const closeMap = document.getElementById('closeMap');
-    const mapDiv = document.getElementById('map');
+    // State
+    let map, userMarker, coords = null;
     const errorBanner = document.getElementById('errorBanner');
-    const getLoc = document.getElementById('getLoc');
-    const saveLoc = document.getElementById('saveLoc');
-    const coordsDisp = document.getElementById('coordsDisp');
     const locationStatus = document.getElementById('locationStatus');
-    const toast = document.getElementById('toast');
-    
-    // App state
-    let map = null, marker = null, liveCircle = null, geolocationWatcher = null;
-    let coords = null;
+    const coordsDisp = document.getElementById('coordsDisp');
 
-    // Modal control
-    openMap.onclick = () => {
-      mapModal.classList.remove('hidden');
-      setTimeout(initMap, 150); // Slight delay to ensure modal is visible
-    };
-    closeMap.onclick = () => {
-      mapModal.classList.add('hidden');
-      cleanupMap();
-    };
-
-    // Toast
-    function showToast(msg, color="success") {
-      toast.textContent = msg;
-      toast.className = `fixed bottom-3 left-1/2 -translate-x-1/2 px-3 py-2 rounded shadow text-white transition bg-${color === "error" ? "red" : "green"}-600`;
-      toast.classList.remove('hidden');
-      setTimeout(()=>toast.classList.add('hidden'), 1800);
-    }
-
-    // Map setup
+    // Satellite map setup without zoom or attribution UI
     function initMap() {
-      errorBanner.classList.add("hidden");
-      locationStatus.textContent = "";
-      coordsDisp.textContent = "—";
-      // Only create map once
-      if (!map) {
-        map = L.map('map').setView([20.5937, 78.9629], 5); // Center of India as fallback
-        // Add OpenStreetMap tiles
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19
-        }).addTo(map);
-        // Click to set marker
-        map.on("click", (e) => {
-          setMarker(e.latlng.lat, e.latlng.lng);
-        });
-      }
-      // Ensure visible (fixes map resize in modals)
-      setTimeout(()=>map.invalidateSize(), 200);
+      map = L.map('map', {
+        zoomControl: false,
+        attributionControl: false
+      }).setView([22.5937, 78.9629], 5); // India by default
+
+      L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        { maxZoom: 19 }
+      ).addTo(map);
+
+      // Place or move marker with a tap/click
+      map.on('click', function(e) {
+        placeUserMarker(e.latlng.lat, e.latlng.lng);
+      });
     }
 
-    // Place marker and update display
-    function setMarker(lat, lng) {
-      if (marker) {
-        marker.setLatLng([lat, lng]);
+    function placeUserMarker(lat, lng) {
+      if (userMarker) {
+        userMarker.setLatLng([lat, lng]);
       } else {
-        marker = L.marker([lat, lng], { draggable: true }).addTo(map);
-        marker.on("dragend", e => {
-          const p = e.target.getLatLng();
-          setMarker(p.lat, p.lng);
+        userMarker = L.marker([lat, lng], { draggable: true }).addTo(map);
+        userMarker.on("dragend", function(e) {
+          const pos = e.target.getLatLng();
+          coords = [pos.lat, pos.lng];
+          coordsDisp.textContent = `Pin: ${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}`;
+          locationStatus.textContent = "Pin moved!";
         });
       }
-      coords = { lat, lng };
-      coordsDisp.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-      locationStatus.textContent = "Location selected!";
+      coords = [lat, lng];
+      coordsDisp.textContent = `Pin: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      locationStatus.textContent = "Pin placed!";
     }
 
-    // Geolocation
-    getLoc.onclick = () => {
+    // Try to get GPS location and pin it
+    document.getElementById('getLoc').onclick = function() {
+      errorBanner.classList.add("hidden");
       if (!navigator.geolocation) {
-        showError("Geolocation not supported. Please allow GPS/browser location.");
+        showError("Geolocation not supported. Please allow location access.");
         return;
       }
-      locationStatus.textContent = "Finding your current GPS location...";
-      errorBanner.classList.add("hidden");
-      // Clean previous watcher
-      if (geolocationWatcher) navigator.geolocation.clearWatch(geolocationWatcher);
-      geolocationWatcher = navigator.geolocation.watchPosition(
-        (pos) => {
-          const { latitude, longitude, accuracy } = pos.coords;
-          map.setView([latitude, longitude], 17);
-          setMarker(latitude, longitude);
-          // Draw accuracy circle
-          if (liveCircle) {
-            liveCircle.setLatLng([latitude, longitude]);
-            liveCircle.setRadius(accuracy);
-          } else {
-            liveCircle = L.circle([latitude, longitude], {
-              color: '#1976d2', fillColor: '#1976d2', fillOpacity: 0.2, radius: accuracy
-            }).addTo(map);
-          }
-          locationStatus.textContent = "Live GPS found! Move pin if needed.";
+      locationStatus.textContent = "Locating your position...";
+      navigator.geolocation.getCurrentPosition(
+        function(pos) {
+          let lat = pos.coords.latitude, lng = pos.coords.longitude;
+          map.setView([lat, lng], 18, { animate:true });
+          placeUserMarker(lat, lng);
+          locationStatus.textContent = "Location found! (You may adjust pin)";
         },
-        (err) => {
-          let msg = "Geolocation unavailable. ";
-          if (err.code === 1) msg += "Permission denied.";
-          else if (err.code === 2) msg += "Location unavailable.";
-          else if (err.code === 3) msg += "Timeout.";
-          else msg += err.message;
+        function(err) {
+          let msg = "Failed to get current location.";
+          if (err.code === 1) msg = "Permission denied. Please allow location access in your browser.";
+          else if (err.code === 2) msg = "Location unavailable. Check your device settings.";
+          else if (err.code === 3) msg = "Location request timed out.";
           showError(msg);
-          locationStatus.textContent = "Failed to get location. Try again.";
+          locationStatus.textContent = "Could not get current location.";
         },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 10000 }
       );
     };
 
-    // Save action
-    saveLoc.onclick = () => {
+    // Save coordinates
+    document.getElementById('saveLoc').onclick = function() {
       if (!coords) {
-        showError("Please choose a location before saving!");
+        locationStatus.textContent = "Please place your pin location on the map.";
         return;
       }
-      showToast("Location saved: " + coords.lat.toFixed(5) + "," + coords.lng.toFixed(5));
-      // You can now use the coords object for API, checkout, etc.
-      mapModal.classList.add('hidden');
-      cleanupMap();
+      alert(`Location saved!\nLatitude: ${coords[0].toFixed(6)}\nLongitude: ${coords[1].toFixed(6)}`);
+      // Continue with submitting these values via API or storing for checkout.
     };
 
-    // Cleanup
-    function cleanupMap() {
-      if (geolocationWatcher) {
-        navigator.geolocation.clearWatch(geolocationWatcher);
-        geolocationWatcher = null;
-      }
-      // Remove marker/circle
-      if (marker) { map.removeLayer(marker); marker = null;}
-      if (liveCircle) { map.removeLayer(liveCircle); liveCircle = null;}
-      coords = null; coordsDisp.textContent = "—";
-      locationStatus.textContent = "";
-    }
-
+    // Utility: show error
     function showError(msg) {
       errorBanner.classList.remove("hidden");
       errorBanner.textContent = msg;
-      showToast(msg, "error");
     }
+
+    // Load!
+    window.onload = function() {
+      try {
+        initMap();
+      } catch (e) {
+        showError("Map failed to load or Geolocation unavailable. Please ensure location services are enabled and try again.");
+        locationStatus.textContent = "Map not initialized. Cannot get location.";
+      }
+    };
   </script>
 </body>
 </html>

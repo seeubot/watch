@@ -1,38 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>OpenLayers Map – Simple GPS & Place Search</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- OpenLayers CSS -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.4.0/ol.css">
+  <meta charset="UTF-8"/>
+  <title>Leaflet BW Demo Map – Pin & GPS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
   <style>
-    html, body { height:100%; margin:0; background:#121212; color:#fff; }
-    #map { width: 100vw; height: 100vh; position:absolute; top:0; left:0; }
+    html, body { height:100%; margin:0; background:#111; color:#fff; }
+    #map { width:100vw; height:100vh; position:absolute; top:0; left:0; }
     .searchbox {
-      position: fixed; top:24px; left:50%; transform:translateX(-50%);
-      z-index:1101; background:#1a1a1a; color:#fff; border:2px solid #fff;
-      border-radius:16px; padding:.7em 1em; font-size:1em; min-width:240px;
-      outline:none; box-shadow:0 2px 12px #0007;
+      position:fixed; top:24px; left:50%; transform:translateX(-50%); z-index:1101;
+      background:#111; color:#fff; border:2px solid #fff; border-radius:16px;
+      padding:.7em 1em; font-size:1em; min-width:240px; outline:none;
+      box-shadow:0 2px 12px #000a;
     }
     .suggestions {
-      position: absolute; left: 50%; transform: translateX(-50%); top: 65px;
-      background: #212121; color: #fff; border-radius: 12px;
-      box-shadow: 0 2px 16px rgba(0,0,0,0.19);
-      min-width: 240px; z-index: 1200; font-size: 1em;
-      max-height: 210px; overflow-y: auto; display: none;
+      position: absolute; left:50%; transform:translateX(-50%); top:64px;
+      background:#181818; color:#fff; border-radius:13px; box-shadow:0 2px 16px #0008;
+      min-width:240px; z-index:1200; font-size:1em; max-height:220px; overflow-y:auto; display:none;
     }
-    .suggestions.show { display: block; }
+    .suggestions.show { display:block; }
     .suggestions div { padding:.55em 1em; cursor:pointer; }
-    .suggestions div:hover { background:#232323; }
-    .ol-zoom {
-      top: auto; bottom:24px; right:22px; left: auto !important;
-    }
+    .suggestions div:hover { background:#212121; }
     .fab {
-      position: fixed; bottom: 24px; left: 26px; width:56px; height:56px;
-      border-radius: 50%; border: none; color: #fff; background: #000; z-index: 1102;
-      display: flex; align-items: center; justify-content: center; font-size:2em;
-      box-shadow: 0 2px 7px #0005; cursor:pointer;
+      position:fixed; bottom:24px; left:26px; width:56px; height:56px;
+      border-radius:50%; border:none; color:#fff; background:#000; z-index:1102;
+      display:flex; align-items:center; justify-content:center; font-size:2em;
+      box-shadow:0 2px 7px #0007; cursor:pointer;
     }
     .fab:active { background:#333; }
     .toast {
@@ -44,9 +38,9 @@
     }
     .toast.show { opacity:1; pointer-events:auto; }
     @media (max-width:600px){
-      .fab { width:44px; height:44px; font-size:1.4em;}
+      .fab { width:44px; height:44px; font-size:1.4em; }
       .searchbox { min-width:140px;}
-      .suggestions { min-width:140px;}
+      .suggestions { min-width:140px; }
     }
   </style>
 </head>
@@ -62,8 +56,7 @@
     </svg>
   </button>
   <div id="toast" class="toast"></div>
-  <!-- OpenLayers -->
-  <script src="https://cdn.jsdelivr.net/npm/ol@v7.4.0/dist/ol.js"></script>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
     // Toast helper
     function showToast(msg, duration=2300){
@@ -73,142 +66,95 @@
       setTimeout(()=>toast.classList.remove('show'), duration);
     }
 
-    // B&W OSM tiles
-    const osmLayer = new ol.layer.Tile({
-      source: new ol.source.OSM({
-        url: "https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}.png",
-        attributions: '© Stadia Maps, OpenMapTiles, OpenStreetMap'
-      })
+    // Black-and-white tile layer for good contrast
+    const bwTiles = L.tileLayer(
+      "https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}.png",
+      { attribution:"© Stadia Maps, OpenMapTiles, OpenStreetMap", maxZoom:20 }
+    );
+    const map = L.map("map", {
+      zoomControl:true, attributionControl:true, layers:[bwTiles]
+    }).setView([20.59,78.96], 5);
+
+    // Custom SVG icons
+    function svgIcon(svg, size) {
+      return L.divIcon({ html:svg, iconSize:size, iconAnchor:[size[0]/2,size[1]] });
+    }
+    const liveIcon = svgIcon(
+      `<svg viewBox="0 0 38 38" width="38" height="38" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="19" cy="19" r="19" fill="#fff"/><polygon points="19,7 23,30 19,25 15,30"
+      fill="#232323" stroke="#151515" stroke-width="1.7"/></svg>`, [38,38]
+    );
+    const pinIcon = L.icon({
+      iconUrl:"https://cdn-icons-png.flaticon.com/512/684/684908.png",
+      iconSize:[38,38], iconAnchor:[19,38]
     });
 
-    // OpenLayers map setup
-    const map = new ol.Map({
-      target: "map",
-      layers: [osmLayer],
-      view: new ol.View({
-        center: ol.proj.fromLonLat([78.96, 20.59]),
-        zoom: 5,
-        minZoom: 3, maxZoom: 19
-      }),
-      controls: ol.control.defaults({ attribution:true, zoom:true }).extend([])
-    });
+    let liveMarker=null, userCircle=null, lastCoords=null, pinMarker=null;
 
-    // Custom icon styles
-    const liveLocationStyle = new ol.style.Style({
-      image: new ol.style.Icon({
-        imgSize:[38,38],
-        img: (()=> {
-          const svg = `<svg viewBox="0 0 38 38" width="38" height="38" xmlns="http://www.w3.org/2000/svg"><circle cx="19" cy="19" r="19" fill="#fff"/><polygon points="19,7 23,30 19,25 15,30" fill="#232323" stroke="#151515" stroke-width="1.7"/></svg>`;
-          const img = document.createElement('img');
-          img.src = 'data:image/svg+xml;utf8,'+encodeURIComponent(svg);
-          return img;
-        })(),
-        src: ''
-      })
-    });
-    const pinStyle = new ol.style.Style({
-      image: new ol.style.Icon({
-        anchor: [.5, 1],
-        src: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
-        scale: 0.75
-      })
-    });
-
-    // Marker/pin layer
-    const pinLayer = new ol.layer.Vector({
-      source: new ol.source.Vector()
-    });
-    map.addLayer(pinLayer);
-
-    // Pin by clicking map
-    map.on('click', function(evt){
-      // Remove existing delivery pins
-      const feats = pinLayer.getSource().getFeatures().filter(f=>f.get("type")==="delivery");
-      feats.forEach(f=> pinLayer.getSource().removeFeature(f));
-      const feat = new ol.Feature({ type:"delivery" });
-      feat.setGeometry(new ol.geom.Point(evt.coordinate));
-      feat.setStyle(pinStyle);
-      pinLayer.getSource().addFeature(feat);
+    // Location pinning logic
+    map.on('click', function(e) {
+      if (pinMarker) map.removeLayer(pinMarker);
+      pinMarker = L.marker(e.latlng, {icon:pinIcon}).addTo(map).bindPopup("Delivery location").openPopup();
       showToast("Delivery location pinned!");
     });
 
-    // User geo location marker
-    let lastCoords = null, userLocFeature = null, accuracyCircle = null;
+    // Live location logic (geolocation)
     if ("geolocation" in navigator) {
       navigator.geolocation.watchPosition(
-        pos => {
-          const lon = pos.coords.longitude, lat = pos.coords.latitude;
-          const coords = ol.proj.fromLonLat([lon, lat]);
-          lastCoords = coords;
-          // Remove previous
-          if (userLocFeature) pinLayer.getSource().removeFeature(userLocFeature);
-          if (accuracyCircle) pinLayer.getSource().removeFeature(accuracyCircle);
-          // Draw new
-          userLocFeature = new ol.Feature({ type:"live" });
-          userLocFeature.setGeometry(new ol.geom.Point(coords));
-          userLocFeature.setStyle(liveLocationStyle);
-          pinLayer.getSource().addFeature(userLocFeature);
-          // Accuracy circle (low opacity)
-          accuracyCircle = new ol.Feature({ type:"accuracy" });
-          accuracyCircle.setGeometry(new ol.geom.Circle(coords, pos.coords.accuracy));
-          accuracyCircle.setStyle(new ol.style.Style({
-            fill: new ol.style.Fill({ color: 'rgba(255,255,255,0.13)' }),
-            stroke: new ol.style.Stroke({ color: "#fff8", width: 2 })
-          }));
-          pinLayer.getSource().addFeature(accuracyCircle);
-          // On first fix, center and toast
-          if (!window._olLocFixed) {
-            map.getView().animate({center:coords, zoom:17, duration:1200});
+        pos=>{
+          const {latitude:lat, longitude:lng, accuracy} = pos.coords;
+          if (liveMarker) map.removeLayer(liveMarker);
+          if (userCircle) map.removeLayer(userCircle);
+          liveMarker = L.marker([lat,lng], {icon:liveIcon})
+            .addTo(map).bindPopup(`You're here!<br>Accuracy: ±${Math.round(accuracy)}m`);
+          userCircle = L.circle([lat,lng], {
+            radius:accuracy, color:'#fff', fillColor:'#222', fillOpacity:0.17, opacity:0.7
+          }).addTo(map);
+          if (!lastCoords) {
+            map.setView([lat,lng], 17, {animate:true});
             showToast("Live location found!");
-            window._olLocFixed = true;
           }
+          lastCoords = { lat, lng };
         },
-        e => showToast("Location error: " + e.message, 3200),
+        err=>showToast("Location error: "+err.message, 3200),
         { enableHighAccuracy:true, maximumAge:0, timeout:14000 }
       );
     } else {
       showToast("Geolocation not supported.", 3000);
     }
 
-    // Center button logic
+    // Recenter functionality
     document.getElementById('center-btn').onclick = () => {
       if (lastCoords) {
-        map.getView().animate({ center: lastCoords, duration: 700 });
-        showToast("Centered on your location!", 1100);
+        map.setView([lastCoords.lat, lastCoords.lng], map.getZoom(), { animate:true });
+        if (liveMarker) liveMarker.openPopup();
+        showToast("Centered on your location!", 1200);
       }
     };
 
-    // --- Search logic (OpenStreetMap Nominatim) ---
+    // --- OpenStreetMap Nominatim search and suggestion logic ---
     const searchBox = document.getElementById('search');
     const suggestions = document.getElementById('suggestions');
     let searchTimeout;
     searchBox.oninput = function() {
       clearTimeout(searchTimeout);
       const q = searchBox.value.trim();
-      if (!q) {
-        suggestions.classList.remove("show");
-        return;
-      }
+      if (!q) { suggestions.classList.remove("show"); return; }
       searchTimeout = setTimeout(async ()=>{
         try{
           const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5`);
-          const data = await resp.json(); 
+          const data = await resp.json();
           suggestions.innerHTML = "";
           if(data.length){
             data.forEach(item => {
               const div = document.createElement("div");
               div.textContent = item.display_name;
               div.onclick = ()=>{
-                const c = ol.proj.fromLonLat([+item.lon, +item.lat]);
-                map.getView().animate({ center: c, zoom: 17, duration: 900 });
-                // Remove existing delivery pin
-                const feats = pinLayer.getSource().getFeatures().filter(f=>f.get("type")==="delivery");
-                feats.forEach(f=> pinLayer.getSource().removeFeature(f));
-                // Set pin
-                const feat = new ol.Feature({ type:"delivery" });
-                feat.setGeometry(new ol.geom.Point(c));
-                feat.setStyle(pinStyle);
-                pinLayer.getSource().addFeature(feat);
+                const lat=+item.lat, lon=+item.lon;
+                map.setView([lat,lon], 17, { animate:true });
+                if(pinMarker) map.removeLayer(pinMarker);
+                pinMarker = L.marker([lat,lon], {icon:pinIcon})
+                  .addTo(map).bindPopup("Delivery location: "+item.display_name).openPopup();
                 suggestions.classList.remove("show"); searchBox.value="";
                 showToast("Location pinned & centered!",1400);
               };
@@ -229,7 +175,6 @@
       if(!searchBox.contains(e.target) && !suggestions.contains(e.target))
         suggestions.classList.remove("show");
     });
-    // --- End search ---
   </script>
 </body>
 </html>

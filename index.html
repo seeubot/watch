@@ -1,109 +1,185 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Delicious Bites - Menu</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-     integrity="sha256-p4NxAoJBhIIN+hmNHrzxH+GnBFwDChDLEFNyJsTddoCA="
-     crossorigin=""/>
-    <!-- Leaflet Control Geocoder CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
-    <style>
-        /* ... (all your style rules remain unchanged) ... */
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Delivery Location Map Demo</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <style>
+    body { background: #101010; color: #fff; font-family: sans-serif;}
+    #map { height: 300px; background: #222; border-radius: 8px;}
+    .modal { background: rgba(0,0,0,0.8);}
+    .leaflet-control-geocoder { color: #000; }
+  </style>
 </head>
-<body class="min-h-screen">
-    <!-- ... (all header, modals, main content etc. unchanged) ... -->
+<body class="flex items-center justify-center min-h-screen">
+  <!-- Simple Modal Trigger -->
+  <button id="openMap" class="bg-white text-black px-4 py-2 rounded">Select Delivery Location</button>
+  <!-- Modal -->
+  <div id="mapModal" class="modal fixed inset-0 hidden items-center justify-center z-50">
+    <div class="bg-gray-800 rounded-lg p-5 w-full max-w-lg mx-3">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold text-white">Select Delivery Location</h2>
+        <button id="closeMap" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+      </div>
+      <div id="errorBanner" class="hidden bg-red-700 text-white p-4 mb-2 rounded text-center"></div>
+      <div id="map" class="mb-2"></div>
+      <p id="locationStatus" class="text-sm text-gray-300 text-center mb-2"></p>
+      <div class="flex gap-2 mb-2">
+        <button id="getLoc" class="flex-1 bg-white text-black px-4 py-2 rounded font-bold flex items-center justify-center">📍 Use My Current Location</button>
+        <button id="saveLoc" class="flex-1 bg-gray-600 text-white px-4 py-2 rounded">Save Location</button>
+      </div>
+      <div class="text-center text-gray-400 text-xs">
+        Coordinates: <span id="coordsDisp">—</span>
+      </div>
+    </div>
+  </div>
+  <!-- Success Toast -->
+  <div id="toast" class="hidden fixed bottom-3 left-1/2 -translate-x-1/2 bg-green-600 text-white px-3 py-2 rounded shadow"></div>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-     integrity="sha256-20nQCchB9co0qIjGwZZ1Xz0GbnSe75Lp9js+9dxFVQ="
-     crossorigin=""></script>
-    <!-- Leaflet Control Geocoder JS -->
-    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    // DOMs
+    const openMap = document.getElementById('openMap');
+    const mapModal = document.getElementById('mapModal');
+    const closeMap = document.getElementById('closeMap');
+    const mapDiv = document.getElementById('map');
+    const errorBanner = document.getElementById('errorBanner');
+    const getLoc = document.getElementById('getLoc');
+    const saveLoc = document.getElementById('saveLoc');
+    const coordsDisp = document.getElementById('coordsDisp');
+    const locationStatus = document.getElementById('locationStatus');
+    const toast = document.getElementById('toast');
+    
+    // App state
+    let map = null, marker = null, liveCircle = null, geolocationWatcher = null;
+    let coords = null;
 
-    <script>
-        // ... (all global variables and DOM references unchanged) ...
+    // Modal control
+    openMap.onclick = () => {
+      mapModal.classList.remove('hidden');
+      setTimeout(initMap, 150); // Slight delay to ensure modal is visible
+    };
+    closeMap.onclick = () => {
+      mapModal.classList.add('hidden');
+      cleanupMap();
+    };
 
-        // --- GPS + Live Location UPDATED CODE ---
+    // Toast
+    function showToast(msg, color="success") {
+      toast.textContent = msg;
+      toast.className = `fixed bottom-3 left-1/2 -translate-x-1/2 px-3 py-2 rounded shadow text-white transition bg-${color === "error" ? "red" : "green"}-600`;
+      toast.classList.remove('hidden');
+      setTimeout(()=>toast.classList.add('hidden'), 1800);
+    }
 
-        function getCurrentLocationForMap() {
-            if (!navigator.geolocation) {
-                showNotification('Geolocation is not supported by your browser!', 'error');
-                return;
-            }
+    // Map setup
+    function initMap() {
+      errorBanner.classList.add("hidden");
+      locationStatus.textContent = "";
+      coordsDisp.textContent = "—";
+      // Only create map once
+      if (!map) {
+        map = L.map('map').setView([20.5937, 78.9629], 5); // Center of India as fallback
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19
+        }).addTo(map);
+        // Click to set marker
+        map.on("click", (e) => {
+          setMarker(e.latlng.lat, e.latlng.lng);
+        });
+      }
+      // Ensure visible (fixes map resize in modals)
+      setTimeout(()=>map.invalidateSize(), 200);
+    }
 
-            // Show loading
-            mapLocationStatus.textContent = "Fetching your live location...";
+    // Place marker and update display
+    function setMarker(lat, lng) {
+      if (marker) {
+        marker.setLatLng([lat, lng]);
+      } else {
+        marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+        marker.on("dragend", e => {
+          const p = e.target.getLatLng();
+          setMarker(p.lat, p.lng);
+        });
+      }
+      coords = { lat, lng };
+      coordsDisp.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      locationStatus.textContent = "Location selected!";
+    }
 
-            // Stop previous watcher if running
-            if (geolocationWatcherId) navigator.geolocation.clearWatch(geolocationWatcherId);
+    // Geolocation
+    getLoc.onclick = () => {
+      if (!navigator.geolocation) {
+        showError("Geolocation not supported. Please allow GPS/browser location.");
+        return;
+      }
+      locationStatus.textContent = "Finding your current GPS location...";
+      errorBanner.classList.add("hidden");
+      // Clean previous watcher
+      if (geolocationWatcher) navigator.geolocation.clearWatch(geolocationWatcher);
+      geolocationWatcher = navigator.geolocation.watchPosition(
+        (pos) => {
+          const { latitude, longitude, accuracy } = pos.coords;
+          map.setView([latitude, longitude], 17);
+          setMarker(latitude, longitude);
+          // Draw accuracy circle
+          if (liveCircle) {
+            liveCircle.setLatLng([latitude, longitude]);
+            liveCircle.setRadius(accuracy);
+          } else {
+            liveCircle = L.circle([latitude, longitude], {
+              color: '#1976d2', fillColor: '#1976d2', fillOpacity: 0.2, radius: accuracy
+            }).addTo(map);
+          }
+          locationStatus.textContent = "Live GPS found! Move pin if needed.";
+        },
+        (err) => {
+          let msg = "Geolocation unavailable. ";
+          if (err.code === 1) msg += "Permission denied.";
+          else if (err.code === 2) msg += "Location unavailable.";
+          else if (err.code === 3) msg += "Timeout.";
+          else msg += err.message;
+          showError(msg);
+          locationStatus.textContent = "Failed to get location. Try again.";
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      );
+    };
 
-            geolocationWatcherId = navigator.geolocation.watchPosition(
-                (pos) => {
-                    const { latitude, longitude, accuracy } = pos.coords;
-                    lastKnownLiveCoords = { latitude, longitude };
+    // Save action
+    saveLoc.onclick = () => {
+      if (!coords) {
+        showError("Please choose a location before saving!");
+        return;
+      }
+      showToast("Location saved: " + coords.lat.toFixed(5) + "," + coords.lng.toFixed(5));
+      // You can now use the coords object for API, checkout, etc.
+      mapModal.classList.add('hidden');
+      cleanupMap();
+    };
 
-                    if (map) {
-                        map.setView([latitude, longitude], 17, { animate: true });
+    // Cleanup
+    function cleanupMap() {
+      if (geolocationWatcher) {
+        navigator.geolocation.clearWatch(geolocationWatcher);
+        geolocationWatcher = null;
+      }
+      // Remove marker/circle
+      if (marker) { map.removeLayer(marker); marker = null;}
+      if (liveCircle) { map.removeLayer(liveCircle); liveCircle = null;}
+      coords = null; coordsDisp.textContent = "—";
+      locationStatus.textContent = "";
+    }
 
-                        // Create/update animated live marker
-                        if (liveMarker) {
-                            liveMarker.setLatLng([latitude, longitude]);
-                        } else {
-                            liveMarker = L.marker([latitude, longitude], { icon: liveSVGIcon() })
-                                .addTo(map)
-                                .bindPopup('Your live GPS position');
-                        }
-
-                        // Update accuracy circle
-                        if (userCircle) {
-                            userCircle.setLatLng([latitude, longitude]);
-                            userCircle.setRadius(accuracy);
-                        } else {
-                            userCircle = L.circle([latitude, longitude], { 
-                                color: '#1976d2', fillColor: '#1976d2', fillOpacity: 0.1, radius: accuracy 
-                            }).addTo(map);
-                        }
-                    }
-                    mapLocationStatus.textContent = "Live location found. You can move or save this.";
-                },
-                (err) => {
-                    let msg = "Failed to get your location - ";
-                    if (err.code === 1) msg += "Permission denied.";
-                    else if (err.code === 2) msg += "Position unavailable.";
-                    else if (err.code === 3) msg += "Timeout.";
-                    else msg += err.message;
-                    showNotification(msg, 'error');
-                    mapLocationStatus.textContent = msg;
-                },
-                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-            );
-        }
-
-        function cleanupMapAndGeolocation() {
-            if (geolocationWatcherId) {
-                navigator.geolocation.clearWatch(geolocationWatcherId);
-                geolocationWatcherId = null;
-            }
-            if (map) {
-                if (liveMarker) { map.removeLayer(liveMarker); liveMarker = null; }
-                if (userCircle) { map.removeLayer(userCircle); userCircle = null; }
-                // Optionally also remove delivery marker
-            }
-            lastKnownLiveCoords = null;
-            mapInitialized = false;
-        }
-
-        // --- END OF UPDATED CODE ---
-
-        // ... (rest of your JS code for menu, cart, modal handling, UI, map initialization, etc., remains the same) ...
-    </script>
+    function showError(msg) {
+      errorBanner.classList.remove("hidden");
+      errorBanner.textContent = msg;
+      showToast(msg, "error");
+    }
+  </script>
 </body>
 </html>

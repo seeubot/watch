@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <title>Leaflet Black & White Navigation UI</title>
+  <title>Leaflet Black & White Live Location Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
   <style>
@@ -23,9 +23,7 @@
       display:flex; align-items:center; justify-content:center;
       box-shadow:0 1px 6px #2224;
     }
-    .custom-marker svg {
-      display:block; margin:auto;
-    }
+    .custom-marker svg { display:block; margin:auto; }
     .custom-dest {
       background:#fff;
       border:3px solid #222;
@@ -34,80 +32,84 @@
       display:flex; align-items:center; justify-content:center;
       box-shadow:0 1px 6px #0002;
     }
-    .route-label {
-      background:#fff; color:#222;
-      padding:.34em 1.2em; border-radius:13px;
-      box-shadow:0 2px 8px #0001;
-      border:1px solid #eee; font:500 1em "Inter",Arial,sans-serif;
-      position:absolute; top:51%; right:30px; z-index:999;
-      transform:translateY(-50%);
+    @media (max-width:500px){
+      #map-holder { width:98vw; height:88vh; min-width:0; }
     }
   </style>
 </head>
 <body>
   <div id="map-holder">
     <div id="map"></div>
-    <div class="route-label" id="route-label">21 min</div>
   </div>
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    // Start/end points for the route (example: nearby points for illustration)
-    const ORIGIN = [28.6104186, 77.2128394]; // (Connaught Place, Delhi)
-    const DEST = [28.624578, 77.210915];     // (Sadar Bazaar, Delhi)
+    // Fixed destination (can be set as needed)
+    const DEST = [28.624578, 77.210915]; // Example: Sadar Bazaar, Delhi
 
-    // Black & white base tiles
+    // Black & white OpenStreetMap tiles (no API key needed)
     const bwTiles = L.tileLayer(
       "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       { attribution:'© OpenStreetMap contributors', maxZoom:19 }
     );
 
-    // Initialize the map centered between points
+    // Initialize map with arbitrary starting position; will re-center on live fix
     const map = L.map("map", {
-      zoomControl:false, attributionControl:false
-    }).addLayer(bwTiles);
+      zoomControl: false, attributionControl: false
+    }).addLayer(bwTiles)
+      .setView([28.6200, 77.2110], 14);
 
-    // Fit the map view to both points (with a bit of padding)
-    map.fitBounds([ORIGIN, DEST], {padding:[40,40]});
+    // Custom black "origin" marker for live location
+    let originMarker = null, liveCircle = null, routeLine = null;
 
-    // Custom black "origin" marker
-    const originMarker = L.marker(ORIGIN, {
-      icon: L.divIcon({
-        className:"custom-marker",
-        iconSize:[36,36],
-        html: `<svg viewBox="0 0 22 22" width="22" height="22"><circle cx="11" cy="11" r="9" fill="#fff"/><circle cx="11" cy="11" r="5" fill="#111"/></svg>`
-      })
-    }).addTo(map).bindTooltip("Start", { direction:"top", offset:[0,-17], className:"", permanent:true });
-
-    // Custom white/black destination marker
+    // Themed destination marker
     const destMarker = L.marker(DEST, {
       icon: L.divIcon({
-        className:"custom-dest",
-        iconSize:[32,32],
-        html: `<svg viewBox="0 0 20 20" width="18" height="18"><circle cx="10" cy="10" r="8" fill="#fff" stroke="#222" stroke-width="2"/><circle cx="10" cy="10" r="4" fill="#dedede" stroke="#222" stroke-width="1"/></svg>`
+        className: "custom-dest",
+        iconSize: [32, 32],
+        html: `<svg viewBox="0 0 20 20" width="18" height="18">
+          <circle cx="10" cy="10" r="8" fill="#fff" stroke="#222" stroke-width="2"/>
+          <circle cx="10" cy="10" r="4" fill="#dedede" stroke="#222" stroke-width="1"/>
+        </svg>`
       })
     }).addTo(map).bindTooltip("Destination", { direction:"top", offset:[0,-14], className:"", permanent:true });
 
-    // Draw the route as a simple white polyline
-    const route = L.polyline([ORIGIN, DEST], {
-      color:"#fff", weight:5, opacity:1, lineJoin:'round'
-    }).addTo(map);
-
-    // Label with travel time — position it roughly along the line visually
-    function positionRouteLabel() {
-      const mapDiv = document.getElementById("map");
-      const label = document.getElementById("route-label");
-      const pt = map.latLngToContainerPoint([
-        (ORIGIN[0]+DEST[0])/2 + 0.0016,
-        (ORIGIN[1]+DEST[1])/2 - 0.0017
-      ]);
-      label.style.left = (pt.x-40) + "px";
-      label.style.top = (pt.y-10) + "px";
+    // Live GPS tracking
+    if ("geolocation" in navigator) {
+      navigator.geolocation.watchPosition(
+        pos => {
+          const lat = pos.coords.latitude, lng = pos.coords.longitude, accuracy = pos.coords.accuracy;
+          // Remove old live marker and accuracy circle
+          if (originMarker) map.removeLayer(originMarker);
+          if (liveCircle) map.removeLayer(liveCircle);
+          // Place new themed live marker
+          originMarker = L.marker([lat, lng], {
+            icon: L.divIcon({
+              className: "custom-marker",
+              iconSize: [36,36],
+              html: `<svg viewBox="0 0 22 22" width="22" height="22">
+                <circle cx="11" cy="11" r="9" fill="#fff"/><circle cx="11" cy="11" r="5" fill="#111"/>
+              </svg>`
+            })
+          }).addTo(map).bindTooltip("You", { direction:"top", offset:[0,-17], className: "", permanent:true });
+          // Accuracy (semi-transparent white)
+          liveCircle = L.circle([lat, lng], {
+            radius: accuracy, color:'#888', fillColor:'#fff', fillOpacity:0.12, opacity:0.20
+          }).addTo(map);
+          // Draw/update route as a simple white line
+          if (routeLine) map.removeLayer(routeLine);
+          routeLine = L.polyline([[lat, lng], DEST], {
+            color: "#222", weight:5, opacity:1, lineJoin:'round'
+          }).addTo(map);
+          // Zoom to include both points at all times
+          const bounds = L.latLngBounds([ [lat, lng], DEST ]);
+          map.fitBounds(bounds, { padding:[55,55] });
+        },
+        err => alert("Location error: " + err.message),
+        { enableHighAccuracy: true }
+      );
+    } else {
+      alert("Geolocation not supported by your browser.");
     }
-    map.on("move zoom", positionRouteLabel);
-    positionRouteLabel();
-
-    // Responsive: redraw label on window resize
-    window.addEventListener("resize", ()=>setTimeout(positionRouteLabel,220));
   </script>
 </body>
 </html>

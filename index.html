@@ -1,134 +1,454 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Delivery Location Picker</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"/>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-  <style>
-    body { background: #191919; color: #fff; }
-    #map { height: 300px; border-radius: 8px; min-height: 200px; }
-    .modal-bg { background: rgba(0,0,0,0.7); }
-    .leaflet-control-zoom, .leaflet-control-attribution { display: none !important; }
-  </style>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard - WhatsApp Food Orders</title>
+    <!-- Minimal CSS Framework -->
+    <style>
+        body { font-family: sans-serif; margin: 0; background: #f8f9fc; }
+        .container { max-width: 1200px; margin: 24px auto; padding: 24px; background: #fff; box-shadow: 0 2px 8px #eee; }
+        .login-panel, .dashboard { max-width: 400px; margin: 60px auto;}
+        h2 { margin-bottom: 1em; }
+        input, select, button { padding: 0.6em; margin: 0.3em 0; width: 100%; }
+        .tabs { display: flex; border-bottom: 2px solid #eee; }
+        .tab { padding: 0.8em 2em; cursor: pointer; background: #f5f6fa; border: 0; outline: none;}
+        .tab.active { border-bottom: 3px solid #3498db; background: #fff; }
+        .panel { display: none; }
+        .panel.active { display: block; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 1em;}
+        th, td { border: 1px solid #e1e1e1; padding: 0.7em 1em; }
+        th { background: #f5f6fa; }
+        .stat-cards { display: flex; gap: 18px; margin-bottom: 24px; }
+        .stat { flex:1; background: #f0f3f6; padding: 1em; border-radius: 8px; text-align: center; }
+        #map { height: 230px; width: 100%; margin: 1em 0; }
+        .status-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 9px;}
+        .status-ready { background: #3ad359; }
+        .status-error { background: #e74c3c; }
+        .status-wait { background: #f5b041; }
+        pre {background: #ececec; padding: .7em; border-radius: 7px;}
+    </style>
+    <!-- Leaflet for maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
-<body class="min-h-screen flex items-center justify-center">
-  
-  <!-- Modal -->
-  <div class="fixed inset-0 flex items-center justify-center z-50 modal-bg">
-    <div class="bg-gray-900 rounded-lg p-5 w-full max-w-md mx-2 shadow-lg">
-      <div class="flex justify-between items-center mb-3">
-        <h2 class="text-xl font-bold">Select Delivery Location</h2>
-        <!-- Modal close button (add logic as needed) -->
-        <button onclick="window.location.reload()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
-      </div>
-      <div id="errorBanner" class="hidden bg-red-700 text-white p-4 mb-2 rounded text-center"></div>
-      <div id="map" class="mb-3"></div>
-      <p id="locationStatus" class="text-sm text-gray-300 text-center mb-2"></p>
-      <div class="flex flex-col sm:flex-row gap-2 mb-1">
-        <button id="getLoc" class="bg-white text-black px-4 py-2 rounded font-semibold flex-1 flex items-center justify-center">📍 Use My Current Location</button>
-        <button id="saveLoc" class="bg-gray-600 text-white px-4 py-2 rounded font-semibold flex-1">Save Location</button>
-      </div>
-      <div class="text-gray-400 text-xs text-center mt-2" id="coordsDisp">No pin placed</div>
+<body>
+<div id="app">
+
+    <div class="login-panel" id="loginPanel">
+        <h2>Admin Login</h2>
+        <input type="text" id="loginUser" placeholder="Username" autocomplete="username" />
+        <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password"/>
+        <button onclick="login()">Login</button>
+        <div id="loginMsg" style="color: #e74c3c;margin-top:.6em;"></div>
     </div>
-  </div>
 
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script>
-    // State
-    let map, userMarker, coords = null;
-    const errorBanner = document.getElementById('errorBanner');
-    const locationStatus = document.getElementById('locationStatus');
-    const coordsDisp = document.getElementById('coordsDisp');
+    <div class="container dashboard" id="dashboardPanel" style="display:none;">
+        <h2>Admin Dashboard <span style="float:right;"><button onclick="logout()" style="width:auto;">Logout</button></span></h2>
+        <div class="stat-cards">
+            <div class="stat">
+                <b id="statOrders">0</b><br>Orders
+            </div>
+            <div class="stat">
+                <b id="statCustomers">0</b><br>Customers
+            </div>
+            <div class="stat">
+                <span id="botStatusDot" class="status-dot status-wait"></span>
+                <span id="botStatusText">Loading...</span>
+                <br>WhatsApp Bot
+            </div>
+        </div>
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('orders')">Orders</button>
+            <button class="tab" onclick="showTab('menu')">Menu</button>
+            <button class="tab" onclick="showTab('customers')">Customers</button>
+            <button class="tab" onclick="showTab('settings')">Shop Settings</button>
+            <button class="tab" onclick="showTab('bot')">Bot Status</button>
+        </div>
+        <div class="panel active" id="panel-orders"></div>
+        <div class="panel" id="panel-menu"></div>
+        <div class="panel" id="panel-customers"></div>
+        <div class="panel" id="panel-settings"></div>
+        <div class="panel" id="panel-bot"></div>
+    </div>
+</div>
 
-    // Satellite map setup without zoom or attribution UI
-    function initMap() {
-      map = L.map('map', {
-        zoomControl: false,
-        attributionControl: false
-      }).setView([22.5937, 78.9629], 5); // India by default
-
-      L.tileLayer(
-        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        { maxZoom: 19 }
-      ).addTo(map);
-
-      // Place or move marker with a tap/click
-      map.on('click', function(e) {
-        placeUserMarker(e.latlng.lat, e.latlng.lng);
-      });
+<!-- Dependencies: Socket.IO, Leaflet -->
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+//------------------- Auth -----------------------------
+let sessionActive = false;
+async function login() {
+    const username = document.getElementById('loginUser').value.trim();
+    const password = document.getElementById('loginPass').value.trim();
+    document.getElementById('loginMsg').textContent = 'Logging in...';
+    let res = await fetch('/admin/login', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'}, 
+        body: JSON.stringify({username, password})
+    });
+    if(res.ok){
+        sessionActive = true;
+        document.getElementById('loginPanel').style.display='none';
+        document.getElementById('dashboardPanel').style.display='';
+        loadAllPanels();
+    } else {
+        let data = await res.json();
+        document.getElementById('loginMsg').textContent = data.message || 'Login failed';
     }
+}
+async function logout() {
+    await fetch('/admin/logout');
+    location.reload();
+}
 
-    function placeUserMarker(lat, lng) {
-      if (userMarker) {
-        userMarker.setLatLng([lat, lng]);
-      } else {
-        userMarker = L.marker([lat, lng], { draggable: true }).addTo(map);
-        userMarker.on("dragend", function(e) {
-          const pos = e.target.getLatLng();
-          coords = [pos.lat, pos.lng];
-          coordsDisp.textContent = `Pin: ${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}`;
-          locationStatus.textContent = "Pin moved!";
+//------------- Tabs Logic --------------------
+function showTab(tab) {
+    document.querySelectorAll('.tab').forEach((el,i)=>{
+        el.classList.toggle('active', el.textContent.toLowerCase().includes(tab));
+        document.querySelectorAll('.panel')[i].classList.toggle('active', el.textContent.toLowerCase().includes(tab));
+    });
+    // Map re-initialize on show
+    if(tab==='customers' && window.lastDrawnMapLoc){
+        setTimeout(()=>resetCustomerMap(window.lastDrawnMapLoc), 350);
+    }
+}
+
+//---------------- API Calls --------------------
+async function api(path, options={}) {
+    let res = await fetch(path, options);
+    if(res.ok) return await res.json();
+    else throw await res.json();
+}
+
+//------------- Panel Loaders ------------------
+async function loadAllPanels() {
+    loadOrders();
+    loadMenu();
+    loadCustomers();
+    loadSettings();
+    loadBotStatus();
+    socketInit();
+}
+//--- Orders -----------
+async function loadOrders() {
+    let panel = document.getElementById('panel-orders');
+    panel.innerHTML = "<b>Loading orders...</b>";
+    try {
+        let orders = await api('/api/admin/orders');
+        document.getElementById('statOrders').textContent = orders.length;
+        let rows = orders.map(o=>`
+            <tr>
+                <td>${o._id.slice(0,7)}</td>
+                <td>${o.customerName||''}</td>
+                <td>${o.totalAmount||''}</td>
+                <td>${o.status||''}</td>
+                <td>${(new Date(o.orderDate)).toLocaleString()}</td>
+                <td>
+                    <button onclick="orderDetails('${o._id}')">Details</button>
+                    <button onclick="deleteOrder('${o._id}')">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+        panel.innerHTML = `
+            <table>
+                <tr><th>ID</th><th>Customer</th><th>Amount</th><th>Status</th><th>Date</th><th>Actions</th></tr>
+                ${rows}
+            </table>
+            <div id="orderDetailArea"></div>
+        `;        
+    } catch (e) {
+        panel.innerHTML = "<b style='color:red;'>Failed to load orders</b>";
+    }
+}
+async function orderDetails(id) {
+    let d = await api(`/api/admin/orders/${id}`);
+    let trk = `/track?orderId=${d._id}`;
+    let panel = document.getElementById('orderDetailArea');
+    panel.innerHTML = `
+        <pre>
+<b>Order ${d._id.slice(0,8)}</b>
+Customer: ${d.customerName} | Phone: ${d.customerPhone}
+Status: ${d.status}
+Total: ₹${d.totalAmount}
+${d.deliveryAddress ? 'Delivery: ' + d.deliveryAddress : '' }
+${d.customerLocation && d.customerLocation.latitude ? 'Location: ' + d.customerLocation.latitude + ',' + d.customerLocation.longitude : ''}
+Items:
+${d.items.map(i=>`- ${i.name} x${i.quantity} (₹${i.price})`).join('\n')}
+        </pre>
+        <form onsubmit="return updateOrderStatus('${d._id}')">
+            <select id="orderStatusSel">
+                <option>Pending</option>
+                <option>Confirmed</option>
+                <option>Preparing</option>
+                <option>Out for Delivery</option>
+                <option>Delivered</option>
+                <option>Cancelled</option>
+            </select>
+            <button>Update Status</button>
+            <a href="${trk}" target="_blank">Track</a>
+        </form>
+        <hr>
+    `;
+    document.getElementById('orderStatusSel').value = d.status;
+}
+async function updateOrderStatus(id) {
+    let st = document.getElementById('orderStatusSel').value;
+    try {
+        await api(`/api/admin/orders/${id}`, {
+            method:'PUT',
+            headers:{'Content-Type': 'application/json'},
+            body: JSON.stringify({status: st})
         });
-      }
-      coords = [lat, lng];
-      coordsDisp.textContent = `Pin: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-      locationStatus.textContent = "Pin placed!";
+        loadOrders();
+        alert("Status updated");
+    } catch (e) {
+        alert("Failed to update order");
     }
-
-    // Try to get GPS location and pin it
-    document.getElementById('getLoc').onclick = function() {
-      errorBanner.classList.add("hidden");
-      if (!navigator.geolocation) {
-        showError("Geolocation not supported. Please allow location access.");
-        return;
-      }
-      locationStatus.textContent = "Locating your position...";
-      navigator.geolocation.getCurrentPosition(
-        function(pos) {
-          let lat = pos.coords.latitude, lng = pos.coords.longitude;
-          map.setView([lat, lng], 18, { animate:true });
-          placeUserMarker(lat, lng);
-          locationStatus.textContent = "Location found! (You may adjust pin)";
-        },
-        function(err) {
-          let msg = "Failed to get current location.";
-          if (err.code === 1) msg = "Permission denied. Please allow location access in your browser.";
-          else if (err.code === 2) msg = "Location unavailable. Check your device settings.";
-          else if (err.code === 3) msg = "Location request timed out.";
-          showError(msg);
-          locationStatus.textContent = "Could not get current location.";
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
-    };
-
-    // Save coordinates
-    document.getElementById('saveLoc').onclick = function() {
-      if (!coords) {
-        locationStatus.textContent = "Please place your pin location on the map.";
-        return;
-      }
-      alert(`Location saved!\nLatitude: ${coords[0].toFixed(6)}\nLongitude: ${coords[1].toFixed(6)}`);
-      // Continue with submitting these values via API or storing for checkout.
-    };
-
-    // Utility: show error
-    function showError(msg) {
-      errorBanner.classList.remove("hidden");
-      errorBanner.textContent = msg;
+    return false;
+}
+async function deleteOrder(id) {
+    if(!confirm('Delete this order?')) return;
+    await api(`/api/admin/orders/${id}`, {method:'DELETE'});
+    loadOrders();
+}
+//--- Menu -----------
+async function loadMenu() {
+    let panel = document.getElementById('panel-menu');
+    panel.innerHTML = "<b>Loading menu...</b>";
+    try {
+        let menu = await api('/api/admin/menu');
+        let rows = menu.map(m=>`
+            <tr>
+                <td>${m.name}</td>
+                <td>₹${m.price}</td>
+                <td>${m.category||''}</td>
+                <td><input type="checkbox" onchange="toggleAvailable('${m._id}',this)" ${m.isAvailable?'checked':''} /></td>
+                <td>
+                    <button onclick="editMenuItem('${m._id}')">Edit</button>
+                    <button onclick="deleteMenuItem('${m._id}')">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+        panel.innerHTML = `
+            <button onclick="showMenuForm()">Add New</button>
+            <div id="menuFormWrap"></div>
+            <table>
+                <tr><th>Name</th><th>Price</th><th>Category</th><th>Available</th><th>Actions</th></tr>
+                ${rows}
+            </table>
+        `;
+    } catch (e) {
+        panel.innerHTML = "<b style='color:red;'>Failed to load menu</b>";
     }
-
-    // Load!
-    window.onload = function() {
-      try {
-        initMap();
-      } catch (e) {
-        showError("Map failed to load or Geolocation unavailable. Please ensure location services are enabled and try again.");
-        locationStatus.textContent = "Map not initialized. Cannot get location.";
-      }
+}
+function showMenuForm(id='') {
+    let wrap = document.getElementById('menuFormWrap');
+    if(!wrap) return;
+    wrap.innerHTML = `
+        <form id="menuItemForm" onsubmit="return submitMenuItem('${id}')">
+            <input id="mname" placeholder="Name" required>
+            <input id="mprice" type="number" step="0.01" placeholder="Price" required>
+            <input id="mdesc" placeholder="Description">
+            <input id="murl" placeholder="Image URL">
+            <input id="mcat" placeholder="Category">
+            <label>Trending? <input type="checkbox" id="mtrend"></label>
+            <label>Available <input type="checkbox" id="mavail" checked></label>
+            <button>Save</button> <button onclick="hideMenuForm();return false;">Cancel</button>
+        </form>
+    `;
+    if(id) fillMenuForm(id);
+}
+function hideMenuForm() {
+    document.getElementById('menuFormWrap').innerHTML = '';
+}
+async function fillMenuForm(id) {
+    let mi = await api(`/api/admin/menu/${id}`);
+    document.getElementById('mname').value = mi.name||'';
+    document.getElementById('mprice').value = mi.price||0;
+    document.getElementById('mdesc').value = mi.description||'';
+    document.getElementById('murl').value = mi.imageUrl||'';
+    document.getElementById('mcat').value = mi.category||'';
+    document.getElementById('mtrend').checked = mi.isTrending;
+    document.getElementById('mavail').checked = mi.isAvailable;
+}
+async function submitMenuItem(id){
+    let data = {
+        name: document.getElementById('mname').value,
+        price: parseFloat(document.getElementById('mprice').value),
+        description: document.getElementById('mdesc').value,
+        imageUrl: document.getElementById('murl').value,
+        category: document.getElementById('mcat').value,
+        isTrending: document.getElementById('mtrend').checked,
+        isAvailable: document.getElementById('mavail').checked,
     };
-  </script>
+    try {
+        if(id) await api(`/api/admin/menu/${id}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+        else await api('/api/admin/menu', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+        hideMenuForm();
+        loadMenu();
+    } catch (e) {
+        alert("Failed to save menu item");
+    }
+    return false;
+}
+async function editMenuItem(id){ showMenuForm(id); }
+async function deleteMenuItem(id) {
+    if(!confirm('Delete menu item?')) return;
+    await api(`/api/admin/menu/${id}`, {method:'DELETE'});
+    loadMenu();
+}
+async function toggleAvailable(id, el){
+    await api(`/api/admin/menu/${id}`, {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({isAvailable:el.checked})});
+    loadMenu();
+}
+
+//--- Customers -----------
+async function loadCustomers() {
+    let panel = document.getElementById('panel-customers');
+    panel.innerHTML = "<b>Loading customers...</b>";
+    try {
+        let customers = await api('/api/admin/customers');
+        document.getElementById('statCustomers').textContent = customers.length;
+        let rows = customers.map(c=>`
+            <tr>
+                <td>${c.customerName||''}</td>
+                <td>${c.customerPhone}</td>
+                <td>${(new Date(c.lastOrderDate)).toLocaleDateString()}</td>
+                <td>${c.totalOrders||0}</td>
+                <td>
+                    <button onclick="showCustomerLoc(${c.lastKnownLocation && c.lastKnownLocation.latitude ? c.lastKnownLocation.latitude : 0},${c.lastKnownLocation && c.lastKnownLocation.longitude ? c.lastKnownLocation.longitude : 0})">Map</button>
+                    <button onclick="deleteCustomer('${c._id}')">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+        panel.innerHTML = `
+            <table>
+                <tr><th>Name</th><th>Phone</th><th>Last Order</th><th>Orders</th><th>Actions</th></tr>
+                ${rows}
+            </table>
+            <div id="map"></div>
+        `;
+    } catch (e) {
+        panel.innerHTML = "<b style='color:red;'>Failed to load customers</b>";
+    }
+}
+// Show map with single location (uses Leaflet)
+function showCustomerLoc(lat, lng){
+    if(!lat || !lng) { alert('No location'); return; }
+    let mapDiv = document.getElementById('map');
+    if(!mapDiv) return;
+    mapDiv.style.display='block';
+    let map = L.map('map').setView([lat,lng], 15);
+    window.lastDrawnMapLoc = [lat,lng];
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+    }).addTo(map);
+    L.marker([lat,lng]).addTo(map).bindPopup("Customer Location").openPopup();
+}
+function resetCustomerMap(loc){
+    // Re-create the map on tab switch
+    if(loc) showCustomerLoc(loc[0],loc[1]);
+}
+async function deleteCustomer(id){
+    if(!confirm('Delete this customer?')) return;
+    await api(`/api/admin/customers/${id}`,{method:'DELETE'});
+    loadCustomers();
+}
+
+//--- Settings -----------
+async function loadSettings() {
+    let panel = document.getElementById('panel-settings');
+    panel.innerHTML = "<b>Loading...</b>";
+    try {
+        let s = await api('/api/admin/settings');
+        let rates = Array.isArray(s.deliveryRates) ? s.deliveryRates.map(dr=>`<input type="number" step="0.1" value="${dr.kms}" style="width:50px;" disabled> km: <input type="number" value="${dr.amount}" style="width:80px;" disabled>₹<br>`).join('') : '';
+        panel.innerHTML = `
+            <form onsubmit="return updateSettings()">
+                <label>Shop Name <input id="sName" value="${s.shopName||''}" /></label>
+                <label>Shop Latitude <input id="sLat" value="${s.shopLocation.latitude||0}" /></label>
+                <label>Shop Longitude <input id="sLng" value="${s.shopLocation.longitude||0}" /></label>
+                <label>Admin Username <input id="sAdmin" value="${s.adminUsername||''}" /></label>
+                <label>Admin Password <input id="sPass" type="password" placeholder="Change (leave blank to keep)" /></label>
+                <button>Update</button>
+            </form>
+            <div><b>Delivery Rates:</b><br>${rates || "None (edit in API)"}</div>
+        `;
+    } catch (e) {
+        panel.innerHTML = "<b style='color:red;'>Failed to load settings</b>";
+    }
+}
+async function updateSettings() {
+    let shopName = document.getElementById('sName').value;
+    let shopLocation = {latitude: parseFloat(document.getElementById('sLat').value), longitude: parseFloat(document.getElementById('sLng').value)};
+    let adminUsername = document.getElementById('sAdmin').value;
+    let adminPassword = document.getElementById('sPass').value;
+    try {
+        await api('/api/admin/settings', {
+            method:'PUT', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({shopName, shopLocation, adminUsername, adminPassword: adminPassword?adminPassword:undefined})
+        });
+        alert("Updated!");
+    } catch (e) { alert('Fail to update'); }
+    return false;
+}
+
+//--- Bot Status -----------
+let socket, lastQR;
+async function loadBotStatus() {
+    let panel = document.getElementById('panel-bot');
+    panel.innerHTML = `
+        <div>
+            <b>Status: </b> <span id="botStatMsg">Loading...</span><br>
+            <b>Last Authenticated: </b> <span id="botAuthTime">---</span><br>
+            <button onclick="requestBotQR()">Request New QR</button>
+            <button onclick="loadBotSession()">Reload WhatsApp Session</button>
+        </div>
+        <div id="qrImgArea"></div>
+    `;
+    // Also fetch initial status
+    try {
+        let botdata = await api('/api/admin/bot-status');
+        updateBotStatusPanel(botdata.status, botdata.lastAuthenticatedAt);
+    } catch (e){}
+}
+function updateBotStatusPanel(status, lastAuthTime) {
+    let statDot = document.getElementById('botStatusDot');
+    let statText = document.getElementById('botStatusText');
+    let statMsg = document.getElementById('botStatMsg');
+    if(!statDot || !statText) return;
+    statDot.className = 'status-dot status-wait';
+    statText.innerHTML = (status||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+    if(statMsg) statMsg.textContent = statText.innerHTML;
+    if(status==='ready') statDot.className='status-dot status-ready';
+    if(status==='disconnected'|| status==='auth_failure') statDot.className='status-dot status-error';
+    document.getElementById('botAuthTime').innerHTML = lastAuthTime ? (new Date(lastAuthTime)).toLocaleString() : '--';
+}
+async function requestBotQR() {
+    await api('/api/public/request-qr', {method:'POST'});
+}
+async function loadBotSession() {
+    await api('/api/admin/load-session', {method:'POST'});
+}
+function updateQRImage(qr){
+    lastQR = qr;
+    let area = document.getElementById('qrImgArea');
+    area.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?margin=40&size=220x220&data=${encodeURIComponent(qr)}" alt="QR code for WhatsApp Web"/>`;
+}
+
+//--- Socket.IO -----------
+function socketInit() {
+    socket = io();
+    socket.on('status', function(status){
+        updateBotStatusPanel(status, lastQR ? undefined : null); // panel will fill authTime on status
+    });
+    socket.on('sessionInfo', function(obj){
+        document.getElementById('botAuthTime').innerHTML = obj.lastAuthenticatedAt ? (new Date(obj.lastAuthenticatedAt)).toLocaleString() : '--';
+    });
+    socket.on('qrCode', function(qr){
+        updateQRImage(qr);
+    });
+}
+
+</script>
 </body>
 </html>

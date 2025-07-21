@@ -2,201 +2,226 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Menu Panel (B&W • Mobile)</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Delivery Location</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzxH+iPxlL85dbTEQeUM3GSbPM="
+     crossorigin=""/>
     <style>
-        :root {
-            --bg: #111;
-            --fg: #fff;
-            --accent: #e2e2e2;
-            --emph: #000;
-            --btn: #222;
-            --btn-hover: #444;
+        body {
+            font-family: "Inter", sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background-color: #f3f4f6; /* gray-100 */
         }
-        html, body {
-            margin: 0; padding: 0; background: var(--bg); color: var(--fg);
-            font-family: 'Segoe UI', Arial, sans-serif; font-size: 17px; height: 100%;
+        #map-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+            gap: 1rem;
         }
-        #panel-menu {
-            max-width: 535px; width: 100%; margin: 0 auto; min-height: 100vh; background: var(--bg);
-            padding: 0 0 .7em 0;
-        }
-        h2 { color: var(--fg); margin: 1em 0 .7em 0; font-size: 1.4em;}
-        .menu-header {
-            display: flex; justify-content: space-between; align-items: center; margin: 1.1em .5em .7em .5em;
-            flex-wrap: wrap; gap: 7px;
-        }
-        input, select, button, textarea {
-            width: 100%; background: var(--fg); color: var(--bg); border: none; border-radius: 5px;
-            margin: .6em 0; padding: .91em .7em; font-size: 1em; outline: none;
-        }
-        input[type="checkbox"] { width:auto; display:inline-block; margin-right:.4em;}
-        textarea { resize: vertical; min-height: 40px;}
-        button {
-            background: var(--btn); color: var(--fg); border: none; border-radius: 5px; font-weight: bold;
-            margin: .5em 0; transition: .15s;
-        }
-        button:active, button:focus, button:hover { background: var(--btn-hover);}
-        .bbtn { width: 48%; margin-right: 3%;}
-        .search-box { width: 60%; }
-        .add-btn { width: 36%; background: var(--emph); color: var(--fg);}
-        table {
-            width: 100%; font-size: .95em; border-collapse: collapse; margin-bottom: 1em; color: var(--fg);
-        }
-        th, td { border: 1px solid #444; padding: .75em .4em; }
-        th { background: var(--btn); color: var(--accent);}
-        tr:nth-child(even) { background: #191919; }
-        .act-btns button { width: 2.4em; margin-right: .1em; }
-        .panel, .modal-bg { background: var(--bg);}
-        .modal-bg {
-            position: fixed; z-index: 9999; top:0; left:0; width:100vw; height:100vh; background: rgba(0,0,0,.88);
-            display: none; justify-content: center; align-items: center;
-        }
-        .modal-card {
-            background: #fff; color: #111; border-radius: 9px; min-width: 280px; max-width: 95vw;
-            padding: 1.3em 1em 1em 1em;
-            box-shadow: 0 2px 8px #111;
-        }
-        .modal-card input, .modal-card select, .modal-card textarea {
-            background: #f5f5f5; color: #111; border: 1.4px solid #eee; margin: .5em 0;
-        }
-        .modal-card label {color: #111;}
-        .imgPreview { width: 70px; height: 70px; object-fit: cover; border-radius: 6px; margin:.2em 0;}
-        @media (max-width:610px){
-            #panel-menu { padding: 0 .32em 1.2em .32em;}
-            html { font-size: 15px;}
-            .menu-header { flex-direction:column;}
+        #delivery-map {
+            flex-grow: 1;
+            min-height: 300px; /* Minimum height for map */
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
     </style>
 </head>
 <body>
-<section id="panel-menu">
-    <h2>Menu Panel</h2>
-    <div class="menu-header">
-        <input class="search-box" id="menuSearch" placeholder="Search menu..." oninput="renderMenuTable()" />
-        <button class="add-btn" onclick="openMenuForm()">+ Add Item</button>
-    </div>
-    <div id="menuMsg" style="color:#fff;font-size:.99em;text-align:center;"></div>
-    <div id="menuTableArea"></div>
-</section>
 
-<div class="modal-bg" id="menuModal">
-    <div class="modal-card" id="menuModalCard">
-        <!-- Menu item form inserted here -->
-    </div>
-</div>
-
-<script>
-let menuData = [], menuLastSearch = "";
-async function api(path, options={}) {
-    let res = await fetch(path, options);
-    if(res.ok) return await res.json();
-    else throw (await res.json()).message || "API error";
-}
-// ---- Main Loader ----
-async function loadMenuPanel() {
-    document.getElementById('menuMsg').textContent = "Loading...";
-    try {
-        menuData = await api('/api/admin/menu');
-        document.getElementById('menuMsg').textContent = "";
-        renderMenuTable();
-    } catch(e){
-        document.getElementById('menuMsg').textContent = "Failed to load menu.";
-    }
-}
-function renderMenuTable() {
-    let q = document.getElementById('menuSearch').value?.toLowerCase() || '';
-    let rows = menuData.filter(m => (m.name&&m.name.toLowerCase().includes(q)) || (m.category&&(m.category.toLowerCase().includes(q))))
-        .map(m=>`
-        <tr>
-            <td>${m.imageUrl?`<img src="${m.imageUrl}" class="imgPreview" />`:''}</td>
-            <td>
-                <b>${m.name}</b><br>
-                <small>${m.description||''}</small>
-            </td>
-            <td>₹${m.price}</td>
-            <td>${m.category||''}</td>
-            <td><input type="checkbox" onchange="toggleAvailable('${m._id}',this)" ${m.isAvailable?'checked':''}></td>
-            <td><input type="checkbox" onchange="toggleTrending('${m._id}',this)" ${m.isTrending?'checked':''}></td>
-            <td class="act-btns">
-                <button onclick="openMenuForm('${m._id}')">✎</button>
-                <button onclick="removeMenuItem('${m._id}')">🗑</button>
-            </td>
-        </tr>
-        `).join('');
-    document.getElementById('menuTableArea').innerHTML = `
-        <table>
-        <tr>
-            <th>Img</th><th>Name<br>Desc</th><th>Price</th><th>Cat</th>
-            <th>Avail</th><th>Trend</th><th>Act</th>
-        </tr>
-        ${rows || '<tr><td colspan="7" style="text-align:center;">No menu found</td></tr>'}
-        </table>
-    `;
-}
-function openMenuForm(id) {
-    let m = id ? menuData.find(x=>x._id===id) : {
-        name:'',price:'',description:'',imageUrl:'',category:'',isAvailable:true,isTrending:false
-    };
-    document.getElementById('menuModal').style.display = 'flex';
-    document.getElementById('menuModalCard').innerHTML = `
-    <form id="menuItemForm" onsubmit="return submitMenuItem('${id||''}')">
-        <label>Name<input id="mname" value="${m.name||''}" required></label>
-        <label>Price<input id="mprice" type="number" step="0.01" value="${m.price||''}" required></label>
-        <label>Category<input id="mcat" value="${m.category||''}"></label>
-        <label>Description<textarea id="mdesc">${m.description||''}</textarea></label>
-        <label>Image URL<input id="murl" value="${m.imageUrl||''}" onchange="previewMenuImg()" placeholder="http://..." /></label>
-        <div id="imgPrevWrap">${m.imageUrl?`<img src="${m.imageUrl}" class="imgPreview" />`:''}</div>
-        <label><input type="checkbox" id="mavail" ${m.isAvailable?'checked':''}/> Available</label>
-        <label><input type="checkbox" id="mtrend" ${m.isTrending?'checked':''}/> Trending</label>
-        <div style="display:flex;gap:8px;">
-            <button class="bbtn" style="background:#222;">Save</button>
-            <button type="button" class="bbtn" style="background:#999;color:#000;" onclick="closeMenuForm()">Cancel</button>
+    <header class="bg-red-600 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">Set Delivery Location</h1>
         </div>
-    </form>
-    `;
-}
-function closeMenuForm(){ document.getElementById('menuModal').style.display = 'none'; }
-function previewMenuImg() {
-    let url = document.getElementById('murl').value;
-    document.getElementById('imgPrevWrap').innerHTML = url ? `<img src="${url}" class="imgPreview" />` : '';
-}
-async function submitMenuItem(id) {
-    let data = {
-        name: document.getElementById('mname').value,
-        price: parseFloat(document.getElementById('mprice').value),
-        category: document.getElementById('mcat').value,
-        description: document.getElementById('mdesc').value,
-        imageUrl: document.getElementById('murl').value,
-        isAvailable: document.getElementById('mavail').checked,
-        isTrending: document.getElementById('mtrend').checked,
-    };
-    try {
-        if(!data.name || !data.price) throw "Name + price needed";
-        if(id) await api(`/api/admin/menu/${id}`, {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-        else await api('/api/admin/menu', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-        closeMenuForm();
-        loadMenuPanel();
-    } catch(e){ alert("Error: " + e);}
-    return false;
-}
-async function removeMenuItem(id){
-    if(confirm('Delete this item?')){
-        await api(`/api/admin/menu/${id}`, {method:'DELETE'});
-        loadMenuPanel();
-    }
-}
-async function toggleAvailable(id,el){
-    await api(`/api/admin/menu/${id}`, {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({isAvailable:el.checked})});
-    loadMenuPanel();
-}
-async function toggleTrending(id,el){
-    await api(`/api/admin/menu/${id}`, {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({isTrending:el.checked})});
-    loadMenuPanel();
-}
-window.onclick = function(ev){ if(ev.target==document.getElementById('menuModal')) closeMenuForm(); };
+    </header>
 
-window.onload = loadMenuPanel;
-</script>
+    <div id="map-container" class="container mx-auto">
+        <div id="loading-message" class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded-md mb-4 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-loader-2 animate-spin mr-2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+            <span id="loading-text">Attempting to get your live GPS location...</span>
+        </div>
+
+        <div id="delivery-map"></div>
+
+        <p id="selected-address" class="text-lg font-semibold text-gray-800 mb-4 text-center">Selected Location: Loading...</p>
+
+        <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 justify-center">
+            <button id="use-live-location-button"
+                class="flex-1 sm:flex-none bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-md shadow-md transition duration-300 ease-in-out flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin mr-2"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/><path d="M12 22s8-4 8-10V7l-8-8-8 8v5.5c0 6 8 10 8 10Z"/></svg>
+                Use Live Location
+            </button>
+            <button id="pin-location-button"
+                class="flex-1 sm:flex-none bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-md shadow-md transition duration-300 ease-in-out flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-hand-grab mr-2"><path d="M18 11.5V9.14a2 2 0 0 0-2-2.06l-3.7-.5a2 2 0 0 1-1.87-2.12c.26-1.05.77-2.06 1.54-2.86A4 4 0 0 0 9 2.05L6.5 3.5 2 6.5l4.32 5.02a2 2 0 0 1 .15 2.76l-.73.82a2 2 0 0 0-.02 2.92l3.52 3.52a3 3 0 0 0 4.25 0l4.32-4.32a2 2 0 0 0 .02-2.92Z"/><path d="m18 11.5 1.52-1.52a2.12 2.12 0 0 1 3 3L18 17.5"/></svg>
+                Pin Location on Map
+            </button>
+        </div>
+
+        <button id="confirm-location-button"
+            class="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-md shadow-md transition duration-300 ease-in-out flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-circle mr-2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+            Confirm Location & Continue
+        </button>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJEQyIfEERF1GtLPXySngKCRagHfaIfsCECDiPFC2FuNjGfNFQ="
+     crossorigin=""></script>
+    <script>
+        // --- Global State for this page ---
+        const pageState = {
+            map: null,
+            marker: null,
+            selectedLocation: {
+                latitude: null,
+                longitude: null,
+                address: 'Location not set.'
+            },
+            shopLocation: { latitude: 17.4399, longitude: 78.4983 } // Default fallback
+        };
+
+        // --- DOM Elements ---
+        const deliveryMap = document.getElementById('delivery-map');
+        const selectedAddressText = document.getElementById('selected-address');
+        const useLiveLocationButton = document.getElementById('use-live-location-button');
+        const pinLocationButton = document.getElementById('pin-location-button');
+        const confirmLocationButton = document.getElementById('confirm-location-button');
+        const loadingMessageDiv = document.getElementById('loading-message');
+        const loadingMessageText = document.getElementById('loading-text');
+
+        // --- Map Initialization and Location Handling ---
+        function initializeMap(lat, lng, zoom = 13) {
+            if (pageState.map) {
+                pageState.map.remove(); // Remove existing map instance
+            }
+            pageState.map = L.map('delivery-map').setView([lat, lng], zoom);
+            // Satellite view tile layer
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+            }).addTo(pageState.map);
+
+            pageState.marker = L.marker([lat, lng], { draggable: true }).addTo(pageState.map);
+
+            pageState.marker.on('dragend', (event) => {
+                const latlng = pageState.marker.getLatLng();
+                updateSelectedLocation(latlng.lat, latlng.lng, `Pinned Location (Lat: ${latlng.lat.toFixed(4)}, Lng: ${latlng.lng.toFixed(4)})`);
+            });
+
+            // Ensure map renders correctly
+            setTimeout(() => {
+                pageState.map.invalidateSize();
+            }, 0);
+        }
+
+        function updateSelectedLocation(lat, lng, address) {
+            pageState.selectedLocation.latitude = lat;
+            pageState.selectedLocation.longitude = lng;
+            pageState.selectedLocation.address = address;
+            selectedAddressText.textContent = `Selected Location: ${address}`;
+        }
+
+        function getLiveLocation() {
+            loadingMessageDiv.classList.remove('hidden');
+            loadingMessageText.textContent = 'Attempting to get your live GPS location...';
+            useLiveLocationButton.disabled = true;
+            pinLocationButton.disabled = true;
+            confirmLocationButton.disabled = true;
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const userLat = position.coords.latitude;
+                        const userLng = position.coords.longitude;
+                        const userAccuracy = position.coords.accuracy; // in meters
+
+                        initializeMap(userLat, userLng, 16); // Zoom in closer for live location
+                        pageState.marker.setLatLng([userLat, userLng]);
+                        updateSelectedLocation(userLat, userLng, `GPS Location (Accuracy: ${userAccuracy.toFixed(0)}m)`);
+
+                        loadingMessageDiv.classList.add('hidden');
+                        useLiveLocationButton.disabled = false;
+                        pinLocationButton.disabled = false;
+                        confirmLocationButton.disabled = false;
+                    },
+                    (error) => {
+                        console.warn('Error getting GPS location:', error.message);
+                        loadingMessageText.textContent = 'Could not get your GPS location. Please pin your location on the map.';
+                        initializeMap(pageState.shopLocation.latitude, pageState.shopLocation.longitude); // Fallback to shop location
+                        updateSelectedLocation(pageState.shopLocation.latitude, pageState.shopLocation.longitude, `Default Shop Location (Lat: ${pageState.shopLocation.latitude.toFixed(4)}, Lng: ${pageState.shopLocation.longitude.toFixed(4)})`);
+                        
+                        setTimeout(() => { loadingMessageDiv.classList.add('hidden'); }, 3000); // Hide message after a delay
+                        useLiveLocationButton.disabled = false;
+                        pinLocationButton.disabled = false;
+                        confirmLocationButton.disabled = false;
+                    },
+                    {
+                        enableHighAccuracy: true, // Request high accuracy GPS
+                        timeout: 10000, // 10 seconds timeout
+                        maximumAge: 0 // No cached position
+                    }
+                );
+            } else {
+                loadingMessageText.textContent = 'Geolocation is not supported by your browser. Please pin your location on the map.';
+                initializeMap(pageState.shopLocation.latitude, pageState.shopLocation.longitude); // Fallback to shop location
+                updateSelectedLocation(pageState.shopLocation.latitude, pageState.shopLocation.longitude, `Default Shop Location (Lat: ${pageState.shopLocation.latitude.toFixed(4)}, Lng: ${pageState.shopLocation.longitude.toFixed(4)})`);
+                
+                setTimeout(() => { loadingMessageDiv.classList.add('hidden'); }, 3000); // Hide message after a delay
+                useLiveLocationButton.disabled = false;
+                pinLocationButton.disabled = false;
+                confirmLocationButton.disabled = false;
+            }
+        }
+
+        // --- Event Handlers ---
+        useLiveLocationButton.addEventListener('click', getLiveLocation);
+
+        pinLocationButton.addEventListener('click', () => {
+            // Re-enable marker dragging if it was disabled or just confirm it's active
+            if (pageState.marker) {
+                pageState.marker.dragging.enable();
+                loadingMessageDiv.classList.remove('hidden');
+                loadingMessageText.textContent = 'Drag the map pin to your exact delivery location.';
+                setTimeout(() => { loadingMessageDiv.classList.add('hidden'); }, 3000);
+            }
+        });
+
+        confirmLocationButton.addEventListener('click', () => {
+            if (pageState.selectedLocation.latitude === null || pageState.selectedLocation.longitude === null) {
+                loadingMessageDiv.classList.remove('hidden');
+                loadingMessageText.textContent = 'Please select a location on the map first.';
+                loadingMessageDiv.classList.add('bg-red-100', 'border-red-400', 'text-red-700');
+                loadingMessageDiv.classList.remove('bg-blue-100', 'border-blue-400', 'text-blue-700');
+                setTimeout(() => { 
+                    loadingMessageDiv.classList.add('hidden'); 
+                    loadingMessageDiv.classList.remove('bg-red-100', 'border-red-400', 'text-red-700');
+                    loadingMessageDiv.classList.add('bg-blue-100', 'border-blue-400', 'text-blue-700');
+                }, 5000);
+                return;
+            }
+
+            // Save selected location to sessionStorage
+            sessionStorage.setItem('selectedCustomerLocation', JSON.stringify(pageState.selectedLocation));
+            
+            // Redirect back to menu.html, triggering the checkout modal
+            window.location.href = '/menu?openCheckoutModal=true';
+        });
+
+        // --- Initial Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            getLiveLocation(); // Attempt to get live location on page load
+            lucide.createIcons();
+        });
+    </script>
 </body>
 </html>
+

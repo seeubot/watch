@@ -1,137 +1,149 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>JNTUH R18 Results Viewer</title>
+  <meta charset="utf-8" />
+  <title>Live Satellite Map with GPS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
-    body {
-      background-color: #f9f9fb;
-      font-family: 'Segoe UI', Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      max-width: 450px;
-      background: #ffffff;
-      margin: 60px auto;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-    }
-    h1 {
+    html, body { height: 100%; margin: 0; padding: 0; }
+    body { font-family: "Segoe UI", Roboto, Arial, sans-serif; background: #121212; color: #fff; }
+    #map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    #location-box {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,20,40,0.94);
+      padding: 12px 24px;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+      z-index: 1001;
+      font-size: 1rem;
+      min-width: 200px;
       text-align: center;
-      color: #00509d;
+      transition: background 0.2s;
     }
-    label {
-      font-size: 1rem;
-      display: block;
-      margin-bottom: 8px;
+    .pulse {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #4fc3f7;
+      margin-right: 9px;
+      vertical-align: middle;
+      animation: pulse 1.2s infinite;
     }
-    input {
-      width: 100%;
-      padding: 10px;
-      font-size: 1rem;
-      margin-bottom: 15px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 #4fc3f799; }
+      70% { box-shadow: 0 0 0 10px #4fc3f700; }
+      100% { box-shadow: 0 0 0 0 #4fc3f799; }
     }
-    button {
-      width: 100%;
-      padding: 12px;
-      background-color: #0077b6;
-      color: #fff;
-      font-size: 1rem;
+    .gps-btn {
+      position: fixed;
+      right: 28px;
+      bottom: 28px;
+      z-index: 1001;
+      background: #212121;
+      color: #4fc3f7;
       border: none;
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      font-size: 27px;
+      box-shadow: 0 3px 8px #0006;
       cursor: pointer;
-      border-radius: 5px;
+      transition: background 0.2s;
     }
-    button:hover {
-      background-color: #023e8a;
-    }
-    #result {
-      margin-top: 20px;
-      font-size: 0.95rem;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 12px;
-    }
-    th, td {
-      padding: 8px;
-      border-bottom: 1px solid #ddd;
-      text-align: left;
-    }
-    th {
-      background-color: #caf0f8;
+    .gps-btn:hover, .gps-btn:focus { background: #2b2b3b; }
+    /* Responsive tweaks */
+    @media (max-width: 600px) {
+      #location-box { top: 8px; padding: 8px 4px; font-size: 0.96rem; }
+      .gps-btn { bottom: 14px; right: 14px; width: 48px; height: 48px; font-size: 22px; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>JNTUH R18 Results</h1>
-    <form id="resultForm">
-      <label for="htno">Enter Hall Ticket Number:</label>
-      <input type="text" id="htno" placeholder="e.g., 18E51A0479" required>
-      <button type="submit">Get Results</button>
-    </form>
-    <div id="result"></div>
+  <div id="map"></div>
+  <div id="location-box">
+    <span class="pulse"></span>
+    Searching location...
   </div>
+  <button class="gps-btn" onclick="centerMap()">
+    <span title="Center on GPS">&#x1F4CD;</span>
+  </button>
 
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    const apiList = [
-      "https://jntuh-results-api.vercel.app/api/academicresult?htno=",
-      "https://results-restapi.up.railway.app/api/academicresult?htno=",
-      "https://jntu-results-api.onrender.com/api/academicresult?htno="
-    ];
+    // Defaults and globals
+    let map, marker, lastPos, following = true;
+    const locationBox = document.getElementById('location-box');
+    const pulse = locationBox.querySelector('.pulse');
 
-    document.getElementById('resultForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const htno = document.getElementById('htno').value.trim();
-      const resultDiv = document.getElementById('result');
-      resultDiv.innerHTML = "<em style='color:gray;'>Fetching from server...</em>";
+    // Initialize Satellite Map (Esri Imagery)
+    map = L.map('map', { zoomControl: false }).setView([20,0], 2);
+    L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { attribution: 'Tiles &copy; Esri, Source: Esri, Maxar, Earthstar Geographics' }
+    ).addTo(map);
+    L.control.zoom({ position:'topright' }).addTo(map);
 
-      let data = null;
-      let success = false;
+    // Function to update address
+    function updateAddress(lat, lng) {
+      locationBox.innerHTML = '<span class="pulse"></span> Resolving address...';
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+        .then(r => r.json())
+        .then(d => {
+          const myAddr = d.display_name
+            ? d.display_name
+            : `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+          locationBox.innerHTML = `<span class="pulse"></span> ${myAddr}`;
+        })
+        .catch(() => {
+          locationBox.innerHTML = `<span class="pulse"></span> Unable to get address`;
+        });
+    }
 
-      for (const baseUrl of apiList) {
-        try {
-          const res = await fetch(`${baseUrl}${htno}`);
-          if (res.ok) {
-            const json = await res.json();
-            if (json && json.subject_results && json.subject_results.length > 0) {
-              data = json;
-              success = true;
-              break;
-            }
-          }
-        } catch (err) {
-          console.warn(`API failed: ${baseUrl}`, err);
-        }
+    // Watch GPS position
+    function onLocationUpdate(pos) {
+      const {latitude: lat, longitude: lng} = pos.coords;
+      lastPos = [lat, lng];
+      if (!marker) {
+        marker = L.circleMarker([lat, lng], {
+          color: "#4fc3f7", radius: 12, fillOpacity: 0.7, weight: 4
+        }).addTo(map);
+      } else {
+        marker.setLatLng([lat, lng]);
       }
-
-      if (!success) {
-        resultDiv.innerHTML = `<p style="color:red">Failed to fetch results. Please check hall ticket or try again later.</p>`;
-        return;
+      if (following) {
+        map.setView([lat, lng], Math.max(map.getZoom(),16));
       }
+      updateAddress(lat, lng);
+      marker.bindTooltip("You are here").openTooltip();
+    }
+    function onLocationError(e) {
+      locationBox.innerHTML = `<span class="pulse"></span> Unable to detect GPS<br>${e.message}`;
+    }
+    // Watch position with high accuracy
+    if ("geolocation" in navigator) {
+      navigator.geolocation.watchPosition(
+        onLocationUpdate, onLocationError, { enableHighAccuracy:true, maximumAge:2000, timeout:9000 }
+      );
+    } else {
+      locationBox.innerHTML = `<span class="pulse"></span> Geolocation not supported.`;
+    }
 
-      // Display result
-      let html = `<h2>${data.name || "Unknown"} (${data.htno})</h2>`;
-      html += `<p><strong>Semester:</strong> ${data.semester || "N/A"} <strong>Regulation:</strong> ${data.regulation}</p>`;
-
-      html += `<table><thead><tr><th>Subject</th><th>Grade</th><th>Credits</th></tr></thead><tbody>`;
-      data.subject_results.forEach(obj => {
-        html += `<tr>
-          <td>${obj.subject}</td>
-          <td>${obj.grade}</td>
-          <td>${obj.credits}</td>
-        </tr>`;
-      });
-      html += `</tbody></table>`;
-      html += `<p><strong>SGPA:</strong> ${data.sgpa || "-"} <strong>CGPA:</strong> ${data.cgpa || "-"}</p>`;
-
-      resultDiv.innerHTML = html;
-    });
+    // Recentering button logic
+    function centerMap() {
+      following = true;
+      if (lastPos) {
+        map.setView(lastPos, 17, { animate: true });
+      }
+    }
+    map.on("mousedown touchstart", function() { following = false;});
   </script>
 </body>
 </html>

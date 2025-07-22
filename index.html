@@ -1,117 +1,136 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>JNTUH R18 Results Fetcher</title>
+  <meta charset="UTF-8">
+  <title>JNTUH R18 Results Viewer</title>
   <style>
     body {
-      background-color: #f8fafc;
+      background-color: #f9f9fb;
       font-family: 'Segoe UI', Arial, sans-serif;
       margin: 0;
       padding: 0;
     }
     .container {
-      max-width: 400px;
-      background: #fff;
+      max-width: 450px;
+      background: #ffffff;
       margin: 60px auto;
-      padding: 30px 28px;
-      border-radius: 8px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
     }
     h1 {
-      color: #023e8a;
-      margin-bottom: 20px;
-      font-size: 1.5em;
       text-align: center;
+      color: #00509d;
     }
-    label, input, button {
+    label {
+      font-size: 1rem;
       display: block;
-      width: 100%;
-      margin-bottom: 14px;
+      margin-bottom: 8px;
     }
     input {
-      padding: 9px;
+      width: 100%;
+      padding: 10px;
+      font-size: 1rem;
+      margin-bottom: 15px;
+      border-radius: 5px;
       border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 1em;
     }
     button {
-      padding: 11px;
-      background: #0077b6;
+      width: 100%;
+      padding: 12px;
+      background-color: #0077b6;
+      color: #fff;
+      font-size: 1rem;
       border: none;
-      border-radius: 4px;
-      color: white;
-      font-weight: bold;
       cursor: pointer;
-      transition: background 0.2s;
+      border-radius: 5px;
     }
     button:hover {
-      background: #023e8a;
+      background-color: #023e8a;
     }
     #result {
-      margin-top: 18px;
+      margin-top: 20px;
+      font-size: 0.95rem;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 10px;
+      margin-top: 12px;
     }
     th, td {
-      padding: 7px 6px;
+      padding: 8px;
       border-bottom: 1px solid #ddd;
       text-align: left;
     }
     th {
-      background-color: #e0f7fa;
-      color: #0077b6;
+      background-color: #caf0f8;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>JNTUH R18 Results Fetcher</h1>
+    <h1>JNTUH R18 Results</h1>
     <form id="resultForm">
       <label for="htno">Enter Hall Ticket Number:</label>
-      <input type="text" id="htno" required placeholder="e.g. 18E51A0479" />
+      <input type="text" id="htno" placeholder="e.g., 18E51A0479" required>
       <button type="submit">Get Results</button>
     </form>
     <div id="result"></div>
   </div>
+
   <script>
-    document.getElementById('resultForm').addEventListener('submit', async function(event) {
-      event.preventDefault();
+    const apiList = [
+      "https://jntuh-results-api.vercel.app/api/academicresult?htno=",
+      "https://results-restapi.up.railway.app/api/academicresult?htno=",
+      "https://jntu-results-api.onrender.com/api/academicresult?htno="
+    ];
+
+    document.getElementById('resultForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
       const htno = document.getElementById('htno').value.trim();
-      const apiUrl = `https://jntuhresults.up.railway.app/api/academicresult?htno=${encodeURIComponent(htno)}`;
       const resultDiv = document.getElementById('result');
-      resultDiv.innerHTML = "<em>Fetching results...</em>";
+      resultDiv.innerHTML = "<em style='color:gray;'>Fetching from server...</em>";
 
-      try {
-        const response = await fetch(apiUrl);
-        if (!response.ok) throw new Error("No result found.");
-        const data = await response.json();
+      let data = null;
+      let success = false;
 
-        if (!data || !data.subject_results || data.subject_results.length === 0) {
-          throw new Error("No results for this hall ticket.");
+      for (const baseUrl of apiList) {
+        try {
+          const res = await fetch(`${baseUrl}${htno}`);
+          if (res.ok) {
+            const json = await res.json();
+            if (json && json.subject_results && json.subject_results.length > 0) {
+              data = json;
+              success = true;
+              break;
+            }
+          }
+        } catch (err) {
+          console.warn(`API failed: ${baseUrl}`, err);
         }
-
-        let html = `<h2>${data.name} (${data.htno})</h2>`;
-        html += `<p><strong>Semester:</strong> ${data.semester}  <strong>Regulation:</strong> ${data.regulation}</p>`;
-        html += `<table><thead><tr>
-                   <th>Subject</th><th>Grade</th><th>Credits</th>
-                 </tr></thead><tbody>`;
-        data.subject_results.forEach(res => {
-          html += `<tr>
-            <td>${res.subject}</td>
-            <td>${res.grade}</td>
-            <td>${res.credits}</td>
-          </tr>`;
-        });
-        html += `</tbody></table>
-                 <p><strong>SGPA:</strong> ${data.sgpa || "-"} <strong>CGPA:</strong> ${data.cgpa || "-"}</p>`;
-        resultDiv.innerHTML = html;
-      } catch (err) {
-        resultDiv.innerHTML = `<span style="color:#c1121f;font-weight:bold">${err.message}</span>`;
       }
+
+      if (!success) {
+        resultDiv.innerHTML = `<p style="color:red">Failed to fetch results. Please check hall ticket or try again later.</p>`;
+        return;
+      }
+
+      // Display result
+      let html = `<h2>${data.name || "Unknown"} (${data.htno})</h2>`;
+      html += `<p><strong>Semester:</strong> ${data.semester || "N/A"} <strong>Regulation:</strong> ${data.regulation}</p>`;
+
+      html += `<table><thead><tr><th>Subject</th><th>Grade</th><th>Credits</th></tr></thead><tbody>`;
+      data.subject_results.forEach(obj => {
+        html += `<tr>
+          <td>${obj.subject}</td>
+          <td>${obj.grade}</td>
+          <td>${obj.credits}</td>
+        </tr>`;
+      });
+      html += `</tbody></table>`;
+      html += `<p><strong>SGPA:</strong> ${data.sgpa || "-"} <strong>CGPA:</strong> ${data.cgpa || "-"}</p>`;
+
+      resultDiv.innerHTML = html;
     });
   </script>
 </body>

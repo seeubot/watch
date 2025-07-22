@@ -2,36 +2,29 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Leaflet GPS Map (Live + Pin)</title>
+  <title>Satellite GPS Map with Leaflet</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <style>
-    html, body { height: 100%; margin: 0; padding: 0; background: #f5f8fb; font-family: 'Segoe UI',sans-serif; }
+    html, body { height: 100%; margin: 0; font-family: 'Segoe UI',sans-serif;}
     #map { height: 100vh; width: 100vw; }
-    .floating-ui {
-      position: absolute; z-index: 1000; top: 16px; left: 50%; transform: translateX(-50%);
-      display: flex; gap: 10px; background: rgba(255,255,255,0.95); border-radius: 16px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.15); padding: 12px 18px;
+    .floating-ui { position: absolute; z-index: 1000; top: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; background: rgba(255,255,255,0.92); border-radius: 16px;  box-shadow: 0 4px 16px rgba(0,0,0,0.15); padding: 12px 18px;}
+    .floating-ui button { background: #00bfae; color: #fff; border: none; border-radius: 18px; padding: 8px 20px; font-size: 1rem; cursor: pointer; transition: background 0.2s; box-shadow: 0 2px 6px rgba(44,98,180,0.10); }
+    .floating-ui button.active, .floating-ui button:hover { background: #00887a; }
+    .address-display { position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%); padding: 12px 20px; border-radius: 14px; min-width: 240px; background: rgba(255,255,255,0.98); box-shadow: 0 2px 10px rgba(0,0,0,0.10); font-size: 1rem; color: #222; z-index: 1000; text-align: center; max-width: calc(100vw - 36px); word-break: break-word; font-weight: 500;}
+    /* Custom Map Marker - animated pulse effect */
+    .custom-marker {
+      width: 32px; height: 32px; border-radius: 50%; background: #28a5a5; box-shadow: 0 0 0 rgba(40,165,165,0.6); animation: pulse 1.8s infinite;
+      display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.2em; border: 2px solid #fff;
     }
-    .floating-ui button {
-      background: #2266ff; color: #fff; border: none; border-radius: 20px; padding: 8px 18px; font-size: 1rem;
-      cursor: pointer; transition: background 0.2s;
-      box-shadow: 0 2px 6px rgba(44,98,180,0.10);
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(40,165,165,0.3);}
+      70% { box-shadow: 0 0 0 14px rgba(40,165,165,0);}
+      100% { box-shadow: 0 0 0 0 rgba(40,165,165,0);}
     }
-    .floating-ui button.active, .floating-ui button:hover { background: #1144aa; }
-    .address-display {
-      position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
-      padding: 12px 20px; border-radius: 14px; min-width: 240px;
-      background: rgba(255,255,255,0.98); box-shadow: 0 2px 10px rgba(0,0,0,0.10);
-      font-size: 1rem; color: #222; z-index: 1000;
-      text-align: center; max-width: calc(100vw - 36px);
-      word-break: break-word; font-weight: 500;
-    }
-    @media (max-width: 600px) {
-      .floating-ui { flex-direction: column; top: 8px; left: 50%; transform: translateX(-50%); }
-      .address-display { font-size: 0.95rem; padding: 8px 8px; }
-    }
+    @media (max-width: 600px) { .floating-ui { flex-direction: column; top: 7px; left: 50%; transform: translateX(-50%); } .address-display { font-size: .95rem; padding: 8px 8px; } }
   </style>
 </head>
 <body>
@@ -48,14 +41,34 @@
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    // State variables
+    // --- Custom Marker as DivIcon ---
+    function getLiveIcon() {
+      return L.divIcon({
+        className: '',
+        html: "<div class='custom-marker'><i class='fas fa-crosshairs'></i></div>",
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+        popupAnchor: [0, -16]
+      });
+    }
+    function getPinIcon() {
+      return L.divIcon({
+        className: '',
+        html: "<div class='custom-marker' style='background:#f15555;'><i class='fas fa-map-pin'></i></div>",
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+        popupAnchor: [0, -16]
+      });
+    }
+
+    // --- Map Logic ---
     let map, liveMarker, pinMarker, currentMode, watchId;
     const addressDisplay = document.getElementById('address');
     const liveBtn = document.getElementById('liveBtn');
     const pinBtn = document.getElementById('pinBtn');
-    // Nominatim reverse geocode helper
+
+    // Reverse geocode helper (Nominatim)
     async function reverseGeocode(lat, lon) {
-      // Add your contact email if possible to meet usage terms
       const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=jsonv2&email=test@example.com`;
       try {
         const res = await fetch(url);
@@ -66,7 +79,6 @@
         return 'Reverse geocoding failed';
       }
     }
-    // Display helper for coordinates/address
     function updateAddress(lat, lon, address) {
       addressDisplay.innerHTML = `<div><b>Lat:</b> ${lat.toFixed(6)}<br><b>Lng:</b> ${lon.toFixed(6)}</div>
       <div style="margin-top:7px;color:#555;"><span style="font-size:0.97em;">🔎 </span>${address}</div>`;
@@ -77,34 +89,28 @@
       if (!map) return;
       map.setView([lat, lon], 16, { animate: true });
       if (liveMarker) liveMarker.setLatLng([lat, lon]);
-      else liveMarker = L.marker([lat, lon], {icon: L.icon({iconUrl:'https://cdn-icons-png.flaticon.com/512/447/447031.png',iconSize:[32,32],iconAnchor:[16,28]})}).addTo(map);
-      // Remove pin marker if in live
+      else liveMarker = L.marker([lat, lon], {icon: getLiveIcon()}).addTo(map);
       if (pinMarker) { map.removeLayer(pinMarker); pinMarker = null; }
       reverseGeocode(lat, lon).then(addr => updateAddress(lat, lon, addr));
     }
-    // Error handler (no GPS, permission denied)
     function onGeoError(e) {
       addressDisplay.textContent = `Unable to get GPS: ${e.message || e}`;
     }
-    // Switch to live GPS tracking mode
     function activateLiveMode() {
       liveBtn.classList.add('active'); pinBtn.classList.remove('active');
       currentMode = 'live';
       if (watchId) navigator.geolocation.clearWatch(watchId);
       watchId = navigator.geolocation.watchPosition(centerToLiveLocation, onGeoError, {enableHighAccuracy:true,timeout:6000});
-      map.off('click'); // Disable pin handler
+      map.off('click');
     }
-    // Switch to pin (pick on map) mode
     function activatePinMode() {
       pinBtn.classList.add('active'); liveBtn.classList.remove('active');
       currentMode = 'pin';
       if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
       map.once('click', async function(e){
         const lat = e.latlng.lat, lon = e.latlng.lng;
-        // Remove previous pin
         if (pinMarker) pinMarker.setLatLng([lat, lon]);
-        else pinMarker = L.marker([lat, lon], {icon: L.icon({iconUrl:'https://cdn-icons-png.flaticon.com/512/854/854878.png',iconSize:[32,32],iconAnchor:[16,28]})}).addTo(map);
-        // Remove live marker
+        else pinMarker = L.marker([lat, lon], {icon: getPinIcon()}).addTo(map);
         if (liveMarker) { map.removeLayer(liveMarker); liveMarker = null; }
         map.setView([lat, lon], 16, { animate: true });
         let addr = await reverseGeocode(lat, lon);
@@ -112,18 +118,17 @@
       });
       addressDisplay.textContent = "Tap on map to pin a location.";
     }
-    // Button event bindings
     liveBtn.onclick = activateLiveMode;
     pinBtn.onclick = activatePinMode;
 
-    // Initialize map and live location on load
+    // --- Initialize map with Satellite tiles ---
     window.onload = function() {
-      map = L.map('map').setView([18.5214, 73.8544], 13); // Start at Pune, India if no GPS
-      // Integrate OSM tiles
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
+      map = L.map('map', { zoomControl: true }).setView([18.5214, 73.8544], 13);
+      // ESRI World Imagery tile layer [1][3]:
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community',
+        maxZoom: 20
       }).addTo(map);
-      // Default to 'live' on load
       activateLiveMode();
     };
   </script>

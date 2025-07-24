@@ -19,20 +19,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     const customerNameInput = document.getElementById('customerName');
     const customerPhoneInput = document.getElementById('customerPhone');
     const deliveryAddressInput = document.getElementById('deliveryAddress');
+    const deliveryLatInput = document.getElementById('deliveryLat');
+    const deliveryLonInput = document.getElementById('deliveryLon');
     const messageDisplay = document.getElementById('messageDisplay');
     const messageText = document.getElementById('messageText');
     const closeMessageBtn = document.getElementById('closeMessage');
     const orderTrackingSection = document.getElementById('orderTrackingSection');
     const orderTrackingDetails = document.getElementById('orderTrackingDetails');
     const closeOrderTrackingBtn = document.getElementById('closeOrderTracking');
+    const openMapBtn = document.getElementById('openMapBtn');
+    const mapDiv = document.getElementById('map');
 
     // --- Global Variables ---
     let cart = JSON.parse(localStorage.getItem('cart')) || [];
     let allMenuItems = [];
     let publicSettings = {};
+    let map = null; // Leaflet map instance
+    let marker = null; // Leaflet marker instance
+    let selectedLocation = null; // { latitude, longitude, address }
 
     // --- Constants ---
     const API_BASE_URL = window.location.origin; // Assumes frontend is served from the same domain as backend
+    const NOMINATIM_API_URL = 'https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}';
 
     // --- Utility Functions ---
 
@@ -42,7 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
      * @param {string} type - 'success', 'error', 'info'.
      */
     function showMessage(msg, type = 'info') {
-        messageText.textContent = msg;
+        messageText.innerHTML = msg; // Use innerHTML for potential bold tags
         messageDisplay.classList.remove('hidden', 'bg-blue-100', 'bg-green-100', 'bg-red-100', 'border-blue-500', 'border-green-500', 'border-red-500', 'text-blue-700', 'text-green-700', 'text-red-700');
         messageDisplay.classList.add('flex'); // Ensure it's flex for alignment
 
@@ -224,6 +232,124 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // --- Map Functions ---
+
+    /**
+     * Initializes the Leaflet map.
+     */
+    function initMap() {
+        if (map) {
+            map.remove(); // Remove existing map if any
+        }
+        mapDiv.classList.remove('hidden');
+        // Set default view to shop location or a general Indian city if not available
+        const defaultLat = publicSettings.shopLocation?.latitude || 17.4399;
+        const defaultLon = publicSettings.shopLocation?.longitude || 78.4983;
+
+        map = L.map('map').setView([defaultLat, defaultLon], 13); // Zoom level 13
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Try to get user's current location
+        map.locate({ setView: true, maxZoom: 16 });
+
+        map.on('locationfound', function(e) {
+            console.log('User location found:', e.latlng);
+            addOrMoveMarker(e.latlng);
+            reverseGeocode(e.latlng.lat, e.latlng.lng);
+        });
+
+        map.on('locationerror', function(e) {
+            console.warn('Location access denied or error:', e.message);
+            showMessage('Could not get your current location. Please manually select on map or enter address.', 'info');
+            // If location fails, still add a marker at the default shop location
+            addOrMoveMarker([defaultLat, defaultLon]);
+            reverseGeocode(defaultLat, defaultLon);
+        });
+
+        // Add a draggable marker
+        marker = L.marker([defaultLat, defaultLon], { draggable: true }).addTo(map);
+        marker.on('dragend', function(e) {
+            const latLng = marker.getLatLng();
+            reverseGeocode(latLng.lat, latLng.lng);
+        });
+
+        // Add click listener to map to move marker
+        map.on('click', function(e) {
+            addOrMoveMarker(e.latlng);
+            reverseGeocode(e.latlng.lat, e.latlng.lng);
+        });
+
+        // If a location was previously selected, set the marker to it
+        if (selectedLocation && selectedLocation.latitude && selectedLocation.longitude) {
+            addOrMoveMarker([selectedLocation.latitude, selectedLocation.longitude]);
+            map.setView([selectedLocation.latitude, selectedLocation.longitude], 16);
+        } else {
+             // If no previous location, try to set marker to customer's last known address from local storage
+            const storedLat = localStorage.getItem('deliveryLat');
+            const storedLon = localStorage.getItem('deliveryLon');
+            if (storedLat && storedLon) {
+                const latLng = [parseFloat(storedLat), parseFloat(storedLon)];
+                addOrMoveMarker(latLng);
+                map.setView(latLng, 16);
+                reverseGeocode(latLng[0], latLng[1]); // Reverse geocode to update address field
+            }
+        }
+    }
+
+    /**
+     * Adds or moves the marker on the map.
+     * @param {L.LatLng} latLng - The latitude and longitude.
+     */
+    function addOrMoveMarker(latLng) {
+        if (marker) {
+            marker.setLatLng(latLng);
+        } else {
+            marker = L.marker(latLng, { draggable: true }).addTo(map);
+            marker.on('dragend', function(e) {
+                const newLatLng = marker.getLatLng();
+                reverseGeocode(newLatLng.lat, newLatLng.lng);
+            });
+        }
+        selectedLocation = {
+            latitude: latLng.lat,
+            longitude: latLng.lng,
+            address: 'Fetching address...' // Placeholder
+        };
+        deliveryLatInput.value = latLng.lat;
+        deliveryLonInput.value = latLng.lng;
+        // Disable manual address input when map is used
+        deliveryAddressInput.readOnly = true;
+        deliveryAddressInput.classList.add('bg-gray-100');
+    }
+
+    /**
+     * Performs reverse geocoding to get address from coordinates.
+     * @param {number} lat - Latitude.
+     * @param {number} lon - Longitude.
+     */
+    async function reverseGeocode(lat, lon) {
+        const url = NOMINATIM_API_URL.replace('{lat}', lat).replace('{lon}', lon);
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            if (data && data.display_name) {
+                const address = data.display_name;
+                deliveryAddressInput.value = address;
+                selectedLocation.address = address;
+            } else {
+                deliveryAddressInput.value = `Address not found for ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+                selectedLocation.address = deliveryAddressInput.value;
+            }
+        } catch (error) {
+            console.error('Error during reverse geocoding:', error);
+            deliveryAddressInput.value = 'Failed to fetch address. Please enter manually.';
+            selectedLocation.address = deliveryAddressInput.value;
+        }
+    }
+
     // --- API Calls ---
 
     /**
@@ -305,6 +431,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             localStorage.setItem('customerName', orderData.customerName);
             localStorage.setItem('customerPhone', orderData.customerPhone);
             localStorage.setItem('deliveryAddress', orderData.deliveryAddress);
+            localStorage.setItem('deliveryLat', orderData.customerLocation.latitude);
+            localStorage.setItem('deliveryLon', orderData.customerLocation.longitude);
+
+            // Reset map related fields
+            selectedLocation = null;
+            deliveryAddressInput.readOnly = false;
+            deliveryAddressInput.classList.remove('bg-gray-100');
+            mapDiv.classList.add('hidden');
+            if (map) {
+                map.remove();
+                map = null;
+                marker = null;
+            }
 
         } catch (error) {
             console.error('Error placing order:', error);
@@ -420,10 +559,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     viewCartBtn.addEventListener('click', () => {
         cartModal.classList.remove('hidden');
         updateCartDisplay(); // Ensure cart display is up-to-date when opened
+        // Initialize map only when cart modal is opened and map is not already initialized
+        if (!map) {
+            initMap();
+        } else {
+            // Invalidate map size if it was hidden
+            map.invalidateSize();
+        }
     });
 
     closeCartModal.addEventListener('click', () => {
         cartModal.classList.add('hidden');
+        // Optionally destroy map to free resources if not needed
+        // if (map) {
+        //     map.remove();
+        //     map = null;
+        //     marker = null;
+        // }
     });
 
     // Close modal if clicked outside content
@@ -454,6 +606,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
+    openMapBtn.addEventListener('click', () => {
+        mapDiv.classList.toggle('hidden');
+        if (!map) {
+            initMap();
+        } else {
+            map.invalidateSize(); // Important for map to render correctly after being hidden/shown
+        }
+        // If map is opened, disable manual address input
+        if (!mapDiv.classList.contains('hidden')) {
+            deliveryAddressInput.readOnly = true;
+            deliveryAddressInput.classList.add('bg-gray-100');
+        } else {
+            // If map is closed, re-enable manual input unless a location was selected
+            if (!selectedLocation || !selectedLocation.latitude) {
+                deliveryAddressInput.readOnly = false;
+                deliveryAddressInput.classList.remove('bg-gray-100');
+            }
+        }
+    });
+
     checkoutForm.addEventListener('submit', async (event) => {
         event.preventDefault();
 
@@ -464,7 +636,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const customerName = customerNameInput.value.trim();
         const customerPhone = customerPhoneInput.value.trim();
-        const deliveryAddress = deliveryAddressInput.value.trim();
+        const deliveryAddress = deliveryAddressInput.value.trim(); // This will be from map or manual
 
         if (!customerName || !customerPhone || !deliveryAddress) {
             showMessage('Please fill in all delivery details.', 'error');
@@ -478,6 +650,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        // Ensure location data is present if map was used
+        if (map && !mapDiv.classList.contains('hidden') && (!selectedLocation || !selectedLocation.latitude)) {
+            showMessage('Please select your delivery location on the map.', 'error');
+            return;
+        }
+
+        // If map was not used, or if no location was selected via map, use default location or try to geocode manual address
+        let finalCustomerLocation = selectedLocation;
+        if (!finalCustomerLocation || !finalCustomerLocation.latitude) {
+            // If map was not used or no location selected, try to use a default or assume address is text only
+            finalCustomerLocation = {
+                latitude: 0, // Default or estimate from address if needed
+                longitude: 0, // Default or estimate from address if needed
+                address: deliveryAddress
+            };
+        }
+
         const { subtotal, transportTax, discountAmount, totalAmount } = calculateCartTotals();
 
         const orderData = {
@@ -485,11 +674,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             customerName,
             customerPhone,
             deliveryAddress,
-            customerLocation: { // Placeholder location, could be expanded with geolocation API
-                latitude: 0,
-                longitude: 0,
-                address: deliveryAddress
-            },
+            customerLocation: finalCustomerLocation,
             subtotal,
             transportTax,
             discountAmount,
@@ -522,6 +707,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         customerNameInput.value = localStorage.getItem('customerName') || '';
         customerPhoneInput.value = localStorage.getItem('customerPhone') || '';
         deliveryAddressInput.value = localStorage.getItem('deliveryAddress') || '';
+        const storedLat = localStorage.getItem('deliveryLat');
+        const storedLon = localStorage.getItem('deliveryLon');
+
+        if (storedLat && storedLon) {
+            selectedLocation = {
+                latitude: parseFloat(storedLat),
+                longitude: parseFloat(storedLon),
+                address: localStorage.getItem('deliveryAddress') || ''
+            };
+            deliveryLatInput.value = storedLat;
+            deliveryLonInput.value = storedLon;
+            deliveryAddressInput.readOnly = true;
+            deliveryAddressInput.classList.add('bg-gray-100');
+        } else {
+            deliveryAddressInput.readOnly = false;
+            deliveryAddressInput.classList.remove('bg-gray-100');
+        }
 
         // Check for orderId in URL query parameters
         const urlParams = new URLSearchParams(window.location.search);

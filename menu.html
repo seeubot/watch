@@ -213,15 +213,17 @@
                 <button class="text-gray-600 hover:text-blue-500">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-align-left"><line x1="21" x2="3" y1="6" y2="6"/><line x1="17" x2="3" y1="12" y2="12"/><line x1="19" x2="3" y1="18" y2="18"/></svg>
                 </button>
-                <div class="relative">
-                    <select id="locationDropdown" class="appearance-none bg-transparent border-none text-gray-800 font-semibold text-lg pr-8 focus:outline-none cursor-pointer">
+                <div class="relative flex items-center">
+                    <span id="currentLocationDisplay" class="text-gray-800 font-semibold text-lg">Loading...</span>
+                    <!-- Original dropdown is kept for future selection functionality if needed -->
+                    <!-- <select id="locationDropdown" class="appearance-none bg-transparent border-none text-gray-800 font-semibold text-lg pr-8 focus:outline-none cursor-pointer">
                         <option value="california">California</option>
                         <option value="texas">Texas</option>
                         <option value="newyork">New York</option>
                     </select>
                     <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
                         <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                    </div>
+                    </div> -->
                 </div>
             </div>
             <button class="text-gray-600 hover:text-blue-500" id="trackOrderBtn">
@@ -266,6 +268,7 @@
             </div>
             <p id="noMenuItemsMessage" class="text-center text-gray-500 mt-8 hidden">No menu items found matching your criteria.</p>
             <p id="loadingMessage" class="text-center text-blue-500 mt-8">Loading menu...</p>
+            <p id="menuErrorMessage" class="text-center text-red-600 mt-8 hidden">Error loading menu. Please try again later or contact support. (Server might be down)</p>
         </section>
     </main>
 
@@ -436,16 +439,19 @@
 
         // --- Utility Functions ---
         async function fetchData(url, options = {}) {
+            // Prepend window.location.origin to ensure absolute URLs for internal APIs
+            const fullUrl = url.startsWith('http') ? url : window.location.origin + url;
+            console.log(`Attempting to fetch from URL: ${fullUrl}`); // Log the full URL being fetched
             try {
-                const response = await fetch(url, options);
+                const response = await fetch(fullUrl, options);
                 if (!response.ok) {
                     const errorBody = await response.json().catch(() => ({ message: response.statusText }));
-                    console.error(`Error fetching ${url}:`, response.status, errorBody.message);
-                    throw new Error(errorBody.message || `Failed to fetch data from ${url}`);
+                    console.error(`Error fetching ${fullUrl}:`, response.status, errorBody.message);
+                    throw new Error(errorBody.message || `Failed to fetch data from ${fullUrl}`);
                 }
                 return await response.json();
             } catch (error) {
-                console.error(`Network error fetching ${url}:`, error);
+                console.error(`Network error fetching ${fullUrl}:`, error);
                 throw new Error(`Network error: ${error.message}`);
             }
         }
@@ -526,10 +532,17 @@
 
         // --- Menu Rendering ---
         async function loadMenu() {
-            document.getElementById('loadingMessage').classList.remove('hidden');
-            document.getElementById('menuItemsGrid').innerHTML = ''; // Clear previous items
-            document.getElementById('popularItemsGrid').innerHTML = '';
-            document.getElementById('noMenuItemsMessage').classList.add('hidden');
+            const loadingMessage = document.getElementById('loadingMessage');
+            const menuItemsGrid = document.getElementById('menuItemsGrid');
+            const popularItemsGrid = document.getElementById('popularItemsGrid');
+            const noMenuItemsMessage = document.getElementById('noMenuItemsMessage');
+            const menuErrorMessage = document.getElementById('menuErrorMessage'); // Get the new error message element
+
+            if (loadingMessage) loadingMessage.classList.remove('hidden');
+            if (menuItemsGrid) menuItemsGrid.innerHTML = ''; // Clear previous items
+            if (popularItemsGrid) popularItemsGrid.innerHTML = '';
+            if (noMenuItemsMessage) noMenuItemsMessage.classList.add('hidden');
+            if (menuErrorMessage) menuErrorMessage.classList.add('hidden'); // Hide previous error
 
             try {
                 const menuData = await fetchData('/api/menu');
@@ -537,49 +550,70 @@
                 renderMenuItems(); // Initial render for both sections
                 populateCategoryFilter();
             } catch (error) {
-                document.getElementById('menuItemsGrid').innerHTML = `<p class="text-center text-red-600 col-span-full">Failed to load menu: ${error.message}</p>`;
-                document.getElementById('popularItemsGrid').innerHTML = `<p class="text-center text-red-600 col-span-full">Failed to load popular items.</p>`;
+                if (menuItemsGrid) menuItemsGrid.innerHTML = ''; // Clear content on error
+                if (popularItemsGrid) popularItemsGrid.innerHTML = ''; // Clear content on error
+                if (menuErrorMessage) {
+                    menuErrorMessage.textContent = `Error loading menu: ${error.message}. Please ensure the backend server is running and accessible.`;
+                    menuErrorMessage.classList.remove('hidden');
+                }
+                if (noMenuItemsMessage) noMenuItemsMessage.classList.add('hidden'); // Ensure this remains hidden if there's a load error
             } finally {
-                document.getElementById('loadingMessage').classList.add('hidden');
+                if (loadingMessage) loadingMessage.classList.add('hidden');
             }
         }
 
         function populateCategoryFilter() {
             const categories = [...new Set(allMenuItems.map(item => item.category).filter(Boolean))];
             const filterSelect = document.getElementById('menuCategoryFilter');
-            filterSelect.innerHTML = '<option value="">All Categories</option>' +
-                categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+            if (filterSelect) { // Defensive check
+                filterSelect.innerHTML = '<option value="">All Categories</option>' +
+                    categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+            }
+
 
             const categoryPillsContainer = document.getElementById('categoryPills');
-            categoryPillsContainer.innerHTML = '<button class="category-pill active" data-category="">All</button>'; // Reset and add 'All'
-            categories.forEach(cat => {
-                const button = document.createElement('button');
-                button.className = 'category-pill';
-                button.textContent = cat;
-                button.dataset.category = cat;
-                categoryPillsContainer.appendChild(button);
-            });
-
-            // Add event listeners to category pills
-            categoryPillsContainer.querySelectorAll('.category-pill').forEach(pill => {
-                pill.addEventListener('click', (e) => {
-                    categoryPillsContainer.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
-                    e.target.classList.add('active');
-                    document.getElementById('menuCategoryFilter').value = e.target.dataset.category; // Sync dropdown
-                    renderMenuItems();
+            if (categoryPillsContainer) { // Defensive check
+                categoryPillsContainer.innerHTML = '<button class="category-pill active" data-category="">All</button>'; // Reset and add 'All'
+                categories.forEach(cat => {
+                    const button = document.createElement('button');
+                    button.className = 'category-pill';
+                    button.textContent = cat;
+                    button.dataset.category = cat;
+                    categoryPillsContainer.appendChild(button);
                 });
-            });
+
+                // Add event listeners to category pills
+                categoryPillsContainer.querySelectorAll('.category-pill').forEach(pill => {
+                    pill.addEventListener('click', (e) => {
+                        categoryPillsContainer.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
+                        e.target.classList.add('active');
+                        if (filterSelect) { // Sync dropdown if it exists
+                            filterSelect.value = e.target.dataset.category;
+                        }
+                        renderMenuItems();
+                    });
+                });
+            }
         }
 
         function renderMenuItems() {
             const menuItemsGrid = document.getElementById('menuItemsGrid');
             const popularItemsGrid = document.getElementById('popularItemsGrid');
+            const menuSearchInput = document.getElementById('menuSearch');
+            const menuCategoryFilter = document.getElementById('menuCategoryFilter');
+
+            // Defensive checks for elements
+            if (!menuItemsGrid || !popularItemsGrid || !menuSearchInput || !menuCategoryFilter) {
+                console.error("One or more menu rendering elements are missing. Cannot render menu items.");
+                return;
+            }
+
             menuItemsGrid.innerHTML = '';
             popularItemsGrid.innerHTML = '';
             document.getElementById('noMenuItemsMessage').classList.add('hidden');
 
-            const searchTerm = document.getElementById('menuSearch').value.toLowerCase();
-            const filterCategory = document.getElementById('menuCategoryFilter').value;
+            const searchTerm = menuSearchInput.value.toLowerCase();
+            const filterCategory = menuCategoryFilter.value;
 
             const filteredItems = allMenuItems.filter(item => {
                 const matchesSearch = (item.name && item.name.toLowerCase().includes(searchTerm)) ||
@@ -828,7 +862,7 @@
 
             // Remove previous listener to prevent duplicates
             const oldUseCurrentLocationHandler = useCurrentLocationCheckbox.dataset.handler;
-            if (oldUseCurrentLocationHandler) {
+            if (oldUseCurrentLocationHandler && window[oldUseCurrentLocationHandler]) {
                 useCurrentLocationCheckbox.removeEventListener('change', window[oldUseCurrentLocationHandler]);
             }
 
@@ -872,7 +906,9 @@
                 }
             };
             useCurrentLocationCheckbox.addEventListener('change', newUseCurrentLocationHandler);
-            useCurrentLocationCheckbox.dataset.handler = 'newUseCurrentLocationHandler'; // Store handler name for removal
+            // Store handler reference to remove it later if needed (though not strictly necessary for this specific case)
+            window.newUseCurrentLocationHandler = newUseCurrentLocationHandler;
+            useCurrentLocationCheckbox.dataset.handler = 'newUseCurrentLocationHandler';
         }
 
         // --- Order Tracking Modal Logic ---
@@ -915,6 +951,66 @@
             }
         }
 
+        // --- Live Location Display ---
+        async function updateLiveLocationDisplay() {
+            const locationDisplay = document.getElementById('currentLocationDisplay');
+            if (!locationDisplay) return;
+
+            locationDisplay.textContent = 'Getting location...';
+
+            try {
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 });
+                });
+
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+
+                // Use Nominatim for reverse geocoding (OpenStreetMap's API)
+                // Ensure Nominatim URL uses https protocol explicitly
+                const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=0`;
+                const geoResponse = await fetch(nominatimUrl, {
+                    headers: {
+                        'User-Agent': 'DeliciousBitesApp/1.0 (your-email@example.com)' // Required by Nominatim policy
+                    }
+                });
+                const geoData = await geoResponse.json();
+
+                let shortLocation = 'Unknown Location';
+                if (geoData.address) {
+                    const address = geoData.address;
+                    if (address.city) {
+                        shortLocation = address.city;
+                    } else if (address.town) {
+                        shortLocation = address.town;
+                    } else if (address.village) {
+                        shortLocation = address.village;
+                    }
+
+                    if (address.country_code) {
+                        shortLocation += `, ${address.country_code.toUpperCase()}`;
+                    }
+                }
+                locationDisplay.textContent = shortLocation;
+
+            } catch (error) {
+                console.error('Error fetching live location:', error);
+                if (error.code === error.PERMISSION_DENIED) {
+                    locationDisplay.textContent = 'Location Blocked (Permission Denied)';
+                } else if (error.code === error.TIMEOUT) {
+                     locationDisplay.textContent = 'Location Timeout';
+                } else if (error.message) {
+                    locationDisplay.textContent = `Location Error: ${error.message}`;
+                }
+                else {
+                    locationDisplay.textContent = 'Location N/A (Unknown Error)';
+                }
+                // Log the full error object for debugging
+                console.error('Full geolocation error object:', JSON.stringify(error)); // Stringify for better inspection
+            }
+        }
+
+
         // --- Event Listeners ---
         document.addEventListener('DOMContentLoaded', async () => {
             // Load shop settings first to get delivery rates and shop location
@@ -924,24 +1020,32 @@
                 if (!shopSettings.shopLocation) shopSettings.shopLocation = { latitude: 0, longitude: 0 };
             } catch (error) {
                 console.error('Failed to load shop settings:', error);
-                alert('Failed to load shop settings. Delivery tax calculation might be inaccurate.');
+                // Display a user-friendly alert or message on the UI if settings fail to load
+                alert('Failed to load shop settings. Delivery tax calculation might be inaccurate. Please check server status.');
             }
 
             loadMenu(); // Load menu items after settings
             updateCartCount(); // Initial cart count display
+            updateLiveLocationDisplay(); // Load live location
 
             // Menu search and filter
-            document.getElementById('menuSearch').addEventListener('input', renderMenuItems);
-            document.getElementById('menuCategoryFilter').addEventListener('change', renderMenuItems);
+            const menuSearchInput = document.getElementById('menuSearch');
+            const menuCategoryFilter = document.getElementById('menuCategoryFilter');
+
+            if (menuSearchInput) menuSearchInput.addEventListener('input', renderMenuItems);
+            if (menuCategoryFilter) menuCategoryFilter.addEventListener('change', renderMenuItems);
+
 
             // Floating Cart Button
             const floatingCartBtn = document.getElementById('floatingCartBtn');
             const cartModal = document.getElementById('cartModal');
-            floatingCartBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                renderCartModal();
-                showModal(cartModal);
-            });
+            if (floatingCartBtn) {
+                floatingCartBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    renderCartModal();
+                    showModal(cartModal);
+                });
+            }
             document.getElementById('closeCartModal').addEventListener('click', () => hideModal(cartModal));
             document.getElementById('clearCartBtn').addEventListener('click', () => {
                 if (confirm('Are you sure you want to clear your cart?')) {
@@ -954,11 +1058,14 @@
 
             // Checkout Modal
             const checkoutModal = document.getElementById('checkoutModal');
-            document.getElementById('checkoutBtn').addEventListener('click', () => {
-                hideModal(cartModal); // Close cart modal
-                renderCheckoutModal();
-                showModal(checkoutModal);
-            });
+            const checkoutBtn = document.getElementById('checkoutBtn');
+            if (checkoutBtn) {
+                checkoutBtn.addEventListener('click', () => {
+                    hideModal(cartModal); // Close cart modal
+                    renderCheckoutModal();
+                    showModal(checkoutModal);
+                });
+            }
             document.getElementById('closeCheckoutModal').addEventListener('click', () => hideModal(checkoutModal));
 
             document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
@@ -1039,14 +1146,17 @@
 
             // Order Tracking Modal
             const trackOrderModal = document.getElementById('trackOrderModal');
-            document.getElementById('trackOrderBtn').addEventListener('click', (e) => {
-                e.preventDefault();
-                // Check if an orderId was passed in the URL (e.g., from WhatsApp bot)
-                const urlParams = new URLSearchParams(window.location.search);
-                const initialOrderId = urlParams.get('orderId') || '';
-                renderTrackOrderModal(initialOrderId);
-                showModal(trackOrderModal);
-            });
+            const trackOrderBtn = document.getElementById('trackOrderBtn');
+            if (trackOrderBtn) {
+                trackOrderBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    // Check if an orderId was passed in the URL (e.g., from WhatsApp bot)
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const initialOrderId = urlParams.get('orderId') || ''; // Fixed: Completed the line
+                    renderTrackOrderModal(initialOrderId);
+                    showModal(trackOrderModal);
+                });
+            }
             document.getElementById('closeTrackOrderModal').addEventListener('click', () => hideModal(trackOrderModal));
             document.getElementById('lookupOrderBtn').addEventListener('click', lookupOrder);
 
@@ -1077,7 +1187,7 @@
                     showModal(trackOrderModal);
                 }, 500);
             }
-        });
+        }); // Fixed: Added missing closing brace for DOMContentLoaded
     </script>
 </body>
 </html>

@@ -1186,10 +1186,8 @@
 
             // Calculate Transport Tax
             let transportTax = 0;
+            // Use the first delivery rate amount if available, otherwise a default flat rate
             if (settings.deliveryRates && settings.deliveryRates.length > 0) {
-                // For a simple menu, let's use the amount for the first delivery rate entry
-                // In a real application, this would be calculated based on customer's actual distance
-                // from the shop using a mapping or a more complex logic.
                 transportTax = settings.deliveryRates[0].amount;
             } else {
                 transportTax = 20; // Default flat rate if no delivery rates are configured
@@ -1255,27 +1253,27 @@
 
             if (customerAddressInput.value) {
                 locationStatusP.textContent = `Location saved: ${customerAddressInput.value}`;
-                locationStatusP.style.color = var('--success-green');
+                locationStatusP.style.color = 'var(--success-green)';
             } else {
                 locationStatusP.textContent = 'No location saved.';
-                locationStatusP.style.color = var('--text-light');
+                locationStatusP.style.color = 'var(--text-light)';
             }
         }
 
         getLocationBtn.addEventListener('click', () => {
             locationStatusP.textContent = 'Getting your location...';
-            locationStatusP.style.color = var('--primary-blue');
+            locationStatusP.style.color = 'var(--primary-blue)';
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(async (position) => {
                     customerLocation = {
                         latitude: position.coords.latitude,
                         longitude: position.coords.longitude
                     };
-                    // Reverse geocoding (optional, requires a geocoding API key)
-                    // For simplicity, we'll just use coordinates and a placeholder address
+                    // For simplicity, we'll use coordinates and a placeholder address
+                    // In a real app, you'd use a reverse geocoding API here (e.g., Google Maps Geocoding API)
                     customerLocation.address = `Lat: ${customerLocation.latitude.toFixed(4)}, Lng: ${customerLocation.longitude.toFixed(4)}`;
                     locationStatusP.textContent = `Location acquired: ${customerLocation.address}`;
-                    locationStatusP.style.color = var('--success-green');
+                    locationStatusP.style.color = 'var(--success-green)';
 
                     customerLatitudeInput.value = customerLocation.latitude;
                     customerLongitudeInput.value = customerLocation.longitude;
@@ -1284,7 +1282,7 @@
                 }, (error) => {
                     console.error('Error getting location:', error);
                     locationStatusP.textContent = `Error getting location: ${error.message}. Please enter address manually.`;
-                    locationStatusP.style.color = var('--accent-red');
+                    locationStatusP.style.color = 'var(--accent-red)';
                     customerLocation = null;
                     showToast('Failed to get location.', 'error');
                 }, {
@@ -1294,7 +1292,7 @@
                 });
             } else {
                 locationStatusP.textContent = 'Geolocation is not supported by your browser. Please enter address manually.';
-                locationStatusP.style.color = var('--accent-red');
+                locationStatusP.style.color = 'var(--accent-red)';
                 customerLocation = null;
                 showToast('Geolocation not supported.', 'error');
             }
@@ -1323,6 +1321,8 @@
                 localStorage.setItem('customerAddress', customerLocation.address);
             } else {
                 // If location wasn't explicitly captured, save the manually entered address
+                localStorage.setItem('customerLatitude', ''); // Clear previous if any
+                localStorage.setItem('customerLongitude', ''); // Clear previous if any
                 localStorage.setItem('customerAddress', deliveryAddress);
             }
 
@@ -1384,9 +1384,8 @@
             const orderIdFromUrl = urlParams.get('orderId');
             if (orderIdFromUrl) {
                 showToast(`Tracking order: ${orderIdFromUrl}`, 'info');
-                // Optionally, you could open a tracking modal here
-                // For now, it just shows a toast. The backend /track route redirects to /menu.
-                // A dedicated tracking modal would be a good enhancement.
+                // The backend /track route redirects to /menu.
+                // A dedicated tracking modal could be implemented here if desired.
             }
 
             await fetchSettings();
@@ -1421,6 +1420,7 @@
         // Close cart summary if clicking outside on mobile (if it's open)
         document.addEventListener('click', (e) => {
             if (window.innerWidth <= 992 && cartSummarySection.classList.contains('active')) {
+                // Check if the click was outside the cart summary and not on the toggle button itself
                 if (!cartSummarySection.contains(e.target) && !toggleCartBtn.contains(e.target)) {
                     cartSummarySection.classList.remove('active');
                 }

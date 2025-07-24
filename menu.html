@@ -1013,8 +1013,10 @@
                 </div>
                 <div class="form-group">
                     <label for="deliveryAddress">Delivery Address:</label>
-                    <textarea id="deliveryAddress" rows="3" required></textarea>
-                    <small style="color: var(--text-light);">This address is automatically filled from your location or can be edited.</small>
+                    <textarea id="deliveryAddress" rows="3" required placeholder="Enter your full delivery address"></textarea>
+                    <small id="addressHint" style="color: var(--text-light); margin-top: 5px; display: block;">
+                        This address is automatically filled from your device's location. Please edit if incorrect.
+                    </small>
                 </div>
                 
                 <!-- Hidden inputs for lat/lng -->
@@ -1109,7 +1111,7 @@
         const customerNameInput = document.getElementById('customerName');
         const customerPhoneInput = document.getElementById('customerPhone');
         const deliveryAddressInput = document.getElementById('deliveryAddress');
-        // Removed map related elements
+        const addressHint = document.getElementById('addressHint'); // New hint element
 
         const customerLatitudeInput = document.getElementById('customerLatitude');
         const customerLongitudeInput = document.getElementById('customerLongitude');
@@ -1291,15 +1293,20 @@
                 customerLongitudeInput.value = customerLocation.longitude;
                 customerAddressInput.value = customerLocation.address;
                 deliveryAddressInput.value = customerLocation.address; // Pre-fill delivery address
+                addressHint.textContent = 'This address is automatically filled from your device\'s location. Please edit if incorrect.';
+                addressHint.style.color = 'var(--text-light)';
+
             } else {
-                displayLocationSpan.textContent = 'Location not set. Click "Change" to set.';
+                displayLocationSpan.textContent = 'Location not set. Click "Change" to set or enter manually.';
                 locationStatusIcon.className = 'fas fa-map-marker-alt status-icon';
                 locationStatusIcon.style.color = 'var(--text-light)';
                 // Clear any stored location in inputs
                 customerLatitudeInput.value = '';
                 customerLongitudeInput.value = '';
                 customerAddressInput.value = '';
-                deliveryAddressInput.value = '';
+                deliveryAddressInput.value = ''; // Clear delivery address if no location
+                addressHint.textContent = 'Location detection failed. Please enter your full delivery address manually.';
+                addressHint.style.color = 'var(--accent-red)';
             }
         }
 
@@ -1527,16 +1534,18 @@
             }
             checkoutTotalSpan.textContent = `₹${currentTotalAmount.toFixed(2)}`;
 
-            // Pre-fill customer details from localStorage or current customerLocation
+            // Pre-fill customer details from localStorage
             customerNameInput.value = localStorage.getItem('customerName') || '';
             customerPhoneInput.value = localStorage.getItem('customerPhone') || '';
             
-            // Prioritize customerLocation from header, then localStorage for address field
+            // Prioritize customerLocation from auto-detection, then localStorage for address field
             if (customerLocation && customerLocation.address) {
                 deliveryAddressInput.value = customerLocation.address;
                 customerLatitudeInput.value = customerLocation.latitude;
                 customerLongitudeInput.value = customerLocation.longitude;
                 customerAddressInput.value = customerLocation.address; // Store the geocoded address
+                addressHint.textContent = 'This address is automatically filled from your device\'s location. Please edit if incorrect.';
+                addressHint.style.color = 'var(--text-light)';
             } else if (localStorage.getItem('customerAddress')) {
                 const storedLat = localStorage.getItem('customerLatitude');
                 const storedLng = localStorage.getItem('customerLongitude');
@@ -1550,11 +1559,15 @@
                 customerLatitudeInput.value = storedLat;
                 customerLongitudeInput.value = storedLng;
                 customerAddressInput.value = storedAddress;
+                addressHint.textContent = 'This address is from your previous order. Please edit if incorrect.';
+                addressHint.style.color = 'var(--text-light)';
             } else {
-                deliveryAddressInput.value = '';
+                deliveryAddressInput.value = ''; // Ensure it's empty for manual entry
                 customerLatitudeInput.value = '';
                 customerLongitudeInput.value = '';
                 customerAddressInput.value = '';
+                addressHint.textContent = 'Location detection failed. Please enter your full delivery address manually.';
+                addressHint.style.color = 'var(--accent-red)';
             }
         }
 
@@ -1565,7 +1578,7 @@
             const customerPhone = customerPhoneInput.value.trim();
             const deliveryAddress = deliveryAddressInput.value.trim(); // The address displayed in the textarea
             
-            // Use the geocoded address from customerLocation (or fallback to textarea content if no geocoding happened)
+            // Use the geocoded address from customerLocation if available, otherwise fall back to textarea content
             const orderLatitude = customerLocation ? customerLocation.latitude : null;
             const orderLongitude = customerLocation ? customerLocation.longitude : null;
             const orderAddressForBackend = customerLocation ? customerLocation.address : deliveryAddress; // Backend expects the geocoded address if available
@@ -1575,10 +1588,16 @@
                 return;
             }
             
-            // Basic validation for location data, though not as strict as map pinning
-            if (!orderLatitude || !orderLongitude || !orderAddressForBackend || orderAddressForBackend === 'Location not set. Click "Change" to set.' || orderAddressForBackend === 'Location detection failed. Please enter address manually.' || orderAddressForBackend === 'Geolocation not supported. Please enter address manually.' || orderAddressForBackend.includes('Address not found')) {
-                showToast('Please ensure your delivery address is accurate. If location detection failed, please type it manually.', 'warning');
-                // Allow submission but warn the user. Backend can handle null lat/lng.
+            // Basic validation for location data. If GPS failed, user must manually enter.
+            if (!orderLatitude || !orderLongitude || !orderAddressForBackend || orderAddressForBackend.includes('Address not found') || orderAddressForBackend === 'Location not set. Click "Change" to set or enter manually.' || orderAddressForBackend === 'Location detection failed. Please enter address manually.') {
+                // If GPS failed, and the user hasn't typed a substantial address, prompt them
+                if (deliveryAddress.length < 10) { // Arbitrary length check for a "substantial" address
+                    showToast('Please provide a detailed delivery address for accurate delivery.', 'warning');
+                    return; // Prevent submission until a better address is given
+                }
+                // If they typed something, proceed but log the warning
+                console.warn("Submitting order with manually entered address due to GPS failure.");
+                showToast('Location not precisely detected. Using manually entered address.', 'warning');
             }
 
             // Save customer details to localStorage for next time
@@ -1587,7 +1606,7 @@
             localStorage.setItem('deliveryAddress', deliveryAddress); // Save the manually entered address too
             localStorage.setItem('customerLatitude', orderLatitude);
             localStorage.setItem('customerLongitude', orderLongitude);
-            localStorage.setItem('customerAddress', orderAddressForBackend); // Save the geocoded address
+            localStorage.setItem('customerAddress', orderAddressForBackend); // Save the geocoded address (or manual fallback)
 
 
             const orderPayload = {

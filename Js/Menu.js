@@ -297,6 +297,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 reverseGeocode(latLng[0], latLng[1]); // Reverse geocode to update address field
             }
         }
+        // Crucial for map to render correctly when initialized in a hidden container
+        map.invalidateSize();
     }
 
     /**
@@ -563,7 +565,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!map) {
             initMap();
         } else {
-            // Invalidate map size if it was hidden
+            // Crucial: Invalidate map size if it was hidden
             map.invalidateSize();
         }
     });
@@ -611,7 +613,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!map) {
             initMap();
         } else {
-            map.invalidateSize(); // Important for map to render correctly after being hidden/shown
+            // Crucial: Invalidate map size when toggled visible
+            if (!mapDiv.classList.contains('hidden')) {
+                map.invalidateSize();
+            }
         }
         // If map is opened, disable manual address input
         if (!mapDiv.classList.contains('hidden')) {
@@ -650,13 +655,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Ensure location data is present if map was used
-        if (map && !mapDiv.classList.contains('hidden') && (!selectedLocation || !selectedLocation.latitude)) {
+        // Ensure location data is present if map was used and is visible
+        if (!mapDiv.classList.contains('hidden') && (!selectedLocation || !selectedLocation.latitude)) {
             showMessage('Please select your delivery location on the map.', 'error');
             return;
         }
 
-        // If map was not used, or if no location was selected via map, use default location or try to geocode manual address
+        // If map was not used or no location selected via map, use default location or try to geocode manual address
         let finalCustomerLocation = selectedLocation;
         if (!finalCustomerLocation || !finalCustomerLocation.latitude) {
             // If map was not used or no location selected, try to use a default or assume address is text only

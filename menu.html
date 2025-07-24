@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Delicious Bites - Web Menu</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <!-- Leaflet Geocoder CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <style>
         /* General Styles */
         body {
@@ -16,6 +20,7 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            overflow-x: hidden; /* Prevent horizontal scroll */
         }
 
         /* Color Theme */
@@ -30,6 +35,7 @@
             --warning-orange: #FF9800;
             --shadow-light: rgba(0, 0, 0, 0.08);
             --shadow-medium: rgba(0, 0, 0, 0.15);
+            --shadow-strong: rgba(0, 0, 0, 0.25);
         }
 
         /* Header */
@@ -79,6 +85,56 @@
             box-shadow: 0 2px 5px var(--shadow-medium);
         }
 
+        /* Location Header */
+        .location-header {
+            background-color: var(--white);
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1em;
+            color: var(--text-dark);
+            box-shadow: 0 2px 5px var(--shadow-light);
+            position: sticky;
+            top: 80px; /* Below main header */
+            z-index: 90;
+        }
+
+        .location-header i {
+            color: var(--primary-blue);
+            font-size: 1.2em;
+        }
+        
+        .location-header .status-icon {
+            font-size: 1.2em;
+            width: 20px; /* Fixed width for consistent alignment */
+            text-align: center;
+        }
+
+        .location-header span {
+            flex-grow: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .location-header button {
+            background: none;
+            border: none;
+            color: var(--accent-red);
+            font-size: 0.9em;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: underline;
+            transition: color 0.2s ease;
+        }
+
+        .location-header button:hover {
+            color: #D32F2F;
+        }
+
+
         /* Main Content Layout */
         .menu-container {
             display: flex;
@@ -97,7 +153,7 @@
             flex: 1; /* Takes less space */
             min-width: 280px; /* Minimum width for cart */
             position: sticky; /* Sticky cart on desktop */
-            top: 100px; /* Adjust based on header height */
+            top: 150px; /* Adjust based on header + location header height */
             align-self: flex-start; /* Align to top */
         }
 
@@ -554,10 +610,10 @@
         #orderConfirmationModal .modal-content {
             text-align: center;
         }
-        #orderConfirmationModal .modal-content i {
-            font-size: 4em;
-            color: var(--success-green);
-            margin-bottom: 20px;
+        #orderConfirmationModal .modal-content lottie-player {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 20px auto;
         }
         #orderConfirmationModal .modal-content p {
             font-size: 1.1em;
@@ -623,7 +679,7 @@
             to { transform: translateY(0); opacity: 1; }
         }
 
-        /* Loading Spinner */
+        /* Loading Spinner (Lottie) */
         #loadingSpinner {
             display: none;
             position: fixed;
@@ -635,20 +691,36 @@
             background-color: rgba(255, 255, 255, 0.8);
             justify-content: center;
             align-items: center;
+            flex-direction: column;
+            gap: 20px;
         }
 
-        .spinner {
-            border: 8px solid var(--border-light);
-            border-top: 8px solid var(--primary-blue);
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            animation: spin 1s linear infinite;
+        #loadingSpinner lottie-player {
+            width: 150px;
+            height: 150px;
+        }
+        #loadingSpinner p {
+            font-size: 1.2em;
+            color: var(--primary-blue);
+            font-weight: bold;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        /* Map Styles */
+        #map {
+            height: 300px; /* Fixed height for the map */
+            width: 100%;
+            border-radius: 8px;
+            margin-top: 15px;
+            border: 1px solid var(--border-light);
+        }
+
+        .leaflet-container {
+            border-radius: 8px; /* Apply border-radius to the map container */
+        }
+
+        .leaflet-control-geocoder {
+            margin-top: 10px;
+            margin-bottom: 10px;
         }
 
         /* Responsive Adjustments */
@@ -680,6 +752,11 @@
 
             .cart-summary.active {
                 display: flex; /* Show when activated by icon */
+            }
+
+            .location-header {
+                top: 75px; /* Adjust sticky position for mobile header */
+                font-size: 1em;
             }
         }
 
@@ -770,12 +847,21 @@
                 font-size: 1em;
                 padding: 12px;
             }
+            .location-header {
+                padding: 10px 15px;
+                font-size: 0.9em;
+            }
+            .location-header i {
+                font-size: 1em;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Lottie Loading Spinner -->
     <div id="loadingSpinner">
-        <div class="spinner"></div>
+        <lottie-player src="https://lottie.host/17498c8c-1e6a-4b95-a22c-a2b647065c71/f15u0F4hLd.json" background="transparent" speed="1" style="width: 150px; height: 150px;" loop autoplay></lottie-player>
+        <p>Loading deliciousness...</p>
     </div>
 
     <header class="header">
@@ -785,6 +871,13 @@
             <span class="cart-count" id="cartCount">0</span>
         </button>
     </header>
+
+    <!-- Location Header -->
+    <div class="location-header">
+        <i id="locationStatusIcon" class="fas fa-map-marker-alt status-icon"></i>
+        <span id="displayLocation">Detecting your location...</span>
+        <button id="changeLocationBtn">Change</button>
+    </div>
 
     <div class="menu-container">
         <section class="menu-items-section">
@@ -852,9 +945,9 @@
                     <textarea id="deliveryAddress" rows="3" required></textarea>
                 </div>
                 <div class="form-group">
-                    <label>Your Current Location (Optional, for precise delivery):</label>
-                    <button type="button" class="btn btn-secondary" id="getLocationBtn"><i class="fas fa-map-marker-alt"></i> Get My Location</button>
-                    <p id="locationStatus" style="font-size: 0.9em; color: var(--text-light); margin-top: 10px;"></p>
+                    <label>Confirm Delivery Location on Map:</label>
+                    <div id="map"></div>
+                    <p id="mapLocationStatus" style="font-size: 0.9em; color: var(--text-light); margin-top: 10px;">Click on the map to set your delivery pin or search for an address.</p>
                     <input type="hidden" id="customerLatitude">
                     <input type="hidden" id="customerLongitude">
                     <input type="hidden" id="customerAddress">
@@ -895,7 +988,7 @@
     <div id="orderConfirmationModal" class="modal">
         <div class="modal-content">
             <span class="close-button" data-modal-id="orderConfirmationModal">&times;</span>
-            <i class="fas fa-check-circle"></i>
+            <lottie-player id="orderPlacedLottie" src="https://lottie.host/57539f37-142f-488f-a316-568379c65637/1z7tT71y1N.json" background="transparent" speed="1" loop="false" autoplay></lottie-player>
             <h3>Order Placed Successfully!</h3>
             <p>Your Order ID: <strong><span id="confirmedOrderId"></span></strong></p>
             <p>Your Tracking PIN: <strong><span id="confirmedPinId"></span></strong></p>
@@ -908,6 +1001,13 @@
     </div>
 
     <div id="toastContainer"></div>
+
+    <!-- Lottie Player Script -->
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <!-- Leaflet Geocoder JS -->
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
     <script>
         const API_BASE_URL = window.location.origin;
@@ -938,8 +1038,8 @@
         const customerNameInput = document.getElementById('customerName');
         const customerPhoneInput = document.getElementById('customerPhone');
         const deliveryAddressInput = document.getElementById('deliveryAddress');
-        const getLocationBtn = document.getElementById('getLocationBtn');
-        const locationStatusP = document.getElementById('locationStatus');
+        const mapDiv = document.getElementById('map');
+        const mapLocationStatusP = document.getElementById('mapLocationStatus');
         const customerLatitudeInput = document.getElementById('customerLatitude');
         const customerLongitudeInput = document.getElementById('customerLongitude');
         const customerAddressInput = document.getElementById('customerAddress');
@@ -952,9 +1052,15 @@
         const checkoutTotalSpan = document.getElementById('checkoutTotal');
 
         const orderConfirmationModal = document.getElementById('orderConfirmationModal');
+        const orderPlacedLottie = document.getElementById('orderPlacedLottie');
         const confirmedOrderIdSpan = document.getElementById('confirmedOrderId');
         const confirmedPinIdSpan = document.getElementById('confirmedPinId');
         const trackOrderLink = document.getElementById('trackOrderLink');
+
+        // Location Header
+        const locationStatusIcon = document.getElementById('locationStatusIcon');
+        const displayLocationSpan = document.getElementById('displayLocation');
+        const changeLocationBtn = document.getElementById('changeLocationBtn');
 
         // --- Global State ---
         let cart = [];
@@ -966,6 +1072,8 @@
             discountPercentage: 0.20
         };
         let customerLocation = null; // { latitude, longitude, address }
+        let map = null;
+        let mapMarker = null;
 
         // --- Utility Functions ---
 
@@ -1035,6 +1143,190 @@
                 hideLoadingSpinner();
             }
         }
+
+        // --- Location Handling ---
+
+        async function getAndDisplayLocation() {
+            locationStatusIcon.className = 'fas fa-spinner fa-spin status-icon'; // Spinner
+            displayLocationSpan.textContent = 'Detecting your precise location (using GPS)...';
+            locationStatusIcon.style.color = 'var(--primary-blue)';
+
+            // Check localStorage first
+            const storedLat = localStorage.getItem('customerLatitude');
+            const storedLng = localStorage.getItem('customerLongitude');
+            const storedAddress = localStorage.getItem('customerAddress');
+
+            if (storedLat && storedLng && storedAddress) {
+                customerLocation = {
+                    latitude: parseFloat(storedLat),
+                    longitude: parseFloat(storedLng),
+                    address: storedAddress
+                };
+                updateLocationHeaderUI();
+                return; // Use stored location immediately
+            }
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(async (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    customerLocation = { latitude: lat, longitude: lng };
+                    await reverseGeocode(lat, lng);
+                    updateLocationHeaderUI();
+                    showToast('Location detected!', 'success');
+                }, (error) => {
+                    console.error('Error getting location:', error);
+                    customerLocation = null; // Clear any partial location
+                    displayLocationSpan.textContent = 'Location detection failed. Please set manually.';
+                    locationStatusIcon.className = 'fas fa-exclamation-triangle status-icon';
+                    locationStatusIcon.style.color = 'var(--warning-orange)';
+                    showToast('Failed to detect location. Please set manually.', 'warning');
+                    updateLocationHeaderUI(); // Update UI to reflect failure
+                }, {
+                    enableHighAccuracy: true, // Request GPS for high accuracy
+                    timeout: 10000, // 10 seconds timeout
+                    maximumAge: 0 // No cached position
+                });
+            } else {
+                customerLocation = null;
+                displayLocationSpan.textContent = 'Geolocation not supported. Please set manually.';
+                locationStatusIcon.className = 'fas fa-times-circle status-icon';
+                locationStatusIcon.style.color = 'var(--error-red)';
+                showToast('Geolocation not supported by your browser.', 'error');
+                updateLocationHeaderUI(); // Update UI to reflect no support
+            }
+        }
+
+        async function reverseGeocode(lat, lng) {
+            try {
+                // Using OpenStreetMap Nominatim for reverse geocoding
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                customerLocation.address = data.display_name || `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+            } catch (error) {
+                console.error('Error during reverse geocoding:', error);
+                customerLocation.address = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)} (Address not found)`;
+            }
+        }
+
+        function updateLocationHeaderUI() {
+            if (customerLocation && customerLocation.address) {
+                displayLocationSpan.textContent = customerLocation.address;
+                locationStatusIcon.className = 'fas fa-map-marker-alt status-icon';
+                locationStatusIcon.style.color = 'var(--primary-blue)';
+                // Also update the checkout form's hidden inputs and textarea
+                customerLatitudeInput.value = customerLocation.latitude;
+                customerLongitudeInput.value = customerLocation.longitude;
+                customerAddressInput.value = customerLocation.address;
+                deliveryAddressInput.value = customerLocation.address; // Pre-fill delivery address
+            } else {
+                displayLocationSpan.textContent = 'Location not set. Click "Change" to set.';
+                locationStatusIcon.className = 'fas fa-map-marker-alt status-icon';
+                locationStatusIcon.style.color = 'var(--text-light)';
+                // Clear any stored location in inputs
+                customerLatitudeInput.value = '';
+                customerLongitudeInput.value = '';
+                customerAddressInput.value = '';
+                deliveryAddressInput.value = '';
+            }
+        }
+
+        changeLocationBtn.addEventListener('click', () => {
+            // Open the checkout modal directly to the map section
+            prepareCheckoutModal();
+            openModal(checkoutModal);
+            initMap(); // Ensure map is initialized when modal opens
+        });
+
+
+        // --- Map Initialization and Interaction ---
+        function initMap() {
+            if (map) {
+                map.remove(); // Remove existing map instance if any
+            }
+
+            // Default to shop location if available, otherwise a general Indian city
+            const defaultLat = settings.shopLocation ? settings.shopLocation.latitude : 17.4399; // Hyderabad
+            const defaultLng = settings.shopLocation ? settings.shopLocation.longitude : 78.4983; // Hyderabad
+
+            // Use customer's current location if available, otherwise default
+            const initialMapLat = customerLocation ? customerLocation.latitude : defaultLat;
+            const initialMapLng = customerLocation ? customerLocation.longitude : defaultLng;
+            const initialMapZoom = customerLocation ? 16 : 13; // Zoom in more if location is known
+
+            map = L.map('map').setView([initialMapLat, initialMapLng], initialMapZoom);
+
+            // OpenStreetMap Satellite Tiles (using Esri World Imagery as a common satellite option)
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, swisstopo, and the GIS User Community',
+                maxZoom: 18
+            }).addTo(map);
+
+            // Add Geocoder for address search
+            const geocoder = L.Control.Geocoder.nominatim();
+            L.Control.geocoder({
+                geocoder: geocoder,
+                placeholder: 'Search for address...',
+                defaultMarkGeocodedLocation: false,
+                collapsed: false // Keep search bar open
+            }).on('markgeocode', function(e) {
+                const center = e.geocode.center;
+                setMapMarker(center.lat, center.lng, e.geocode.name);
+                map.setView(center, 16); // Zoom to result
+            }).addTo(map);
+
+            // Click event to set marker
+            map.on('click', function(e) {
+                setMapMarker(e.latlng.lat, e.latlng.lng);
+            });
+
+            // Set initial marker if customerLocation is already known or just detected
+            if (customerLocation && customerLocation.latitude && customerLocation.longitude) {
+                setMapMarker(customerLocation.latitude, customerLocation.longitude, customerLocation.address);
+            } else {
+                // If no customerLocation yet, try to get current location for map's initial marker
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition((position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        setMapMarker(lat, lng, 'Your current location');
+                        map.setView([lat, lng], 16); // Zoom to detected location
+                    }, (error) => {
+                        console.warn('Geolocation failed for map initial marker:', error);
+                        mapLocationStatusP.textContent = 'Click on the map to set your delivery pin or search for an address.';
+                    });
+                }
+            }
+        }
+
+        async function setMapMarker(lat, lng, address = null) {
+            if (mapMarker) {
+                map.removeLayer(mapMarker);
+            }
+            mapMarker = L.marker([lat, lng]).addTo(map);
+
+            customerLatitudeInput.value = lat;
+            customerLongitudeInput.value = lng;
+
+            if (address) {
+                customerAddressInput.value = address;
+                mapLocationStatusP.textContent = `Pinned location: ${address}`;
+                customerLocation = { latitude: lat, longitude: lng, address: address }; // Update global state
+                deliveryAddressInput.value = address; // Update delivery address input
+            } else {
+                // Reverse geocode if address is not provided (e.g., direct map click)
+                await reverseGeocode(lat, lng);
+                customerAddressInput.value = customerLocation.address;
+                mapLocationStatusP.textContent = `Pinned location: ${customerLocation.address}`;
+                customerLocation = { latitude: lat, longitude: lng, address: customerLocation.address }; // Update global state
+                deliveryAddressInput.value = customerLocation.address; // Update delivery address input
+            }
+            mapLocationStatusP.style.color = 'var(--primary-blue)';
+        }
+
 
         // --- Menu Rendering ---
 
@@ -1187,7 +1479,7 @@
             // Calculate Transport Tax
             let transportTax = 0;
             // Use the first delivery rate amount if available, otherwise a default flat rate
-            if (settings.deliveryRates && settings.deliveryRates.length > 0) {
+            if (settings.deliveryRates && settings.deliveryRates.length > 0 && settings.deliveryRates[0].amount !== undefined) {
                 transportTax = settings.deliveryRates[0].amount;
             } else {
                 transportTax = 20; // Default flat rate if no delivery rates are configured
@@ -1217,6 +1509,12 @@
             }
             prepareCheckoutModal();
             openModal(checkoutModal);
+            // Ensure map is initialized and rendered when modal opens
+            // Use a small timeout to ensure modal is visible before map renders
+            setTimeout(() => {
+                map.invalidateSize(); // Invalidate map size to fix rendering issues inside hidden modals
+                initMap();
+            }, 100);
         });
 
         function prepareCheckoutModal() {
@@ -1243,88 +1541,70 @@
             }
             checkoutTotalSpan.textContent = `₹${currentTotalAmount.toFixed(2)}`;
 
-            // Pre-fill customer details if available from localStorage
+            // Pre-fill customer details from localStorage or current customerLocation
             customerNameInput.value = localStorage.getItem('customerName') || '';
             customerPhoneInput.value = localStorage.getItem('customerPhone') || '';
-            deliveryAddressInput.value = localStorage.getItem('deliveryAddress') || '';
-            customerLatitudeInput.value = localStorage.getItem('customerLatitude') || '';
-            customerLongitudeInput.value = localStorage.getItem('customerLongitude') || '';
-            customerAddressInput.value = localStorage.getItem('customerAddress') || '';
-
-            if (customerAddressInput.value) {
-                locationStatusP.textContent = `Location saved: ${customerAddressInput.value}`;
-                locationStatusP.style.color = 'var(--success-green)';
+            
+            // Prioritize customerLocation from header, then localStorage for address field
+            if (customerLocation && customerLocation.address) {
+                deliveryAddressInput.value = customerLocation.address;
+                customerLatitudeInput.value = customerLocation.latitude;
+                customerLongitudeInput.value = customerLocation.longitude;
+                customerAddressInput.value = customerLocation.address;
+                mapLocationStatusP.textContent = `Pinned location: ${customerLocation.address}`;
+                mapLocationStatusP.style.color = 'var(--primary-blue)';
+            } else if (localStorage.getItem('customerAddress')) {
+                const storedLat = localStorage.getItem('customerLatitude');
+                const storedLng = localStorage.getItem('customerLongitude');
+                const storedAddress = localStorage.getItem('customerAddress');
+                customerLocation = {
+                    latitude: parseFloat(storedLat),
+                    longitude: parseFloat(storedLng),
+                    address: storedAddress
+                };
+                deliveryAddressInput.value = storedAddress;
+                customerLatitudeInput.value = storedLat;
+                customerLongitudeInput.value = storedLng;
+                customerAddressInput.value = storedAddress;
+                mapLocationStatusP.textContent = `Pinned location: ${storedAddress}`;
+                mapLocationStatusP.style.color = 'var(--primary-blue)';
             } else {
-                locationStatusP.textContent = 'No location saved.';
-                locationStatusP.style.color = 'var(--text-light)';
+                mapLocationStatusP.textContent = 'Click on the map to set your delivery pin.';
+                mapLocationStatusP.style.color = 'var(--text-light)';
+                customerLatitudeInput.value = '';
+                customerLongitudeInput.value = '';
+                customerAddressInput.value = '';
+                deliveryAddressInput.value = '';
             }
         }
-
-        getLocationBtn.addEventListener('click', () => {
-            locationStatusP.textContent = 'Getting your location...';
-            locationStatusP.style.color = 'var(--primary-blue)';
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(async (position) => {
-                    customerLocation = {
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude
-                    };
-                    // For simplicity, we'll use coordinates and a placeholder address
-                    // In a real app, you'd use a reverse geocoding API here (e.g., Google Maps Geocoding API)
-                    customerLocation.address = `Lat: ${customerLocation.latitude.toFixed(4)}, Lng: ${customerLocation.longitude.toFixed(4)}`;
-                    locationStatusP.textContent = `Location acquired: ${customerLocation.address}`;
-                    locationStatusP.style.color = 'var(--success-green)';
-
-                    customerLatitudeInput.value = customerLocation.latitude;
-                    customerLongitudeInput.value = customerLocation.longitude;
-                    customerAddressInput.value = customerLocation.address; // Store this for submission
-                    showToast('Location acquired!', 'success');
-                }, (error) => {
-                    console.error('Error getting location:', error);
-                    locationStatusP.textContent = `Error getting location: ${error.message}. Please enter address manually.`;
-                    locationStatusP.style.color = 'var(--accent-red)';
-                    customerLocation = null;
-                    showToast('Failed to get location.', 'error');
-                }, {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 0
-                });
-            } else {
-                locationStatusP.textContent = 'Geolocation is not supported by your browser. Please enter address manually.';
-                locationStatusP.style.color = 'var(--accent-red)';
-                customerLocation = null;
-                showToast('Geolocation not supported.', 'error');
-            }
-        });
-
 
         checkoutForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const customerName = customerNameInput.value.trim();
             const customerPhone = customerPhoneInput.value.trim();
-            const deliveryAddress = deliveryAddressInput.value.trim();
+            const deliveryAddress = deliveryAddressInput.value.trim(); // The address displayed in the textarea
+            const orderLatitude = customerLatitudeInput.value ? parseFloat(customerLatitudeInput.value) : null;
+            const orderLongitude = customerLongitudeInput.value ? parseFloat(customerLongitudeInput.value) : null;
+            const orderAddressFromMap = customerAddressInput.value.trim(); // The address obtained from map/geocoding
 
             if (!customerName || !customerPhone || !deliveryAddress) {
                 showToast('Please fill in all required customer details.', 'error');
+                return;
+            }
+            
+            if (!orderLatitude || !orderLongitude || !orderAddressFromMap || orderAddressFromMap === 'Click on the map to set your delivery pin.' || orderAddressFromMap === 'Your current location' || orderAddressFromMap === 'Address not found') {
+                showToast('Please confirm your delivery location on the map by pinning it or searching for an address.', 'error');
                 return;
             }
 
             // Save customer details to localStorage for next time
             localStorage.setItem('customerName', customerName);
             localStorage.setItem('customerPhone', customerPhone);
-            localStorage.setItem('deliveryAddress', deliveryAddress);
-            if (customerLocation) {
-                localStorage.setItem('customerLatitude', customerLocation.latitude);
-                localStorage.setItem('customerLongitude', customerLocation.longitude);
-                localStorage.setItem('customerAddress', customerLocation.address);
-            } else {
-                // If location wasn't explicitly captured, save the manually entered address
-                localStorage.setItem('customerLatitude', ''); // Clear previous if any
-                localStorage.setItem('customerLongitude', ''); // Clear previous if any
-                localStorage.setItem('customerAddress', deliveryAddress);
-            }
+            localStorage.setItem('deliveryAddress', deliveryAddress); // Save the manually entered address too
+            localStorage.setItem('customerLatitude', orderLatitude);
+            localStorage.setItem('customerLongitude', orderLongitude);
+            localStorage.setItem('customerAddress', orderAddressFromMap); // Save the geocoded address
 
 
             const orderPayload = {
@@ -1336,8 +1616,8 @@
                 })),
                 customerName: customerName,
                 customerPhone: customerPhone,
-                deliveryAddress: deliveryAddress,
-                customerLocation: customerLocation || { latitude: null, longitude: null, address: deliveryAddress }, // Use captured location or fallback to address
+                deliveryAddress: deliveryAddress, // Send the address from the text area
+                customerLocation: { latitude: orderLatitude, longitude: orderLongitude, address: orderAddressFromMap }, // Send the map-pinned location
                 subtotal: parseFloat(subtotalAmountSpan.textContent.replace('₹', '')),
                 transportTax: parseFloat(transportTaxAmountSpan.textContent.replace('₹', '')),
                 discountAmount: parseFloat(discountAmountSpan.textContent.replace('-₹', '')),
@@ -1365,6 +1645,9 @@
                 confirmedOrderIdSpan.textContent = result.orderId;
                 confirmedPinIdSpan.textContent = result.pinId;
                 trackOrderLink.href = `/track?orderId=${result.pinId}`; // Link to track page
+
+                // Play Lottie animation
+                orderPlacedLottie.play();
                 openModal(orderConfirmationModal);
 
                 cart = []; // Clear cart after successful order
@@ -1379,17 +1662,9 @@
 
         // --- Initial Load ---
         document.addEventListener('DOMContentLoaded', async () => {
-            // Check for orderId in URL for tracking
-            const urlParams = new URLSearchParams(window.location.search);
-            const orderIdFromUrl = urlParams.get('orderId');
-            if (orderIdFromUrl) {
-                showToast(`Tracking order: ${orderIdFromUrl}`, 'info');
-                // The backend /track route redirects to /menu.
-                // A dedicated tracking modal could be implemented here if desired.
-            }
-
             await fetchSettings();
             await fetchMenu();
+            await getAndDisplayLocation(); // Auto-detect location on page load
             updateCartUI(); // Initialize cart UI
         });
 
@@ -1398,6 +1673,9 @@
             button.addEventListener('click', (e) => {
                 const modalId = e.target.dataset.modalId;
                 closeModal(document.getElementById(modalId));
+                if (modalId === 'orderConfirmationModal') {
+                    orderPlacedLottie.stop(); // Stop animation when closing
+                }
             });
         });
 

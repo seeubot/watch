@@ -28,6 +28,44 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #dc2626; /* Darker Red */
         }
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+        }
+        .close-button {
+            color: #aaa;
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: #ef4444;
+            text-decoration: none;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body class="flex flex-col min-h-screen">
@@ -39,7 +77,7 @@
                 <ul class="flex space-x-4 text-lg">
                     <li><a href="/dashboard" class="hover:text-red-200 transition-colors duration-200">Dashboard</a></li>
                     <li><a href="/admin/login" class="hover:text-red-200 transition-colors duration-200">Login</a></li>
-                    <li><a href="/admin/logout" class="hover:text-red-200 transition-colors duration-200">Logout</a></li>
+                    <li><a href="#" id="logoutBtn" class="hover:text-red-200 transition-colors duration-200">Logout</a></li>
                 </ul>
             </nav>
         </div>
@@ -65,17 +103,18 @@
                 <p class="text-gray-600 mb-4">Manage and track all customer orders.</p>
                 <div class="flex justify-between items-center text-gray-700 text-lg">
                     <span>Total Orders:</span>
-                    <span class="font-bold text-red-600">125</span>
+                    <span id="totalOrders" class="font-bold text-red-600">Loading...</span>
                 </div>
                 <div class="flex justify-between items-center text-gray-700 text-lg mt-2">
                     <span>Pending:</span>
-                    <span class="font-bold text-orange-500">10</span>
+                    <span id="pendingOrders" class="font-bold text-orange-500">Loading...</span>
                 </div>
                 <div class="flex justify-between items-center text-gray-700 text-lg mt-2">
                     <span>Delivered:</span>
-                    <span class="font-bold text-green-500">100</span>
+                    <span id="deliveredOrders" class="font-bold text-green-500">Loading...</span>
                 </div>
-                <button class="mt-6 w-full bg-red-500 text-white py-3 px-4 rounded-md hover:bg-red-700 transition-colors duration-300 shadow-md">
+                <button class="mt-6 w-full bg-red-500 text-white py-3 px-4 rounded-md hover:bg-red-700 transition-colors duration-300 shadow-md"
+                        onclick="alert('View All Orders functionality coming soon!')">
                     View All Orders
                 </button>
             </div>
@@ -95,17 +134,18 @@
                 <p class="text-gray-600 mb-4">Add, edit, or remove items from your menu.</p>
                 <div class="flex justify-between items-center text-gray-700 text-lg">
                     <span>Total Items:</span>
-                    <span class="font-bold text-red-600">50</span>
+                    <span id="totalMenuItems" class="font-bold text-red-600">Loading...</span>
                 </div>
                 <div class="flex justify-between items-center text-gray-700 text-lg mt-2">
                     <span>Available:</span>
-                    <span class="font-bold text-green-500">45</span>
+                    <span id="availableMenuItems" class="font-bold text-green-500">Loading...</span>
                 </div>
                 <div class="flex justify-between items-center text-gray-700 text-lg mt-2">
                     <span>Trending:</span>
-                    <span class="font-bold text-purple-500">5</span>
+                    <span id="trendingMenuItems" class="font-bold text-purple-500">Loading...</span>
                 </div>
-                <button class="mt-6 w-full bg-red-500 text-white py-3 px-4 rounded-md hover:bg-red-700 transition-colors duration-300 shadow-md">
+                <button class="mt-6 w-full bg-red-500 text-white py-3 px-4 rounded-md hover:bg-red-700 transition-colors duration-300 shadow-md"
+                        onclick="alert('Manage Menu functionality coming soon!')">
                     Manage Menu
                 </button>
             </div>
@@ -124,17 +164,18 @@
                 <p class="text-gray-600 mb-4">View and manage your customer information.</p>
                 <div class="flex justify-between items-center text-gray-700 text-lg">
                     <span>Total Customers:</span>
-                    <span class="font-bold text-red-600">500</span>
+                    <span id="totalCustomers" class="font-bold text-red-600">Loading...</span>
                 </div>
                 <div class="flex justify-between items-center text-gray-700 text-lg mt-2">
                     <span>New this week:</span>
-                    <span class="font-bold text-blue-500">25</span>
+                    <span id="newCustomers" class="font-bold text-blue-500">Loading...</span>
                 </div>
                 <div class="flex justify-between items-center text-gray-700 text-lg mt-2">
                     <span>Active Customers:</span>
-                    <span class="font-bold text-green-500">350</span>
+                    <span id="activeCustomers" class="font-bold text-green-500">Loading...</span>
                 </div>
-                <button class="mt-6 w-full bg-red-500 text-white py-3 px-4 rounded-md hover:bg-red-700 transition-colors duration-300 shadow-md">
+                <button class="mt-6 w-full bg-red-500 text-white py-3 px-4 rounded-md hover:bg-red-700 transition-colors duration-300 shadow-md"
+                        onclick="alert('View Customers functionality coming soon!')">
                     View Customers
                 </button>
             </div>
@@ -167,9 +208,7 @@
                     <button id="loadSessionBtn" class="w-full bg-red-500 text-white py-3 px-4 rounded-md hover:bg-red-700 transition-colors duration-300 shadow-md">
                         Load New Session / Get QR
                     </button>
-                    <button id="disconnectBtn" class="w-full bg-gray-400 text-white py-3 px-4 rounded-md hover:bg-gray-600 transition-colors duration-300 shadow-md">
-                        Disconnect WhatsApp
-                    </button>
+                    <!-- Disconnect button removed as per backend logic, re-initialization handles it implicitly -->
                 </div>
             </div>
 
@@ -185,13 +224,14 @@
                 <p class="text-gray-600 mb-4">Configure shop details, delivery rates, and more.</p>
                 <div class="flex justify-between items-center text-gray-700 text-lg">
                     <span>Shop Name:</span>
-                    <span class="font-bold text-red-600">Delicious Bites</span>
+                    <span id="shopName" class="font-bold text-red-600">Loading...</span>
                 </div>
                 <div class="flex justify-between items-center text-gray-700 text-lg mt-2">
-                    <span>Delivery Zones:</span>
-                    <span class="font-bold text-blue-500">3</span>
+                    <span>Delivery Rates:</span>
+                    <span id="deliveryRatesCount" class="font-bold text-blue-500">Loading...</span>
                 </div>
-                <button class="mt-6 w-full bg-red-500 text-white py-3 px-4 rounded-md hover:bg-red-700 transition-colors duration-300 shadow-md">
+                <button class="mt-6 w-full bg-red-500 text-white py-3 px-4 rounded-md hover:bg-red-700 transition-colors duration-300 shadow-md"
+                        onclick="alert('Adjust Settings functionality coming soon!')">
                     Adjust Settings
                 </button>
             </div>
@@ -209,14 +249,33 @@
                 <p class="text-gray-600 mb-4">Set up and manage order discounts.</p>
                 <div class="flex justify-between items-center text-gray-700 text-lg">
                     <span>Min Subtotal:</span>
-                    <span class="font-bold text-red-600">₹200</span>
+                    <span id="minSubtotalForDiscount" class="font-bold text-red-600">Loading...</span>
                 </div>
                 <div class="flex justify-between items-center text-gray-700 text-lg mt-2">
                     <span>Discount %:</span>
-                    <span class="font-bold text-green-500">20%</span>
+                    <span id="discountPercentage" class="font-bold text-green-500">Loading...</span>
                 </div>
-                <button class="mt-6 w-full bg-red-500 text-white py-3 px-4 rounded-md hover:bg-red-700 transition-colors duration-300 shadow-md">
+                <button id="configureDiscountBtn" class="mt-6 w-full bg-red-500 text-white py-3 px-4 rounded-md hover:bg-red-700 transition-colors duration-300 shadow-md">
                     Configure Discounts
+                </button>
+            </div>
+
+            <!-- Card 7: Two-Factor Authentication -->
+            <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-red-500">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-2xl font-semibold text-gray-800">Two-Factor Auth</h2>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield-check text-red-500">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <path d="m9 12 2 2 4-4"/>
+                    </svg>
+                </div>
+                <p class="text-gray-600 mb-4">Enhance your dashboard security with 2FA.</p>
+                <div class="flex justify-between items-center text-gray-700 text-lg">
+                    <span>Status:</span>
+                    <span id="twoFactorStatus" class="font-bold text-yellow-500">Loading...</span>
+                </div>
+                <button id="manage2FABtn" class="mt-6 w-full bg-red-500 text-white py-3 px-4 rounded-md hover:bg-red-700 transition-colors duration-300 shadow-md">
+                    Manage 2FA
                 </button>
             </div>
 
@@ -230,6 +289,45 @@
         </div>
     </footer>
 
+    <!-- 2FA Modal -->
+    <div id="twoFAModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="close2FAModal">&times;</span>
+            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Manage Two-Factor Authentication</h3>
+            <div id="twoFAModalContent">
+                <p id="current2FAStatus" class="text-lg font-medium mb-4">Current Status: <span class="font-bold" id="modal2FAStatusText">Loading...</span></p>
+
+                <div id="enable2FASection" class="hidden">
+                    <button id="generate2FABtn" class="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors duration-300 shadow-md mb-4">
+                        Generate New 2FA QR
+                    </button>
+                    <div id="qrCodeDisplay" class="text-center mb-4 hidden">
+                        <p class="text-gray-700 mb-2">Scan this QR code with your authenticator app (e.g., Google Authenticator):</p>
+                        <img id="modalQrCodeImage" src="" alt="2FA QR Code" class="mx-auto border p-2 rounded-md">
+                        <p class="text-sm text-gray-500 mt-2">Or manually enter secret: <span id="manualSecret" class="font-mono text-xs break-all"></span></p>
+                        <div class="mt-4">
+                            <label for="verifyTotpCode" class="block text-sm font-medium text-gray-700 mb-1">Enter 2FA Code to Verify & Enable</label>
+                            <input type="text" id="verifyTotpCode" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm" placeholder="6-digit code">
+                            <button id="verify2FABtn" class="w-full bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 transition-colors duration-300 shadow-md mt-3">
+                                Verify & Enable 2FA
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="disable2FASection" class="hidden">
+                    <p class="text-gray-700 mb-4">Two-Factor Authentication is currently enabled. You can disable it below.</p>
+                    <button id="disable2FABtn" class="w-full bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition-colors duration-300 shadow-md">
+                        Disable 2FA
+                    </button>
+                </div>
+                <div id="modalErrorMessage" class="text-red-600 text-sm text-center mt-4 hidden"></div>
+                <div id="modalSuccessMessage" class="text-green-600 text-sm text-center mt-4 hidden"></div>
+            </div>
+        </div>
+    </div>
+
+
     <!-- Socket.io and JavaScript for dynamic content -->
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -241,48 +339,134 @@
             return null;
         }
 
-        // Check for token and redirect if not present or expired
-        document.addEventListener('DOMContentLoaded', async () => {
-            const token = getCookie('token'); // Assuming token is stored in a cookie named 'token'
+        const token = getCookie('token'); // Get token once on load
 
-            if (!token) {
-                // If no token, redirect to login page
-                window.location.href = '/admin/login';
-                return;
-            }
+        // Redirect to login if no token
+        if (!token) {
+            window.location.href = '/admin/login';
+        }
 
-            // Verify token with the backend
+        // --- Utility Functions ---
+        async function fetchData(url) {
             try {
-                const response = await fetch('/api/admin/bot-status', { // Using a simple authenticated endpoint to verify token
+                const response = await fetch(url, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
-
                 if (response.status === 401 || response.status === 403) {
                     // Token expired or invalid, redirect to login
+                    alert('Session expired or invalid. Please log in again.');
+                    setCookie('token', '', -1); // Clear token
                     window.location.href = '/admin/login';
-                    return;
+                    return null;
                 }
-
                 if (!response.ok) {
-                    console.error('Failed to verify token:', response.statusText);
-                    // Optionally, redirect or show an error message
-                    return;
+                    console.error(`Error fetching ${url}:`, response.status, response.statusText);
+                    return null;
                 }
-
-                const data = await response.json();
-                updateWhatsAppStatus(data.status, data.lastAuthenticatedAt, data.qrCodeAvailable);
-
+                return await response.json();
             } catch (error) {
-                console.error('Error verifying token or fetching bot status:', error);
-                // Handle network errors or other issues
-                window.location.href = '/admin/login'; // Redirect on error
-                return;
+                console.error(`Network error fetching ${url}:`, error);
+                return null;
+            }
+        }
+
+        function updateStatusColor(status) {
+            const statusElement = document.getElementById('whatsappStatus');
+            statusElement.classList.remove('text-green-500', 'text-red-500', 'text-yellow-500', 'text-blue-500', 'text-orange-500');
+            switch (status) {
+                case 'ready':
+                    statusElement.classList.add('text-green-500');
+                    break;
+                case 'disconnected':
+                case 'auth_failure':
+                case 'qr_error':
+                    statusElement.classList.add('text-red-500');
+                    break;
+                case 'qr_received':
+                    statusElement.classList.add('text-orange-500');
+                    break;
+                case 'authenticated':
+                case 'initializing':
+                    statusElement.classList.add('text-yellow-500');
+                    break;
+                default:
+                    statusElement.classList.add('text-gray-500');
+                    break;
+            }
+        }
+
+        // Function to set a cookie (copied from login page for consistency)
+        function setCookie(name, value, days) {
+            const date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            const expires = `expires=${date.toUTCString()}`;
+            document.cookie = `${name}=${value};${expires};path=/;SameSite=Lax`;
+        }
+
+        // --- Data Loading Functions ---
+        async function loadDashboardData() {
+            // Orders
+            const orders = await fetchData('/api/admin/orders');
+            if (orders) {
+                document.getElementById('totalOrders').textContent = orders.length;
+                document.getElementById('pendingOrders').textContent = orders.filter(o => o.status === 'Pending').length;
+                document.getElementById('deliveredOrders').textContent = orders.filter(o => o.status === 'Delivered').length;
             }
 
-            // Initialize Socket.io connection after token verification
+            // Menu
+            const menuItems = await fetchData('/api/admin/menu');
+            if (menuItems) {
+                document.getElementById('totalMenuItems').textContent = menuItems.length;
+                document.getElementById('availableMenuItems').textContent = menuItems.filter(item => item.isAvailable).length;
+                document.getElementById('trendingMenuItems').textContent = menuItems.filter(item => item.isTrending).length;
+            }
+
+            // Customers (simplified for now, 'new this week' and 'active' would need more complex logic)
+            const customers = await fetchData('/api/admin/customers');
+            if (customers) {
+                document.getElementById('totalCustomers').textContent = customers.length;
+                // Placeholder for 'new this week' - actual implementation needs server-side logic
+                const oneWeekAgo = new Date();
+                oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                document.getElementById('newCustomers').textContent = customers.filter(c => new Date(c.lastOrderDate) > oneWeekAgo).length; // Using lastOrderDate as a proxy
+                document.getElementById('activeCustomers').textContent = customers.filter(c => c.totalOrders > 0).length; // Proxy for active
+            }
+
+            // Settings
+            const settings = await fetchData('/api/admin/settings');
+            if (settings) {
+                document.getElementById('shopName').textContent = settings.shopName || 'N/A';
+                document.getElementById('deliveryRatesCount').textContent = settings.deliveryRates ? settings.deliveryRates.length : 0;
+            }
+
+            // Discount Settings
+            const discountSettings = await fetchData('/api/admin/discount-settings');
+            if (discountSettings) {
+                document.getElementById('minSubtotalForDiscount').textContent = `₹${discountSettings.minSubtotalForDiscount.toFixed(2)}`;
+                document.getElementById('discountPercentage').textContent = `${(discountSettings.discountPercentage * 100).toFixed(0)}%`;
+            }
+
+            // WhatsApp Bot Status (initial load)
+            const botStatus = await fetchData('/api/admin/bot-status');
+            if (botStatus) {
+                updateWhatsAppStatus(botStatus.status, botStatus.lastAuthenticatedAt, botStatus.qrCodeAvailable);
+                if (botStatus.qrCodeAvailable && botStatus.status === 'qr_received') {
+                    // If QR is already available, request it via socket or directly from an API if exposed
+                    // For simplicity, we assume socket will send it shortly after connect/status update
+                    // Or, if the backend exposes a direct QR endpoint for current QR, we could fetch it here.
+                    // For now, rely on socket.io.
+                }
+            }
+        }
+
+        // --- Event Listeners ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDashboardData(); // Load initial data
+
+            // Initialize Socket.io connection
             const socket = io();
 
             socket.on('connect', () => {
@@ -291,8 +475,7 @@
 
             socket.on('status', (status) => {
                 console.log('WhatsApp Status:', status);
-                document.getElementById('whatsappStatus').textContent = status.replace(/_/g, ' ').toUpperCase();
-                updateStatusColor(status);
+                updateWhatsAppStatus(status, null, status === 'qr_received' || status === 'qr_error'); // lastAuthenticatedAt will come from sessionInfo
             });
 
             socket.on('sessionInfo', (info) => {
@@ -329,14 +512,15 @@
                 // Optionally display logs on the dashboard if a log area is added
             });
 
+            socket.on('new_order', (order) => {
+                console.log('New order received via socket:', order);
+                alert(`New Order Received! Order ID: ${order.customOrderId || order._id.substring(0, 6)}...`);
+                loadDashboardData(); // Reload dashboard data to update order counts
+            });
+
+
             // Handle Load New Session / Get QR button click
             document.getElementById('loadSessionBtn').addEventListener('click', async () => {
-                const token = getCookie('token');
-                if (!token) {
-                    alert('Please log in first.');
-                    window.location.href = '/admin/login';
-                    return;
-                }
                 document.getElementById('whatsappStatus').textContent = 'INITIALIZING...';
                 document.getElementById('whatsappStatus').className = 'font-bold text-yellow-500'; // Set to yellow for initializing
                 try {
@@ -361,63 +545,177 @@
                 }
             });
 
-            // Handle Disconnect WhatsApp button click (Placeholder for future functionality)
-            document.getElementById('disconnectBtn').addEventListener('click', () => {
-                alert('Disconnect functionality not yet implemented. Please refer to server logs or restart the server if needed.');
-                // In a real scenario, this would trigger a backend endpoint to destroy the session.
+            // Logout button handler
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                setCookie('token', '', -1); // Clear the token cookie
+                window.location.href = '/admin/login'; // Redirect to login page
             });
 
-            // Function to update WhatsApp status and color
-            function updateWhatsAppStatus(status, lastAuthenticatedAt, qrCodeAvailable) {
-                const statusElement = document.getElementById('whatsappStatus');
-                const lastAuthElement = document.getElementById('lastAuthenticatedAt');
-                const qrCodeContainer = document.getElementById('qrCodeContainer');
-                const qrMessage = document.getElementById('qrMessage');
+            // --- 2FA Modal Logic ---
+            const twoFAModal = document.getElementById('twoFAModal');
+            const close2FAModal = document.getElementById('close2FAModal');
+            const manage2FABtn = document.getElementById('manage2FABtn');
+            const modal2FAStatusText = document.getElementById('modal2FAStatusText');
+            const enable2FASection = document.getElementById('enable2FASection');
+            const disable2FASection = document.getElementById('disable2FASection');
+            const generate2FABtn = document.getElementById('generate2FABtn');
+            const qrCodeDisplay = document.getElementById('qrCodeDisplay');
+            const modalQrCodeImage = document.getElementById('modalQrCodeImage');
+            const manualSecret = document.getElementById('manualSecret');
+            const verifyTotpCodeInput = document.getElementById('verifyTotpCode');
+            const verify2FABtn = document.getElementById('verify2FABtn');
+            const disable2FABtn = document.getElementById('disable2FABtn');
+            const modalErrorMessage = document.getElementById('modalErrorMessage');
+            const modalSuccessMessage = document.getElementById('modalSuccessMessage');
 
-                statusElement.textContent = status.replace(/_/g, ' ').toUpperCase();
-                updateStatusColor(status);
+            let currentGeneratedSecret = null; // To store the secret temporarily for verification
 
-                if (lastAuthenticatedAt) {
-                    const date = new Date(lastAuthenticatedAt);
-                    lastAuthElement.textContent = date.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-                } else {
-                    lastAuthElement.textContent = 'N/A';
-                }
+            function showModalMessage(element, message, isSuccess = false) {
+                element.textContent = message;
+                element.classList.remove('hidden', 'text-red-600', 'text-green-600');
+                element.classList.add(isSuccess ? 'text-green-600' : 'text-red-600');
+            }
 
-                // Show QR code container if QR is available and status is qr_received or qr_error
-                if (qrCodeAvailable && (status === 'qr_received' || status === 'qr_error')) {
-                    qrCodeContainer.classList.remove('hidden');
-                    qrMessage.classList.remove('hidden');
-                } else {
-                    qrCodeContainer.classList.add('hidden');
-                    qrMessage.classList.add('hidden');
+            function hideModalMessages() {
+                modalErrorMessage.classList.add('hidden');
+                modalSuccessMessage.classList.add('hidden');
+            }
+
+            async function update2FAStatusInModal() {
+                hideModalMessages();
+                const statusData = await fetchData('/api/admin/2fa/status');
+                if (statusData) {
+                    modal2FAStatusText.textContent = statusData.twoFactorEnabled ? 'Enabled' : 'Disabled';
+                    modal2FAStatusText.classList.remove('text-yellow-500', 'text-green-500', 'text-red-500');
+                    modal2FAStatusText.classList.add(statusData.twoFactorEnabled ? 'text-green-500' : 'text-red-500');
+
+                    if (statusData.twoFactorEnabled) {
+                        enable2FASection.classList.add('hidden');
+                        disable2FASection.classList.remove('hidden');
+                        document.getElementById('twoFactorStatus').textContent = 'Enabled';
+                        document.getElementById('twoFactorStatus').classList.remove('text-yellow-500', 'text-red-500');
+                        document.getElementById('twoFactorStatus').classList.add('text-green-500');
+                    } else {
+                        enable2FASection.classList.remove('hidden');
+                        disable2FASection.classList.add('hidden');
+                        qrCodeDisplay.classList.add('hidden'); // Hide QR section if 2FA is disabled
+                        modalQrCodeImage.src = '';
+                        manualSecret.textContent = '';
+                        verifyTotpCodeInput.value = '';
+                        currentGeneratedSecret = null; // Clear any temporary secret
+                        document.getElementById('twoFactorStatus').textContent = 'Disabled';
+                        document.getElementById('twoFactorStatus').classList.remove('text-yellow-500', 'text-green-500');
+                        document.getElementById('twoFactorStatus').classList.add('text-red-500');
+                    }
                 }
             }
 
-            function updateStatusColor(status) {
-                const statusElement = document.getElementById('whatsappStatus');
-                statusElement.classList.remove('text-green-500', 'text-red-500', 'text-yellow-500', 'text-blue-500', 'text-orange-500');
-                switch (status) {
-                    case 'ready':
-                        statusElement.classList.add('text-green-500');
-                        break;
-                    case 'disconnected':
-                    case 'auth_failure':
-                    case 'qr_error':
-                        statusElement.classList.add('text-red-500');
-                        break;
-                    case 'qr_received':
-                        statusElement.classList.add('text-orange-500');
-                        break;
-                    case 'authenticated':
-                    case 'initializing':
-                        statusElement.classList.add('text-yellow-500');
-                        break;
-                    default:
-                        statusElement.classList.add('text-gray-500');
-                        break;
+            manage2FABtn.addEventListener('click', () => {
+                twoFAModal.style.display = 'flex'; // Use flex to center
+                update2FAStatusInModal();
+            });
+
+            close2FAModal.addEventListener('click', () => {
+                twoFAModal.style.display = 'none';
+                hideModalMessages();
+            });
+
+            window.addEventListener('click', (event) => {
+                if (event.target == twoFAModal) {
+                    twoFAModal.style.display = 'none';
+                    hideModalMessages();
+                }
+            });
+
+            generate2FABtn.addEventListener('click', async () => {
+                hideModalMessages();
+                try {
+                    const data = await fetchData('/api/admin/2fa/generate');
+                    if (data) {
+                        modalQrCodeImage.src = data.qrCodeUrl;
+                        manualSecret.textContent = data.secret;
+                        currentGeneratedSecret = data.secret; // Store for verification
+                        qrCodeDisplay.classList.remove('hidden');
+                        showModalMessage(modalSuccessMessage, 'New QR code generated. Scan and verify to enable 2FA.', true);
+                    } else {
+                        showModalMessage(modalErrorMessage, 'Failed to generate QR code.');
+                    }
+                } catch (error) {
+                    showModalMessage(modalErrorMessage, 'Network error generating QR code.');
+                }
+            });
+
+            verify2FABtn.addEventListener('click', async () => {
+                hideModalMessages();
+                const totpCode = verifyTotpCodeInput.value.trim();
+                if (!totpCode || totpCode.length !== 6) {
+                    showModalMessage(modalErrorMessage, 'Please enter a valid 6-digit code.');
+                    return;
+                }
+                if (!currentGeneratedSecret) {
+                    showModalMessage(modalErrorMessage, 'Please generate a QR code first.');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/admin/2fa/verify', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ totpCode, secret: currentGeneratedSecret })
+                    });
+                    const data = await response.json();
+
+                    if (response.ok && data.verified) {
+                        showModalMessage(modalSuccessMessage, '2FA successfully enabled!', true);
+                        update2FAStatusInModal(); // Refresh status in modal and dashboard
+                    } else {
+                        showModalMessage(modalErrorMessage, data.message || 'Invalid 2FA code. Please try again.');
+                    }
+                } catch (error) {
+                    showModalMessage(modalErrorMessage, 'Network error verifying 2FA code.');
+                }
+            });
+
+            disable2FABtn.addEventListener('click', async () => {
+                hideModalMessages();
+                if (!confirm('Are you sure you want to disable Two-Factor Authentication?')) {
+                    return;
+                }
+                try {
+                    const response = await fetch('/api/admin/2fa/disable', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        showModalMessage(modalSuccessMessage, '2FA successfully disabled.', true);
+                        update2FAStatusInModal(); // Refresh status in modal and dashboard
+                    } else {
+                        showModalMessage(modalErrorMessage, data.message || 'Failed to disable 2FA.');
+                    }
+                } catch (error) {
+                    showModalMessage(modalErrorMessage, 'Network error disabling 2FA.');
+                }
+            });
+
+            // Initial load of 2FA status for the main dashboard card
+            async function loadInitial2FAStatus() {
+                const statusData = await fetchData('/api/admin/2fa/status');
+                if (statusData) {
+                    const twoFactorStatusElement = document.getElementById('twoFactorStatus');
+                    twoFactorStatusElement.textContent = statusData.twoFactorEnabled ? 'Enabled' : 'Disabled';
+                    twoFactorStatusElement.classList.remove('text-yellow-500', 'text-green-500', 'text-red-500');
+                    twoFactorStatusElement.classList.add(statusData.twoFactorEnabled ? 'text-green-500' : 'text-red-500');
                 }
             }
+            loadInitial2FAStatus(); // Call on DOMContentLoaded
         });
     </script>
 </body>

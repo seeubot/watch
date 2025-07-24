@@ -1400,11 +1400,13 @@
             const initialMapLng = customerLocation ? customerLocation.longitude : defaultLng;
             const initialMapZoom = customerLocation ? 16 : 13; // Zoom in more if location is known
 
-            map = L.map('map').setView([initialMapLat, initialMapLng], initialMapZoom);
+            map = L.map('map', {
+                zoomControl: false // Hide default zoom controls
+            }).setView([initialMapLat, initialMapLng], initialMapZoom);
 
             // OpenStreetMap Satellite Tiles (using Esri World Imagery as a common satellite option)
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, swisstopo, and the GIS User Community',
+                attribution: false, // Hide attribution footer
                 maxZoom: 18
             }).addTo(map);
 
@@ -1481,7 +1483,7 @@
         }
 
         confirmLocationBtn.addEventListener('click', () => {
-            if (tempMapLocation && tempMapLocation.latitude && tempMapLocation.longitude && tempMapLocation.address && tempMapLocation.address !== 'Address not found') {
+            if (tempMapLocation && tempMapLocation.latitude && tempMapLocation.longitude && tempMapLocation.address && tempMapLocation.address !== 'Address not found' && tempMapLocation.address !== 'Your current location') {
                 customerLocation = { ...tempMapLocation }; // Confirm the location
                 updateLocationHeaderUI(); // Update the main UI
                 closeModal(locationMapModal);

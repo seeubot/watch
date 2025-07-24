@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot Status - Delicious Bites</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000000; /* Pure black background */
+            color: #ffffff; /* Pure white text */
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+        .container {
+            background-color: #1a1a1a;
+            padding: 2.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 5px 15px rgba(255,255,255,0.1);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #ffffff;
+        }
+        .status-indicator {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        .status-disconnected { color: #ff6666; } /* Red */
+        .status-qr_received { color: #ffff66; } /* Yellow */
+        .status-authenticated { color: #00cc00; } /* Green */
+        .status-ready { color: #00cc00; } /* Green */
+        .status-auth_failure { color: #ff6666; } /* Red */
+        .status-initializing { color: #00aaff; } /* Blue */
+        .status-qr_error { color: #ff6666; } /* Red */
+
+        #qr-code-container {
+            margin-top: 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 200px; /* Ensure space for QR */
+        }
+        #qr-code {
+            max-width: 100%;
+            height: auto;
+            border: 5px solid #333333;
+            border-radius: 0.5rem;
+            background-color: #ffffff; /* White background for QR */
+            padding: 10px;
+        }
+        .message {
+            margin-top: 1rem;
+            font-weight: 600;
+            color: #cccccc;
+        }
+        .btn-primary {
+            background-color: #0066cc;
+            color: #ffffff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 700;
+            font-size: 1.125rem;
+            width: 100%;
+            transition: background-color 0.2s ease-in-out;
+            margin-top: 1.5rem;
+        }
+        .btn-primary:hover {
+            background-color: #0077dd;
+        }
+        .loader {
+            border: 4px solid #333333;
+            border-top: 4px solid #66ff66;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .link-button {
+            display: block;
+            margin-top: 1rem;
+            padding: 0.5rem 1rem;
+            background-color: #333333;
+            color: #ffffff;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        .link-button:hover {
+            background-color: #555555;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 1.5rem;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+            .status-indicator {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WhatsApp Bot Status</h1>
+        <p class="status-indicator">Status: <span id="bot-status-text">Connecting...</span></p>
+        <p class="message" id="status-message">Waiting for bot status...</p>
+        <div id="qr-code-container">
+            <img id="qr-code" src="" alt="Scan QR Code" class="hidden">
+            <p id="qr-loading-text" class="text-gray-400">Loading QR Code...</p>
+        </div>
+        <button id="request-qr-btn" class="btn-primary hidden">
+            <span id="request-qr-loader" class="loader hidden"></span>
+            <span id="request-qr-text">Request New QR Code</span>
+        </button>
+        <p id="last-auth-info" class="message text-sm hidden">Last Authenticated: <span id="last-auth-date">N/A</span></p>
+
+        <a href="/menu" class="link-button">Go to Menu</a>
+        <a href="/admin/login" class="link-button">Admin Login</a>
+    </div>
+
+    <script>
+        const socket = io();
+        const botStatusText = document.getElementById('bot-status-text');
+        const statusMessage = document.getElementById('status-message');
+        const qrCodeImg = document.getElementById('qr-code');
+        const qrLoadingText = document.getElementById('qr-loading-text');
+        const requestQrBtn = document.getElementById('request-qr-btn');
+        const requestQrLoader = document.getElementById('request-qr-loader');
+        const requestQrText = document.getElementById('request-qr-text');
+        const lastAuthInfo = document.getElementById('last-auth-info');
+        const lastAuthDate = document.getElementById('last-auth-date');
+
+        function updateStatus(status) {
+            botStatusText.textContent = status.replace(/_/g, ' ').toUpperCase();
+            botStatusText.className = `status-indicator status-${status}`;
+
+            qrCodeImg.classList.add('hidden');
+            qrLoadingText.classList.add('hidden');
+            requestQrBtn.classList.add('hidden');
+            lastAuthInfo.classList.add('hidden');
+
+            switch (status) {
+                case 'disconnected':
+                    statusMessage.textContent = 'Bot is disconnected. Please request a new QR code.';
+                    requestQrBtn.classList.remove('hidden');
+                    break;
+                case 'qr_received':
+                    statusMessage.textContent = 'Scan the QR code to connect WhatsApp.';
+                    qrCodeImg.classList.remove('hidden');
+                    qrLoadingText.classList.add('hidden'); // Ensure loading text is hidden if QR is shown
+                    break;
+                case 'authenticated':
+                    statusMessage.textContent = 'Bot authenticated. Waiting for ready state...';
+                    break;
+                case 'ready':
+                    statusMessage.textContent = 'Bot is ready and online!';
+                    lastAuthInfo.classList.remove('hidden');
+                    break;
+                case 'auth_failure':
+                    statusMessage.textContent = 'Authentication failed. Please request a new QR code.';
+                    requestQrBtn.classList.remove('hidden');
+                    break;
+                case 'initializing':
+                    statusMessage.textContent = 'Bot is initializing...';
+                    qrLoadingText.classList.remove('hidden');
+                    break;
+                case 'qr_error':
+                    statusMessage.textContent = 'QR code expired or error occurred. Request a new QR.';
+                    requestQrBtn.classList.remove('hidden');
+                    break;
+                default:
+                    statusMessage.textContent = 'Unknown status.';
+                    break;
+            }
+        }
+
+        socket.on('status', (status) => {
+            console.log('Bot Status:', status);
+            updateStatus(status);
+        });
+
+        socket.on('qrCode', (qrData) => {
+            console.log('QR Code Received');
+            if (qrData) {
+                qrCodeImg.src = qrData;
+                qrCodeImg.classList.remove('hidden');
+                qrLoadingText.classList.add('hidden');
+                statusMessage.textContent = 'Scan the QR code to connect WhatsApp.';
+            } else {
+                qrCodeImg.classList.add('hidden');
+                qrCodeImg.src = '';
+                qrLoadingText.classList.remove('hidden');
+                statusMessage.textContent = 'QR code not available.';
+            }
+        });
+
+        socket.on('sessionInfo', (info) => {
+            if (info.lastAuthenticatedAt) {
+                const date = new Date(info.lastAuthenticatedAt);
+                lastAuthDate.textContent = date.toLocaleString();
+                lastAuthInfo.classList.remove('hidden');
+            } else {
+                lastAuthInfo.classList.add('hidden');
+            }
+        });
+
+        requestQrBtn.addEventListener('click', async () => {
+            requestQrLoader.classList.remove('hidden');
+            requestQrText.classList.add('hidden');
+            statusMessage.textContent = 'Requesting new QR...';
+            try {
+                const response = await fetch('/api/public/request-qr', { method: 'POST' });
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.message || 'Failed to request QR.');
+                }
+                statusMessage.textContent = result.message;
+            } catch (error) {
+                console.error('Error requesting QR:', error);
+                statusMessage.textContent = `Error: ${error.message}`;
+            } finally {
+                requestQrLoader.classList.add('hidden');
+                requestQrText.classList.remove('hidden');
+            }
+        });
+
+        // Initial status fetch on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch('/api/admin/bot-status'); // This endpoint requires auth, but public/request-qr does not.
+                                                                        // Let's create a public endpoint for status as well.
+                if (!response.ok) {
+                    // Fallback if admin endpoint is not accessible (e.g., no token)
+                    console.warn('Could not fetch bot status from admin endpoint. Assuming public status.');
+                    updateStatus('disconnected'); // Default to disconnected if no status can be fetched
+                    return;
+                }
+                const data = await response.json();
+                updateStatus(data.status);
+                if (data.qrCodeAvailable) {
+                    // If QR is available, we need to request it explicitly from the backend.
+                    // The backend doesn't re-emit QR on new socket connection unless it's new.
+                    // This is a limitation of current setup, but for now, rely on `qrCode` event.
+                    // Or, we can make an endpoint to fetch current QR if available.
+                    // For simplicity, if status is qr_received, we just wait for the socket event.
+                }
+                if (data.lastAuthenticatedAt) {
+                    const date = new Date(data.lastAuthenticatedAt);
+                    lastAuthDate.textContent = date.toLocaleString();
+                    lastAuthInfo.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Error fetching initial bot status:', error);
+                updateStatus('disconnected');
+                statusMessage.textContent = 'Error fetching bot status. Please try refreshing.';
+            }
+        });
+    </script>
+</body>
+</html>
+

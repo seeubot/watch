@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Delicious Bites</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Poppins for a modern look -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* Gradient background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1.5rem; /* Increased padding for better spacing */
+            box-sizing: border-box;
+        }
+        .login-container {
+            background-color: #ffffff; /* White background for the card */
+            padding: 3rem; /* More generous padding */
+            border-radius: 1.5rem; /* Even more rounded corners */
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2); /* Deeper, softer shadow */
+            width: 100%;
+            max-width: 400px; /* Slightly narrower for a more focused look */
+            transition: all 0.4s ease-in-out; /* Smoother transitions */
+            animation: fadeIn 0.8s ease-out; /* Fade-in animation */
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @media (max-width: 640px) {
+            .login-container {
+                padding: 2rem; /* Adjust padding for smaller screens */
+                margin: 0 1rem;
+            }
+        }
+        .input-field {
+            @apply mt-1 block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm
+                   focus:outline-none focus:ring-3 focus:ring-purple-500 focus:border-purple-500
+                   sm:text-lg transition duration-300 ease-in-out; /* Larger, more rounded, distinct focus */
+        }
+        .form-label {
+            @apply block text-sm font-medium text-gray-700 mb-1.5; /* Increased spacing */
+        }
+        .btn {
+            @apply px-6 py-3 rounded-xl font-semibold transition duration-300 ease-in-out transform hover:scale-105; /* Larger, more interactive buttons */
+        }
+        .btn-primary {
+            @apply bg-gradient-to-r from-indigo-600 to-purple-700 text-white hover:from-indigo-700 hover:to-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2; /* Gradient button */
+        }
+        .error-message {
+            @apply text-red-600 text-sm mt-4 font-medium; /* Increased margin, bolded */
+        }
+        .logo-text {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            color: #667eea; /* Matching primary color */
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="login-container">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl logo-text">Delicious Bites</h1>
+            <h2 class="text-xl font-semibold text-gray-700 mt-2">Admin Panel Login</h2>
+        </div>
+        <form id="login-form" class="space-y-7"> <!-- Increased vertical spacing -->
+            <div>
+                <label for="username" class="form-label">Username</label>
+                <input type="text" id="username" name="username" class="input-field" required autocomplete="username">
+            </div>
+            <div>
+                <label for="password" class="form-label">Password</label>
+                <input type="password" id="password" name="password" class="input-field" required autocomplete="current-password">
+            </div>
+            <div id="totp-field" class="hidden">
+                <label for="totp-code" class="form-label">Two-Factor Code</label>
+                <input type="text" id="totp-code" name="totpCode" class="input-field" placeholder="XXXXXX" maxlength="6" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]*">
+            </div>
+            <button type="submit" class="btn btn-primary w-full py-3.5 text-lg shadow-lg hover:shadow-xl">Login</button>
+            <p id="error-message" class="error-message text-center hidden"></p>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginForm = document.getElementById('login-form');
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const totpField = document.getElementById('totp-field');
+            const totpCodeInput = document.getElementById('totp-code');
+            const errorMessage = document.getElementById('error-message');
+
+            // Function to display error messages
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.classList.remove('hidden');
+            }
+
+            // Function to hide error messages
+            function hideError() {
+                errorMessage.classList.add('hidden');
+                errorMessage.textContent = '';
+            }
+
+            // Check if a token already exists and try to validate it
+            const existingToken = localStorage.getItem('jwtToken');
+            if (existingToken) {
+                // Attempt to verify the token by making a protected API call
+                fetch('/api/admin/bot-status', {
+                    headers: { 'Authorization': `Bearer ${existingToken}` }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Token is valid, redirect to dashboard
+                        window.location.href = '/dashboard';
+                    } else {
+                        // Token is invalid or expired, remove it and stay on login page
+                        localStorage.removeItem('jwtToken');
+                        console.log('Existing token invalid or expired. Please log in again.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error verifying existing token:', error);
+                    localStorage.removeItem('jwtToken');
+                });
+            }
+
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                hideError(); // Clear previous errors
+
+                const username = usernameInput.value.trim();
+                const password = passwordInput.value.trim();
+                const totpCode = totpCodeInput.value.trim();
+
+                const payload = { username, password };
+                if (totpField.classList.contains('hidden') === false) {
+                    payload.totpCode = totpCode;
+                }
+
+                try {
+                    const response = await fetch('/admin/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        if (data.twoFactorEnabled === false) {
+                            // 2FA is not enabled for this user, login successful
+                            localStorage.setItem('jwtToken', data.token);
+                            window.location.href = '/dashboard';
+                        } else if (data.twoFactorEnabled === true) {
+                            // 2FA is enabled and code was correct, login successful
+                            localStorage.setItem('jwtToken', data.token);
+                            window.location.href = '/dashboard';
+                        } else {
+                            // This case should ideally not happen if server logic is correct
+                            // It implies the server expects 2FA but didn't get a code or something
+                            showError('Unexpected login response. Please try again.');
+                        }
+                    } else if (response.status === 401 && data.message && data.message.includes('Two-Factor Authentication code required')) {
+                        // Server explicitly asks for 2FA code
+                        totpField.classList.remove('hidden');
+                        showError('Two-Factor Authentication code required.');
+                    } else {
+                        // Other errors (invalid credentials, etc.)
+                        showError(data.message || 'Login failed. Please check your credentials.');
+                    }
+                } catch (error) {
+                    console.error('Login request failed:', error);
+                    showError('An error occurred during login. Please try again.');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speedy Eats - Food Delivery</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- LeafletJS CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+      xintegrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+      crossorigin=""/>
+      
+    <!-- LeafletJS Script -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+      xintegrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+      crossorigin=""></script>
+
+    <style>
+        /* Custom styles for the app */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        #map {
+            height: 100%;
+            width: 100%;
+            z-index: 10;
+        }
+
+        /* Modal styles */
+        .modal {
+            transition: opacity 0.25s ease;
+        }
+        .modal-content {
+            transition: transform 0.25s ease;
+        }
+        
+        /* Toast notification styles */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            margin-left: -125px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 16px;
+            position: fixed;
+            z-index: 100;
+            left: 50%;
+            bottom: 30px;
+            opacity: 0;
+            transition: visibility 0.5s, opacity 0.5s linear;
+        }
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <!-- Header Section -->
+    <header class="bg-white p-4 shadow-md sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-red-600" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                </svg>
+                <div>
+                    <h1 class="text-xl font-bold text-red-600">Speedy Eats</h1>
+                    <p id="address-display" class="text-xs text-gray-500 truncate max-w-xs">Locating...</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-6">
+                 <button id="track-order-btn" class="hidden bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition-colors duration-300">Track Order</button>
+                <div id="cart-button" class="relative cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <span id="cart-count" class="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto p-4 md:p-8">
+        <div class="h-64 md:h-80 w-full rounded-xl shadow-lg overflow-hidden relative">
+            <div id="map-loader" class="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-20">
+                 <p class="mt-4 text-red-700 font-semibold">Fetching your location...</p>
+            </div>
+            <div id="map"></div>
+        </div>
+        <div class="my-8">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6">Featured Restaurants</h2>
+            <div id="menu-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+        </div>
+    </main>
+
+    <!-- Footer Section -->
+    <footer class="bg-white mt-8 p-6 text-center text-gray-500 border-t">
+        <p>&copy; 2024 Speedy Eats. All Rights Reserved.</p>
+    </footer>
+
+    <!-- Cart Modal -->
+    <div id="cart-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center p-4 hidden">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-md transform scale-95">
+            <div class="p-6 border-b">
+                <h2 class="text-2xl font-bold text-gray-800">Your Cart</h2>
+            </div>
+            <div id="cart-items-container" class="p-6 max-h-80 overflow-y-auto"></div>
+            <div class="p-6 bg-gray-50 rounded-b-lg">
+                <div id="cart-summary"></div>
+                <button id="checkout-btn" class="w-full bg-red-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-700 transition-colors duration-300 mt-4">Checkout</button>
+                <button id="close-cart-btn" class="w-full bg-gray-200 text-gray-700 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300 mt-2">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Track Order Modal -->
+    <div id="track-order-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center p-4 hidden">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-md transform scale-95">
+            <div class="p-6 border-b">
+                <h2 class="text-2xl font-bold text-gray-800">Track Your Order</h2>
+            </div>
+            <div class="p-6">
+                <div id="order-status-container" class="space-y-4"></div>
+            </div>
+            <div class="p-6 bg-gray-50 rounded-b-lg">
+                <button id="close-track-modal-btn" class="w-full bg-gray-200 text-gray-700 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-300 mt-2">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast">Item added to cart!</div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const cart = [];
+            let orderPlaced = false;
+
+            const cartButton = document.getElementById('cart-button');
+            const cartModal = document.getElementById('cart-modal');
+            const closeCartBtn = document.getElementById('close-cart-btn');
+            const checkoutBtn = document.getElementById('checkout-btn');
+            const trackOrderBtn = document.getElementById('track-order-btn');
+            const trackOrderModal = document.getElementById('track-order-modal');
+            const closeTrackModalBtn = document.getElementById('close-track-modal-btn');
+
+            const showToast = (message) => {
+                const toast = document.getElementById('toast');
+                toast.textContent = message;
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 3000);
+            };
+
+            const updateCart = () => {
+                const cartCount = document.getElementById('cart-count');
+                const cartItemsContainer = document.getElementById('cart-items-container');
+                const cartSummary = document.getElementById('cart-summary');
+                
+                cartCount.textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
+                
+                if (cart.length === 0) {
+                    cartItemsContainer.innerHTML = '<p class="text-gray-500">Your cart is empty.</p>';
+                    cartSummary.innerHTML = '';
+                    checkoutBtn.disabled = true;
+                    checkoutBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    return;
+                }
+
+                checkoutBtn.disabled = false;
+                checkoutBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+                cartItemsContainer.innerHTML = cart.map(item => `
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex-1">
+                            <h4 class="font-bold">${item.name}</h4>
+                            <p class="text-red-600 font-semibold">₹${item.price}</p>
+                        </div>
+                        <div class="flex items-center">
+                            <button class="quantity-change bg-gray-200 rounded-full w-6 h-6" data-id="${item.id}" data-change="-1">-</button>
+                            <span class="mx-2">${item.quantity}</span>
+                            <button class="quantity-change bg-gray-200 rounded-full w-6 h-6" data-id="${item.id}" data-change="1">+</button>
+                        </div>
+                    </div>
+                `).join('');
+
+                const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+                const tax = subtotal * 0.05;
+                const total = subtotal + tax;
+
+                cartSummary.innerHTML = `
+                    <div class="flex justify-between text-gray-600"><span>Subtotal</span><span>₹${subtotal.toFixed(2)}</span></div>
+                    <div class="flex justify-between text-gray-600"><span>Taxes (5%)</span><span>₹${tax.toFixed(2)}</span></div>
+                    <div class="flex justify-between font-bold text-xl mt-2"><span>Total</span><span>₹${total.toFixed(2)}</span></div>
+                `;
+            };
+            
+            const addToCart = (item) => {
+                const existingItem = cart.find(cartItem => cartItem.id === item.id);
+                if (existingItem) {
+                    existingItem.quantity++;
+                } else {
+                    cart.push({ ...item, quantity: 1 });
+                }
+                showToast(`${item.name} added to cart!`);
+                updateCart();
+            };
+
+            const renderMenu = async () => {
+                const menuContainer = document.getElementById('menu-container');
+                const menuItems = await fetchMenuData();
+                const itemsWithDiscount = menuItems.map(addFakeDiscount);
+                
+                menuContainer.innerHTML = itemsWithDiscount.map(item => `
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden flex items-center p-4">
+                        <img src="${item.image}" alt="${item.name}" class="w-24 h-24 object-cover rounded-md" onerror="this.onerror=null;this.src='https://placehold.co/100x100/F87171/FFFFFF?text=Food';">
+                        <div class="ml-4 flex-1">
+                            <h3 class="font-bold text-lg">${item.name}</h3>
+                            <div class="flex items-baseline space-x-2 mt-2">
+                                <p class="text-xl font-bold text-red-600">₹${item.price}</p>
+                                <p class="text-md text-gray-400 line-through">₹${item.originalPrice}</p>
+                            </div>
+                        </div>
+                        <button class="add-to-cart-btn ml-4 bg-red-100 text-red-600 font-bold py-2 px-4 rounded-lg hover:bg-red-600 hover:text-white transition-colors duration-300" data-id="${item.id}">ADD</button>
+                    </div>
+                `).join('');
+
+                document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const itemId = parseInt(e.target.dataset.id);
+                        const item = itemsWithDiscount.find(i => i.id === itemId);
+                        addToCart(item);
+                    });
+                });
+            };
+
+            const updateOrderStatus = () => {
+                const container = document.getElementById('order-status-container');
+                const statuses = ["Order Confirmed", "Preparing Food", "Out for Delivery", "Delivered"];
+                let currentStatusIndex = 0;
+
+                const interval = setInterval(() => {
+                    currentStatusIndex++;
+                    container.innerHTML = statuses.map((status, index) => `
+                        <div class="flex items-center ${index < currentStatusIndex ? 'text-green-600' : 'text-gray-400'}">
+                            <div class="w-6 h-6 rounded-full border-2 ${index < currentStatusIndex ? 'bg-green-500 border-green-500' : 'border-gray-400'} flex items-center justify-center">
+                                ${index < currentStatusIndex ? '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' : ''}
+                            </div>
+                            <span class="ml-4 font-semibold">${status}</span>
+                        </div>
+                        ${index < statuses.length - 1 ? `<div class="ml-3 h-8 w-px ${index < currentStatusIndex -1 ? 'bg-green-500' : 'bg-gray-300'}"></div>` : ''}
+                    `).join('');
+
+                    if (currentStatusIndex > statuses.length) {
+                        clearInterval(interval);
+                    }
+                }, 3000);
+            };
+
+            cartButton.addEventListener('click', () => cartModal.classList.remove('hidden'));
+            closeCartBtn.addEventListener('click', () => cartModal.classList.add('hidden'));
+            checkoutBtn.addEventListener('click', () => {
+                cartModal.classList.add('hidden');
+                showToast("Order placed successfully!");
+                cart.length = 0;
+                updateCart();
+                orderPlaced = true;
+                trackOrderBtn.classList.remove('hidden');
+            });
+
+            trackOrderBtn.addEventListener('click', () => {
+                trackOrderModal.classList.remove('hidden');
+                updateOrderStatus();
+            });
+            closeTrackModalBtn.addEventListener('click', () => trackOrderModal.classList.add('hidden'));
+
+            document.getElementById('cart-items-container').addEventListener('click', e => {
+                if (e.target.classList.contains('quantity-change')) {
+                    const id = parseInt(e.target.dataset.id);
+                    const change = parseInt(e.target.dataset.change);
+                    const item = cart.find(i => i.id === id);
+                    if (item) {
+                        item.quantity += change;
+                        if (item.quantity === 0) {
+                            cart.splice(cart.indexOf(item), 1);
+                        }
+                    }
+                    updateCart();
+                }
+            });
+            
+            const fetchMenuData = () => new Promise(resolve => setTimeout(() => resolve([
+                { id: 1, name: "Classic Margherita", price: 250, image: "https://placehold.co/100x100/F87171/FFFFFF?text=Pizza" },
+                { id: 2, name: "Spicy Chicken Burger", price: 180, image: "https://placehold.co/100x100/F87171/FFFFFF?text=Burger" },
+            ]), 1000));
+
+            const addFakeDiscount = (item) => ({...item, originalPrice: Math.ceil((item.price / 0.75) / 5) * 5});
+            
+            const initMap = (coords, address) => {
+                const map = L.map('map').setView(coords, 13);
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
+                L.marker(coords).addTo(map).bindPopup(address).openPopup();
+                document.getElementById('map-loader').style.display = 'none';
+                setTimeout(() => map.invalidateSize(), 200);
+            };
+
+            const getUserLocation = () => {
+                const addressDisplay = document.getElementById('address-display');
+                navigator.geolocation.getCurrentPosition(
+                    async (pos) => {
+                        const { latitude, longitude } = pos.coords;
+                        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+                        const data = await res.json();
+                        addressDisplay.textContent = data.display_name;
+                        initMap([latitude, longitude], data.display_name);
+                    },
+                    () => {
+                        addressDisplay.textContent = "Location access denied.";
+                        initMap([18.6745, 78.0945], "Default Location: Nizamabad");
+                    }
+                );
+            };
+
+            renderMenu();
+            getUserLocation();
+            updateCart();
+        });
+    </script>
+</body>
+</html>

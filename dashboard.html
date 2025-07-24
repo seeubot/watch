@@ -10,7 +10,7 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8f8f8; /* Light grey background */
+            background-color: #f0f4f8; /* Light blue-grey background */
         }
         /* Custom scrollbar for better aesthetics */
         ::-webkit-scrollbar {
@@ -18,15 +18,15 @@
             height: 8px;
         }
         ::-webkit-scrollbar-track {
-            background: #f1f1f1;
+            background: #e2e8f0; /* Lighter blue-grey */
             border-radius: 10px;
         }
         ::-webkit-scrollbar-thumb {
-            background: #ef4444; /* Red */
+            background: #3b82f6; /* Blue */
             border-radius: 10px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #dc2626; /* Darker Red */
+            background: #2563eb; /* Darker Blue */
         }
         .modal {
             display: none; /* Hidden by default */
@@ -62,233 +62,104 @@
         }
         .close-button:hover,
         .close-button:focus {
-            color: #ef4444;
+            color: #3b82f6; /* Blue */
             text-decoration: none;
             cursor: pointer;
+        }
+        .sidebar-link.active {
+            background-color: #2563eb; /* Darker blue for active */
+            color: white;
+            font-weight: 600;
         }
     </style>
 </head>
 <body class="flex flex-col min-h-screen">
     <!-- Header -->
-    <header class="bg-red-600 text-white p-4 shadow-md rounded-b-lg">
+    <header class="bg-blue-600 text-white p-4 shadow-md rounded-b-lg">
         <div class="container mx-auto flex flex-col sm:flex-row justify-between items-center">
             <h1 class="text-3xl font-bold mb-2 sm:mb-0">Delicious Bites Admin</h1>
             <nav>
                 <ul class="flex space-x-4 text-lg">
-                    <li><a href="/dashboard" class="hover:text-red-200 transition-colors duration-200">Dashboard</a></li>
-                    <li><a href="/admin/login" class="hover:text-red-200 transition-colors duration-200">Login</a></li>
-                    <li><a href="#" id="logoutBtn" class="hover:text-red-200 transition-colors duration-200">Logout</a></li>
+                    <li><a href="#" id="logoutBtn" class="hover:text-blue-200 transition-colors duration-200">Logout</a></li>
                 </ul>
             </nav>
         </div>
     </header>
 
-    <!-- Main Content Area -->
-    <main class="container mx-auto p-4 flex-grow">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Main Layout: Sidebar + Content -->
+    <div class="flex flex-1">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white p-4 shadow-lg border-r border-gray-200 flex flex-col">
+            <nav class="flex-grow">
+                <ul class="space-y-2">
+                    <li>
+                        <a href="#" data-section="dashboard-overview" class="sidebar-link flex items-center p-3 rounded-md text-gray-700 hover:bg-blue-100 transition-colors duration-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-dashboard mr-3"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+                            Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-section="orders-management" class="sidebar-link flex items-center p-3 rounded-md text-gray-700 hover:bg-blue-100 transition-colors duration-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clipboard-list mr-3"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
+                            Orders
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-section="menu-management" class="sidebar-link flex items-center p-3 rounded-md text-gray-700 hover:bg-blue-100 transition-colors duration-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open-text mr-3"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/><path d="M9 8h6"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>
+                            Menu
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-section="customer-management" class="sidebar-link flex items-center p-3 rounded-md text-gray-700 hover:bg-blue-100 transition-colors duration-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users mr-3"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            Customers
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-section="settings-management" class="sidebar-link flex items-center p-3 rounded-md text-gray-700 hover:bg-blue-100 transition-colors duration-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings mr-3"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.09.1a2 2 0 0 1 0 2.73l-.09.1a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.09-.1a2 2 0 0 1 0-2.73l.09-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                            Settings
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-section="discount-management" class="sidebar-link flex items-center p-3 rounded-md text-gray-700 hover:bg-blue-100 transition-colors duration-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-percent mr-3"><line x1="19" x2="5" y1="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+                            Discounts
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-section="whatsapp-status" class="sidebar-link flex items-center p-3 rounded-md text-gray-700 hover:bg-blue-100 transition-colors duration-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle-code mr-3"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="m10 10-2 2 2 2"/><path d="m14 14 2-2-2-2"/></svg>
+                            WhatsApp Bot
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-section="two-factor-auth" class="sidebar-link flex items-center p-3 rounded-md text-gray-700 hover:bg-blue-100 transition-colors duration-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield-check mr-3"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                            2FA Security
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
 
-            <!-- Card 1: Orders Overview -->
-            <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-red-500">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-2xl font-semibold text-gray-800">Orders Overview</h2>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clipboard-list text-red-500">
-                        <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
-                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
-                        <path d="M12 11h4"/>
-                        <path d="M12 16h4"/>
-                        <path d="M8 11h.01"/>
-                        <path d="M8 16h.01"/>
-                    </svg>
-                </div>
-                <p class="text-gray-600 mb-4">Manage and track all customer orders.</p>
-                <div class="flex justify-between items-center text-gray-700 text-lg">
-                    <span>Total Orders:</span>
-                    <span id="totalOrders" class="font-bold text-red-600">Loading...</span>
-                </div>
-                <div class="flex justify-between items-center text-gray-700 text-lg mt-2">
-                    <span>Pending:</span>
-                    <span id="pendingOrders" class="font-bold text-orange-500">Loading...</span>
-                </div>
-                <div class="flex justify-between items-center text-gray-700 text-lg mt-2">
-                    <span>Delivered:</span>
-                    <span id="deliveredOrders" class="font-bold text-green-500">Loading...</span>
-                </div>
-                <button class="mt-6 w-full bg-red-500 text-white py-3 px-4 rounded-md hover:bg-red-700 transition-colors duration-300 shadow-md"
-                        onclick="alert('View All Orders functionality coming soon!')">
-                    View All Orders
-                </button>
-            </div>
-
-            <!-- Card 2: Menu Management -->
-            <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-red-500">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-2xl font-semibold text-gray-800">Menu Management</h2>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open-text text-red-500">
-                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-                        <path d="M9 8h6"/>
-                        <path d="M9 12h6"/>
-                        <path d="M9 16h6"/>
-                    </svg>
-                </div>
-                <p class="text-gray-600 mb-4">Add, edit, or remove items from your menu.</p>
-                <div class="flex justify-between items-center text-gray-700 text-lg">
-                    <span>Total Items:</span>
-                    <span id="totalMenuItems" class="font-bold text-red-600">Loading...</span>
-                </div>
-                <div class="flex justify-between items-center text-gray-700 text-lg mt-2">
-                    <span>Available:</span>
-                    <span id="availableMenuItems" class="font-bold text-green-500">Loading...</span>
-                </div>
-                <div class="flex justify-between items-center text-gray-700 text-lg mt-2">
-                    <span>Trending:</span>
-                    <span id="trendingMenuItems" class="font-bold text-purple-500">Loading...</span>
-                </div>
-                <button class="mt-6 w-full bg-red-500 text-white py-3 px-4 rounded-md hover:bg-red-700 transition-colors duration-300 shadow-md"
-                        onclick="alert('Manage Menu functionality coming soon!')">
-                    Manage Menu
-                </button>
-            </div>
-
-            <!-- Card 3: Customer Database -->
-            <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-red-500">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-2xl font-semibold text-gray-800">Customer Database</h2>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users text-red-500">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                        <circle cx="9" cy="7" r="4"/>
-                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                    </svg>
-                </div>
-                <p class="text-gray-600 mb-4">View and manage your customer information.</p>
-                <div class="flex justify-between items-center text-gray-700 text-lg">
-                    <span>Total Customers:</span>
-                    <span id="totalCustomers" class="font-bold text-red-600">Loading...</span>
-                </div>
-                <div class="flex justify-between items-center text-gray-700 text-lg mt-2">
-                    <span>New this week:</span>
-                    <span id="newCustomers" class="font-bold text-blue-500">Loading...</span>
-                </div>
-                <div class="flex justify-between items-center text-gray-700 text-lg mt-2">
-                    <span>Active Customers:</span>
-                    <span id="activeCustomers" class="font-bold text-green-500">Loading...</span>
-                </div>
-                <button class="mt-6 w-full bg-red-500 text-white py-3 px-4 rounded-md hover:bg-red-700 transition-colors duration-300 shadow-md"
-                        onclick="alert('View Customers functionality coming soon!')">
-                    View Customers
-                </button>
-            </div>
-
-            <!-- Card 4: WhatsApp Bot Status -->
-            <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-red-500">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-2xl font-semibold text-gray-800">WhatsApp Bot Status</h2>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle-code text-red-500">
-                        <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>
-                        <path d="m10 10-2 2 2 2"/>
-                        <path d="m14 14 2-2-2-2"/>
-                    </svg>
-                </div>
-                <p class="text-gray-600 mb-4">Monitor the status of your WhatsApp integration.</p>
-                <div class="flex justify-between items-center text-gray-700 text-lg">
-                    <span>Status:</span>
-                    <span id="whatsappStatus" class="font-bold text-yellow-500">Loading...</span>
-                </div>
-                <div class="flex justify-between items-center text-gray-700 text-lg mt-2">
-                    <span>Last Authenticated:</span>
-                    <span id="lastAuthenticatedAt" class="font-bold text-gray-600">N/A</span>
-                </div>
-                <div id="qrCodeContainer" class="mt-4 flex justify-center items-center h-48 bg-gray-100 rounded-md p-2 hidden">
-                    <img id="qrCodeImage" src="" alt="QR Code" class="max-w-full max-h-full object-contain">
-                </div>
-                <p id="qrMessage" class="text-center text-red-500 mt-2 text-sm hidden">Scan QR to connect WhatsApp.</p>
-
-                <div class="mt-6 flex flex-col space-y-3">
-                    <button id="loadSessionBtn" class="w-full bg-red-500 text-white py-3 px-4 rounded-md hover:bg-red-700 transition-colors duration-300 shadow-md">
-                        Load New Session / Get QR
-                    </button>
-                    <!-- Disconnect button removed as per backend logic, re-initialization handles it implicitly -->
-                </div>
-            </div>
-
-            <!-- Card 5: Settings and Configuration -->
-            <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-red-500">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-2xl font-semibold text-gray-800">Settings</h2>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings text-red-500">
-                        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.09.1a2 2 0 0 1 0 2.73l-.09.1a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.09-.1a2 2 0 0 1 0-2.73l.09-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
-                        <circle cx="12" cy="12" r="3"/>
-                    </svg>
-                </div>
-                <p class="text-gray-600 mb-4">Configure shop details, delivery rates, and more.</p>
-                <div class="flex justify-between items-center text-gray-700 text-lg">
-                    <span>Shop Name:</span>
-                    <span id="shopName" class="font-bold text-red-600">Loading...</span>
-                </div>
-                <div class="flex justify-between items-center text-gray-700 text-lg mt-2">
-                    <span>Delivery Rates:</span>
-                    <span id="deliveryRatesCount" class="font-bold text-blue-500">Loading...</span>
-                </div>
-                <button class="mt-6 w-full bg-red-500 text-white py-3 px-4 rounded-md hover:bg-red-700 transition-colors duration-300 shadow-md"
-                        onclick="alert('Adjust Settings functionality coming soon!')">
-                    Adjust Settings
-                </button>
-            </div>
-
-            <!-- Card 6: Discount Management -->
-            <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-red-500">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-2xl font-semibold text-gray-800">Discount Management</h2>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-percent text-red-500">
-                        <line x1="19" x2="5" y1="5" y2="19"/>
-                        <circle cx="6.5" cy="6.5" r="2.5"/>
-                        <circle cx="17.5" cy="17.5" r="2.5"/>
-                    </svg>
-                </div>
-                <p class="text-gray-600 mb-4">Set up and manage order discounts.</p>
-                <div class="flex justify-between items-center text-gray-700 text-lg">
-                    <span>Min Subtotal:</span>
-                    <span id="minSubtotalForDiscount" class="font-bold text-red-600">Loading...</span>
-                </div>
-                <div class="flex justify-between items-center text-gray-700 text-lg mt-2">
-                    <span>Discount %:</span>
-                    <span id="discountPercentage" class="font-bold text-green-500">Loading...</span>
-                </div>
-                <button id="configureDiscountBtn" class="mt-6 w-full bg-red-500 text-white py-3 px-4 rounded-md hover:bg-red-700 transition-colors duration-300 shadow-md">
-                    Configure Discounts
-                </button>
-            </div>
-
-            <!-- Card 7: Two-Factor Authentication -->
-            <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-red-500">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-2xl font-semibold text-gray-800">Two-Factor Auth</h2>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield-check text-red-500">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                        <path d="m9 12 2 2 4-4"/>
-                    </svg>
-                </div>
-                <p class="text-gray-600 mb-4">Enhance your dashboard security with 2FA.</p>
-                <div class="flex justify-between items-center text-gray-700 text-lg">
-                    <span>Status:</span>
-                    <span id="twoFactorStatus" class="font-bold text-yellow-500">Loading...</span>
-                </div>
-                <button id="manage2FABtn" class="mt-6 w-full bg-red-500 text-white py-3 px-4 rounded-md hover:bg-red-700 transition-colors duration-300 shadow-md">
-                    Manage 2FA
-                </button>
-            </div>
-
-        </div>
-    </main>
+        <!-- Main Content Area -->
+        <main id="mainContent" class="flex-1 p-6 overflow-y-auto">
+            <!-- Content will be loaded here dynamically by JavaScript -->
+            <h2 class="text-3xl font-bold text-gray-800 mb-6">Welcome to Your Dashboard!</h2>
+            <p class="text-gray-600">Select a section from the sidebar to get started.</p>
+        </main>
+    </div>
 
     <!-- Footer -->
-    <footer class="bg-red-600 text-white p-4 mt-8 rounded-t-lg">
+    <footer class="bg-blue-600 text-white p-4 mt-8 rounded-t-lg">
         <div class="container mx-auto text-center text-sm">
             &copy; 2025 Delicious Bites. All rights reserved.
         </div>
     </footer>
 
+    <!-- Global Modals (2FA, and generic for Add/Edit operations) -->
     <!-- 2FA Modal -->
     <div id="twoFAModal" class="modal">
         <div class="modal-content">
@@ -307,7 +178,7 @@
                         <p class="text-sm text-gray-500 mt-2">Or manually enter secret: <span id="manualSecret" class="font-mono text-xs break-all"></span></p>
                         <div class="mt-4">
                             <label for="verifyTotpCode" class="block text-sm font-medium text-gray-700 mb-1">Enter 2FA Code to Verify & Enable</label>
-                            <input type="text" id="verifyTotpCode" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm" placeholder="6-digit code">
+                            <input type="text" id="verifyTotpCode" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="6-digit code">
                             <button id="verify2FABtn" class="w-full bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 transition-colors duration-300 shadow-md mt-3">
                                 Verify & Enable 2FA
                             </button>
@@ -327,10 +198,36 @@
         </div>
     </div>
 
+    <!-- Generic Add/Edit Modal -->
+    <div id="genericModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeGenericModal">&times;</span>
+            <h3 id="genericModalTitle" class="text-2xl font-semibold text-gray-800 mb-4"></h3>
+            <div id="genericModalBody">
+                <!-- Form content will be dynamically loaded here -->
+            </div>
+            <div id="genericModalMessage" class="text-red-600 text-sm text-center mt-4 hidden"></div>
+        </div>
+    </div>
 
-    <!-- Socket.io and JavaScript for dynamic content -->
+
     <script src="/socket.io/socket.io.js"></script>
     <script>
+        // --- Global Variables and Utility Functions ---
+        const mainContent = document.getElementById('mainContent');
+        const twoFAModal = document.getElementById('twoFAModal');
+        const genericModal = document.getElementById('genericModal');
+        const logoutBtn = document.getElementById('logoutBtn');
+        let currentGeneratedSecret = null; // To store the secret temporarily for 2FA verification
+
+        // Function to set a cookie
+        function setCookie(name, value, days) {
+            const date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            const expires = `expires=${date.toUTCString()}`;
+            document.cookie = `${name}=${value};${expires};path=/;SameSite=Lax`;
+        }
+
         // Function to parse JWT token from cookie
         function getCookie(name) {
             const value = `; ${document.cookie}`;
@@ -346,69 +243,169 @@
             window.location.href = '/admin/login';
         }
 
-        // --- Utility Functions ---
-        async function fetchData(url) {
+        async function fetchData(url, options = {}) {
             try {
                 const response = await fetch(url, {
-                    method: 'GET',
+                    ...options,
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                        ...(options.headers || {})
                     }
                 });
                 if (response.status === 401 || response.status === 403) {
-                    // Token expired or invalid, redirect to login
                     alert('Session expired or invalid. Please log in again.');
                     setCookie('token', '', -1); // Clear token
                     window.location.href = '/admin/login';
                     return null;
                 }
                 if (!response.ok) {
-                    console.error(`Error fetching ${url}:`, response.status, response.statusText);
-                    return null;
+                    const errorBody = await response.json().catch(() => ({ message: response.statusText }));
+                    console.error(`Error fetching ${url}:`, response.status, errorBody.message);
+                    throw new Error(errorBody.message || `Failed to fetch data from ${url}`);
                 }
                 return await response.json();
             } catch (error) {
                 console.error(`Network error fetching ${url}:`, error);
+                alert(`Error: ${error.message || 'Network error'}`);
                 return null;
             }
         }
 
-        function updateStatusColor(status) {
-            const statusElement = document.getElementById('whatsappStatus');
-            statusElement.classList.remove('text-green-500', 'text-red-500', 'text-yellow-500', 'text-blue-500', 'text-orange-500');
-            switch (status) {
-                case 'ready':
-                    statusElement.classList.add('text-green-500');
-                    break;
-                case 'disconnected':
-                case 'auth_failure':
-                case 'qr_error':
-                    statusElement.classList.add('text-red-500');
-                    break;
-                case 'qr_received':
-                    statusElement.classList.add('text-orange-500');
-                    break;
-                case 'authenticated':
-                case 'initializing':
-                    statusElement.classList.add('text-yellow-500');
-                    break;
-                default:
-                    statusElement.classList.add('text-gray-500');
-                    break;
+        function showGenericModal(title, contentHtml, onSubmitCallback = null) {
+            document.getElementById('genericModalTitle').textContent = title;
+            document.getElementById('genericModalBody').innerHTML = contentHtml;
+            document.getElementById('genericModalMessage').classList.add('hidden');
+            genericModal.style.display = 'flex';
+
+            if (onSubmitCallback) {
+                const form = genericModal.querySelector('form');
+                if (form) {
+                    form.onsubmit = async (e) => {
+                        e.preventDefault();
+                        const formData = new FormData(form);
+                        const data = {};
+                        for (let [key, value] of formData.entries()) {
+                            // Handle booleans from checkboxes
+                            if (form.elements[key] && form.elements[key].type === 'checkbox') {
+                                data[key] = form.elements[key].checked;
+                            } else if (key === 'price' || key === 'quantity' || key === 'minSubtotalForDiscount' || key === 'discountPercentage' || key === 'latitude' || key === 'longitude' || key === 'kms' || key === 'amount') {
+                                data[key] = parseFloat(value);
+                            } else {
+                                data[key] = value;
+                            }
+                        }
+                        try {
+                            await onSubmitCallback(data);
+                            closeGenericModal();
+                            // Reload current section after successful operation
+                            const currentSection = document.querySelector('.sidebar-link.active').dataset.section;
+                            displayContent(currentSection);
+                        } catch (error) {
+                            document.getElementById('genericModalMessage').textContent = error.message || 'Operation failed.';
+                            document.getElementById('genericModalMessage').classList.remove('hidden');
+                        }
+                    };
+                }
             }
         }
 
-        // Function to set a cookie (copied from login page for consistency)
-        function setCookie(name, value, days) {
-            const date = new Date();
-            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-            const expires = `expires=${date.toUTCString()}`;
-            document.cookie = `${name}=${value};${expires};path=/;SameSite=Lax`;
+        function closeGenericModal() {
+            genericModal.style.display = 'none';
+            document.getElementById('genericModalBody').innerHTML = ''; // Clear content
         }
 
-        // --- Data Loading Functions ---
-        async function loadDashboardData() {
-            // Orders
+        // --- Dashboard Section Rendering Functions ---
+
+        async function renderDashboardOverview() {
+            mainContent.innerHTML = `
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Dashboard Overview</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Card 1: Orders Overview -->
+                    <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-blue-500">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-2xl font-semibold text-gray-800">Orders Overview</h3>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clipboard-list text-blue-500">
+                                <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
+                                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                                <path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>
+                            </svg>
+                        </div>
+                        <p class="text-gray-600 mb-4">Manage and track all customer orders.</p>
+                        <div class="flex justify-between items-center text-gray-700 text-lg">
+                            <span>Total Orders:</span>
+                            <span id="totalOrders" class="font-bold text-blue-600">Loading...</span>
+                        </div>
+                        <div class="flex justify-between items-center text-gray-700 text-lg mt-2">
+                            <span>Pending:</span>
+                            <span id="pendingOrders" class="font-bold text-orange-500">Loading...</span>
+                        </div>
+                        <div class="flex justify-between items-center text-gray-700 text-lg mt-2">
+                            <span>Delivered:</span>
+                            <span id="deliveredOrders" class="font-bold text-green-500">Loading...</span>
+                        </div>
+                        <button class="mt-6 w-full bg-blue-500 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition-colors duration-300 shadow-md"
+                                onclick="displayContent('orders-management')">
+                            View All Orders
+                        </button>
+                    </div>
+
+                    <!-- Card 2: Menu Management -->
+                    <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-blue-500">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-2xl font-semibold text-gray-800">Menu Management</h3>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open-text text-blue-500">
+                                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/><path d="M9 8h6"/><path d="M9 12h6"/><path d="M9 16h6"/>
+                            </svg>
+                        </div>
+                        <p class="text-gray-600 mb-4">Add, edit, or remove items from your menu.</p>
+                        <div class="flex justify-between items-center text-gray-700 text-lg">
+                            <span>Total Items:</span>
+                            <span id="totalMenuItems" class="font-bold text-blue-600">Loading...</span>
+                        </div>
+                        <div class="flex justify-between items-center text-gray-700 text-lg mt-2">
+                            <span>Available:</span>
+                            <span id="availableMenuItems" class="font-bold text-green-500">Loading...</span>
+                        </div>
+                        <div class="flex justify-between items-center text-gray-700 text-lg mt-2">
+                            <span>Trending:</span>
+                            <span id="trendingMenuItems" class="font-bold text-purple-500">Loading...</span>
+                        </div>
+                        <button class="mt-6 w-full bg-blue-500 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition-colors duration-300 shadow-md"
+                                onclick="displayContent('menu-management')">
+                            Manage Menu
+                        </button>
+                    </div>
+
+                    <!-- Card 3: Customer Database -->
+                    <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-blue-500">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-2xl font-semibold text-gray-800">Customer Database</h3>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users text-blue-500">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                            </svg>
+                        </div>
+                        <p class="text-gray-600 mb-4">View and manage your customer information.</p>
+                        <div class="flex justify-between items-center text-gray-700 text-lg">
+                            <span>Total Customers:</span>
+                            <span id="totalCustomers" class="font-bold text-blue-600">Loading...</span>
+                        </div>
+                        <div class="flex justify-between items-center text-gray-700 text-lg mt-2">
+                            <span>New this week:</span>
+                            <span id="newCustomers" class="font-bold text-blue-500">Loading...</span>
+                        </div>
+                        <div class="flex justify-between items-center text-gray-700 text-lg mt-2">
+                            <span>Active Customers:</span>
+                            <span id="activeCustomers" class="font-bold text-green-500">Loading...</span>
+                        </div>
+                        <button class="mt-6 w-full bg-blue-500 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition-colors duration-300 shadow-md"
+                                onclick="displayContent('customer-management')">
+                            View Customers
+                        </button>
+                    </div>
+                </div>
+            `;
+            // Load data for overview cards
             const orders = await fetchData('/api/admin/orders');
             if (orders) {
                 document.getElementById('totalOrders').textContent = orders.length;
@@ -416,7 +413,6 @@
                 document.getElementById('deliveredOrders').textContent = orders.filter(o => o.status === 'Delivered').length;
             }
 
-            // Menu
             const menuItems = await fetchData('/api/admin/menu');
             if (menuItems) {
                 document.getElementById('totalMenuItems').textContent = menuItems.length;
@@ -424,236 +420,930 @@
                 document.getElementById('trendingMenuItems').textContent = menuItems.filter(item => item.isTrending).length;
             }
 
-            // Customers (simplified for now, 'new this week' and 'active' would need more complex logic)
             const customers = await fetchData('/api/admin/customers');
             if (customers) {
                 document.getElementById('totalCustomers').textContent = customers.length;
-                // Placeholder for 'new this week' - actual implementation needs server-side logic
                 const oneWeekAgo = new Date();
                 oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-                document.getElementById('newCustomers').textContent = customers.filter(c => new Date(c.lastOrderDate) > oneWeekAgo).length; // Using lastOrderDate as a proxy
-                document.getElementById('activeCustomers').textContent = customers.filter(c => c.totalOrders > 0).length; // Proxy for active
-            }
-
-            // Settings
-            const settings = await fetchData('/api/admin/settings');
-            if (settings) {
-                document.getElementById('shopName').textContent = settings.shopName || 'N/A';
-                document.getElementById('deliveryRatesCount').textContent = settings.deliveryRates ? settings.deliveryRates.length : 0;
-            }
-
-            // Discount Settings
-            const discountSettings = await fetchData('/api/admin/discount-settings');
-            if (discountSettings) {
-                document.getElementById('minSubtotalForDiscount').textContent = `₹${discountSettings.minSubtotalForDiscount.toFixed(2)}`;
-                document.getElementById('discountPercentage').textContent = `${(discountSettings.discountPercentage * 100).toFixed(0)}%`;
-            }
-
-            // WhatsApp Bot Status (initial load)
-            const botStatus = await fetchData('/api/admin/bot-status');
-            if (botStatus) {
-                updateWhatsAppStatus(botStatus.status, botStatus.lastAuthenticatedAt, botStatus.qrCodeAvailable);
-                if (botStatus.qrCodeAvailable && botStatus.status === 'qr_received') {
-                    // If QR is already available, request it via socket or directly from an API if exposed
-                    // For simplicity, we assume socket will send it shortly after connect/status update
-                    // Or, if the backend exposes a direct QR endpoint for current QR, we could fetch it here.
-                    // For now, rely on socket.io.
-                }
+                document.getElementById('newCustomers').textContent = customers.filter(c => c.lastOrderDate && new Date(c.lastOrderDate) > oneWeekAgo).length;
+                document.getElementById('activeCustomers').textContent = customers.filter(c => c.totalOrders > 0).length;
             }
         }
 
-        // --- Event Listeners ---
-        document.addEventListener('DOMContentLoaded', () => {
-            loadDashboardData(); // Load initial data
+        async function renderOrdersManagement() {
+            mainContent.innerHTML = `
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Orders Management</h2>
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <div class="flex justify-between items-center mb-4">
+                        <input type="text" id="orderSearch" placeholder="Search by ID, Customer, Phone..." class="w-1/2 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <select id="orderStatusFilter" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            <option value="">All Statuses</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Confirmed">Confirmed</option>
+                            <option value="Preparing">Preparing</option>
+                            <option value="Out for Delivery">Out for Delivery</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersTableBody" class="bg-white divide-y divide-gray-200">
+                                <!-- Orders will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <p id="noOrdersMessage" class="text-center text-gray-500 mt-4 hidden">No orders found.</p>
+                </div>
+            `;
 
-            // Initialize Socket.io connection
-            const socket = io();
+            const orderSearchInput = document.getElementById('orderSearch');
+            const orderStatusFilter = document.getElementById('orderStatusFilter');
 
-            socket.on('connect', () => {
-                console.log('Connected to Socket.io server.');
-            });
+            const fetchAndRenderOrders = async () => {
+                const orders = await fetchData('/api/admin/orders');
+                const ordersTableBody = document.getElementById('ordersTableBody');
+                ordersTableBody.innerHTML = '';
+                document.getElementById('noOrdersMessage').classList.add('hidden');
 
-            socket.on('status', (status) => {
-                console.log('WhatsApp Status:', status);
-                updateWhatsAppStatus(status, null, status === 'qr_received' || status === 'qr_error'); // lastAuthenticatedAt will come from sessionInfo
-            });
-
-            socket.on('sessionInfo', (info) => {
-                console.log('Session Info:', info);
-                const lastAuthSpan = document.getElementById('lastAuthenticatedAt');
-                if (info.lastAuthenticatedAt) {
-                    const date = new Date(info.lastAuthenticatedAt);
-                    lastAuthSpan.textContent = date.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-                } else {
-                    lastAuthSpan.textContent = 'N/A';
+                if (!orders || orders.length === 0) {
+                    document.getElementById('noOrdersMessage').classList.remove('hidden');
+                    return;
                 }
-            });
 
-            socket.on('qrCode', (qrCodeData) => {
-                const qrCodeImage = document.getElementById('qrCodeImage');
-                const qrCodeContainer = document.getElementById('qrCodeContainer');
-                const qrMessage = document.getElementById('qrMessage');
+                const searchTerm = orderSearchInput.value.toLowerCase();
+                const filterStatus = orderStatusFilter.value;
 
-                if (qrCodeData) {
-                    qrCodeImage.src = qrCodeData;
-                    qrCodeContainer.classList.remove('hidden');
-                    qrMessage.classList.remove('hidden');
-                    console.log('QR Code received and displayed.');
-                } else {
-                    qrCodeImage.src = '';
-                    qrCodeContainer.classList.add('hidden');
-                    qrMessage.classList.add('hidden');
-                    console.log('QR Code cleared.');
+                const filteredOrders = orders.filter(order => {
+                    const matchesSearch = (order.customOrderId && order.customOrderId.toLowerCase().includes(searchTerm)) ||
+                                        (order.pinId && order.pinId.toLowerCase().includes(searchTerm)) ||
+                                        (order.customerName && order.customerName.toLowerCase().includes(searchTerm)) ||
+                                        (order.customerPhone && order.customerPhone.toLowerCase().includes(searchTerm));
+                    const matchesStatus = filterStatus === '' || order.status === filterStatus;
+                    return matchesSearch && matchesStatus;
+                });
+
+                if (filteredOrders.length === 0) {
+                    document.getElementById('noOrdersMessage').classList.remove('hidden');
+                    return;
                 }
-            });
 
-            socket.on('whatsapp_log', (logMessage) => {
-                console.log('[WhatsApp Log]', logMessage);
-                // Optionally display logs on the dashboard if a log area is added
-            });
+                filteredOrders.forEach(order => {
+                    const row = ordersTableBody.insertRow();
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${order.customOrderId || order.pinId || order._id.substring(0, 6) + '...'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${order.customerName || 'N/A'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${order.customerPhone}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₹${order.totalAmount.toFixed(2)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <select class="order-status-select px-2 py-1 rounded-md border border-gray-300" data-order-id="${order._id}">
+                                <option value="Pending" ${order.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                                <option value="Confirmed" ${order.status === 'Confirmed' ? 'selected' : ''}>Confirmed</option>
+                                <option value="Preparing" ${order.status === 'Preparing' ? 'selected' : ''}>Preparing</option>
+                                <option value="Out for Delivery" ${order.status === 'Out for Delivery' ? 'selected' : ''}>Out for Delivery</option>
+                                <option value="Delivered" ${order.status === 'Delivered' ? 'selected' : ''}>Delivered</option>
+                                <option value="Cancelled" ${order.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+                            </select>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(order.orderDate).toLocaleDateString()}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button class="text-blue-600 hover:text-blue-900 mr-3 view-order-btn" data-order-id="${order._id}">View</button>
+                            <button class="text-red-600 hover:text-red-900 delete-order-btn" data-order-id="${order._id}">Delete</button>
+                        </td>
+                    `;
+                });
 
-            socket.on('new_order', (order) => {
-                console.log('New order received via socket:', order);
-                alert(`New Order Received! Order ID: ${order.customOrderId || order._id.substring(0, 6)}...`);
-                loadDashboardData(); // Reload dashboard data to update order counts
-            });
-
-
-            // Handle Load New Session / Get QR button click
-            document.getElementById('loadSessionBtn').addEventListener('click', async () => {
-                document.getElementById('whatsappStatus').textContent = 'INITIALIZING...';
-                document.getElementById('whatsappStatus').className = 'font-bold text-yellow-500'; // Set to yellow for initializing
-                try {
-                    const response = await fetch('/api/admin/load-session', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
+                // Add event listeners for status change
+                ordersTableBody.querySelectorAll('.order-status-select').forEach(select => {
+                    select.addEventListener('change', async (e) => {
+                        const orderId = e.target.dataset.orderId;
+                        const newStatus = e.target.value;
+                        if (confirm(`Are you sure you want to change status of order ${orderId.substring(0, 6)}... to ${newStatus}?`)) {
+                            try {
+                                await fetchData(`/api/admin/orders/${orderId}`, {
+                                    method: 'PUT',
+                                    body: JSON.stringify({ status: newStatus })
+                                });
+                                alert('Order status updated successfully!');
+                                fetchAndRenderOrders(); // Re-render to reflect changes
+                            } catch (error) {
+                                alert('Failed to update order status: ' + error.message);
+                            }
+                        } else {
+                            e.target.value = orders.find(o => o._id === orderId).status; // Revert if cancelled
                         }
                     });
-                    const result = await response.json();
-                    if (!response.ok) {
-                        console.error('Failed to load session:', result.message);
-                        alert('Error: ' + result.message);
+                });
+
+                // Add event listeners for view and delete
+                ordersTableBody.querySelectorAll('.view-order-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const orderId = e.target.dataset.orderId;
+                        const order = await fetchData(`/api/admin/orders/${orderId}`);
+                        if (order) {
+                            let itemsHtml = order.items.map(item => `<li>${item.name} x ${item.quantity} (₹${item.price.toFixed(2)})</li>`).join('');
+                            const content = `
+                                <p><strong>Order ID:</strong> ${order.customOrderId || order.pinId || order._id}</p>
+                                <p><strong>Customer Name:</strong> ${order.customerName}</p>
+                                <p><strong>Customer Phone:</strong> ${order.customerPhone}</p>
+                                <p><strong>Delivery Address:</strong> ${order.deliveryAddress}</p>
+                                <p><strong>Subtotal:</strong> ₹${order.subtotal.toFixed(2)}</p>
+                                <p><strong>Transport Tax:</strong> ₹${order.transportTax.toFixed(2)}</p>
+                                ${order.discountAmount > 0 ? `<p><strong>Discount:</strong> -₹${order.discountAmount.toFixed(2)}</p>` : ''}
+                                <p><strong>Total Amount:</strong> ₹${order.totalAmount.toFixed(2)}</p>
+                                <p><strong>Payment Method:</strong> ${order.paymentMethod}</p>
+                                <p><strong>Status:</strong> ${order.status}</p>
+                                <p><strong>Order Date:</strong> ${new Date(order.orderDate).toLocaleString()}</p>
+                                <h4 class="font-semibold mt-4">Items:</h4>
+                                <ul>${itemsHtml}</ul>
+                            `;
+                            showGenericModal('Order Details', content);
+                        }
+                    });
+                });
+
+                ordersTableBody.querySelectorAll('.delete-order-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const orderId = e.target.dataset.orderId;
+                        if (confirm(`Are you sure you want to delete order ${orderId.substring(0, 6)}...?`)) {
+                            try {
+                                await fetchData(`/api/admin/orders/${orderId}`, { method: 'DELETE' });
+                                alert('Order deleted successfully!');
+                                fetchAndRenderOrders(); // Re-render to reflect changes
+                            } catch (error) {
+                                alert('Failed to delete order: ' + error.message);
+                            }
+                        }
+                    });
+                });
+            };
+
+            orderSearchInput.addEventListener('input', fetchAndRenderOrders);
+            orderStatusFilter.addEventListener('change', fetchAndRenderOrders);
+
+            fetchAndRenderOrders(); // Initial fetch
+        }
+
+        async function renderMenuManagement() {
+            mainContent.innerHTML = `
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Menu Management</h2>
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <button id="addMenuItemBtn" class="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors duration-300 shadow-md mb-4">
+                        Add New Menu Item
+                    </button>
+                    <div class="flex justify-between items-center mb-4">
+                        <input type="text" id="menuSearch" placeholder="Search by name, category..." class="w-1/2 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <select id="menuCategoryFilter" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            <option value="">All Categories</option>
+                            <!-- Categories will be loaded here -->
+                        </select>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Available</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trending</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="menuTableBody" class="bg-white divide-y divide-gray-200">
+                                <!-- Menu items will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <p id="noMenuItemsMessage" class="text-center text-gray-500 mt-4 hidden">No menu items found.</p>
+                </div>
+            `;
+
+            const addMenuItemBtn = document.getElementById('addMenuItemBtn');
+            const menuSearchInput = document.getElementById('menuSearch');
+            const menuCategoryFilter = document.getElementById('menuCategoryFilter');
+
+            const fetchAndRenderMenuItems = async () => {
+                const items = await fetchData('/api/admin/menu');
+                const menuTableBody = document.getElementById('menuTableBody');
+                menuTableBody.innerHTML = '';
+                document.getElementById('noMenuItemsMessage').classList.add('hidden');
+
+                if (!items || items.length === 0) {
+                    document.getElementById('noMenuItemsMessage').classList.remove('hidden');
+                    return;
+                }
+
+                const searchTerm = menuSearchInput.value.toLowerCase();
+                const filterCategory = menuCategoryFilter.value;
+
+                // Populate category filter options
+                const categories = [...new Set(items.map(item => item.category).filter(Boolean))];
+                menuCategoryFilter.innerHTML = '<option value="">All Categories</option>' +
+                    categories.map(cat => `<option value="${cat}" ${cat === filterCategory ? 'selected' : ''}>${cat}</option>`).join('');
+
+                const filteredItems = items.filter(item => {
+                    const matchesSearch = (item.name && item.name.toLowerCase().includes(searchTerm)) ||
+                                        (item.description && item.description.toLowerCase().includes(searchTerm)) ||
+                                        (item.category && item.category.toLowerCase().includes(searchTerm));
+                    const matchesCategory = filterCategory === '' || item.category === filterCategory;
+                    return matchesSearch && matchesCategory;
+                });
+
+                if (filteredItems.length === 0) {
+                    document.getElementById('noMenuItemsMessage').classList.remove('hidden');
+                    return;
+                }
+
+                filteredItems.forEach(item => {
+                    const row = menuTableBody.insertRow();
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap"><img src="${item.imageUrl || 'https://placehold.co/50x50/E2E8F0/64748B?text=No+Img'}" alt="${item.name}" class="h-12 w-12 rounded-md object-cover"></td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.category || 'N/A'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₹${item.price.toFixed(2)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded-md toggle-available" ${item.isAvailable ? 'checked' : ''} data-item-id="${item._id}">
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded-md toggle-trending" ${item.isTrending ? 'checked' : ''} data-item-id="${item._id}">
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button class="text-blue-600 hover:text-blue-900 mr-3 edit-item-btn" data-item-id="${item._id}">Edit</button>
+                            <button class="text-red-600 hover:text-red-900 delete-item-btn" data-item-id="${item._id}">Delete</button>
+                        </td>
+                    `;
+                });
+
+                // Add event listeners
+                menuTableBody.querySelectorAll('.toggle-available').forEach(checkbox => {
+                    checkbox.addEventListener('change', async (e) => {
+                        const itemId = e.target.dataset.itemId;
+                        const isAvailable = e.target.checked;
+                        try {
+                            await fetchData(`/api/admin/menu/${itemId}`, {
+                                method: 'PUT',
+                                body: JSON.stringify({ isAvailable })
+                            });
+                            alert('Item availability updated!');
+                        } catch (error) {
+                            alert('Failed to update availability: ' + error.message);
+                            e.target.checked = !isAvailable; // Revert checkbox state on error
+                        }
+                    });
+                });
+
+                menuTableBody.querySelectorAll('.toggle-trending').forEach(checkbox => {
+                    checkbox.addEventListener('change', async (e) => {
+                        const itemId = e.target.dataset.itemId;
+                        const isTrending = e.target.checked;
+                        try {
+                            await fetchData(`/api/admin/menu/${itemId}`, {
+                                method: 'PUT',
+                                body: JSON.stringify({ isTrending })
+                            });
+                            alert('Item trending status updated!');
+                        } catch (error) {
+                            alert('Failed to update trending status: ' + error.message);
+                            e.target.checked = !isTrending; // Revert checkbox state on error
+                        }
+                    });
+                });
+
+                menuTableBody.querySelectorAll('.edit-item-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const itemId = e.target.dataset.itemId;
+                        const item = await fetchData(`/api/admin/menu/${itemId}`);
+                        if (item) {
+                            const formHtml = `
+                                <form>
+                                    <div class="mb-4">
+                                        <label for="itemName" class="block text-sm font-medium text-gray-700">Name</label>
+                                        <input type="text" id="itemName" name="name" value="${item.name}" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                                    </div>
+                                    <div class="mb-4">
+                                        <label for="itemDescription" class="block text-sm font-medium text-gray-700">Description</label>
+                                        <textarea id="itemDescription" name="description" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">${item.description || ''}</textarea>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label for="itemPrice" class="block text-sm font-medium text-gray-700">Price</label>
+                                        <input type="number" step="0.01" id="itemPrice" name="price" value="${item.price}" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                                    </div>
+                                    <div class="mb-4">
+                                        <label for="itemImageUrl" class="block text-sm font-medium text-gray-700">Image URL</label>
+                                        <input type="url" id="itemImageUrl" name="imageUrl" value="${item.imageUrl || ''}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                                    </div>
+                                    <div class="mb-4">
+                                        <label for="itemCategory" class="block text-sm font-medium text-gray-700">Category</label>
+                                        <input type="text" id="itemCategory" name="category" value="${item.category || ''}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                                    </div>
+                                    <div class="flex items-center mb-4">
+                                        <input type="checkbox" id="itemAvailable" name="isAvailable" ${item.isAvailable ? 'checked' : ''} class="h-4 w-4 text-blue-600 border-gray-300 rounded">
+                                        <label for="itemAvailable" class="ml-2 block text-sm text-gray-900">Is Available</label>
+                                    </div>
+                                    <div class="flex items-center mb-4">
+                                        <input type="checkbox" id="itemTrending" name="isTrending" ${item.isTrending ? 'checked' : ''} class="h-4 w-4 text-blue-600 border-gray-300 rounded">
+                                        <label for="itemTrending" class="ml-2 block text-sm text-gray-900">Is Trending</label>
+                                    </div>
+                                    <button type="submit" class="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600">Update Item</button>
+                                </form>
+                            `;
+                            showGenericModal('Edit Menu Item', formHtml, async (formData) => {
+                                await fetchData(`/api/admin/menu/${itemId}`, {
+                                    method: 'PUT',
+                                    body: JSON.stringify(formData)
+                                });
+                                alert('Menu item updated successfully!');
+                            });
+                        }
+                    });
+                });
+
+                menuTableBody.querySelectorAll('.delete-item-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const itemId = e.target.dataset.itemId;
+                        if (confirm(`Are you sure you want to delete this menu item?`)) {
+                            try {
+                                await fetchData(`/api/admin/menu/${itemId}`, { method: 'DELETE' });
+                                alert('Menu item deleted successfully!');
+                                fetchAndRenderMenuItems();
+                            } catch (error) {
+                                alert('Failed to delete menu item: ' + error.message);
+                            }
+                        }
+                    });
+                });
+            };
+
+            addMenuItemBtn.addEventListener('click', () => {
+                const formHtml = `
+                    <form>
+                        <div class="mb-4">
+                            <label for="itemName" class="block text-sm font-medium text-gray-700">Name</label>
+                            <input type="text" id="itemName" name="name" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        </div>
+                        <div class="mb-4">
+                            <label for="itemDescription" class="block text-sm font-medium text-gray-700">Description</label>
+                            <textarea id="itemDescription" name="description" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"></textarea>
+                        </div>
+                        <div class="mb-4">
+                            <label for="itemPrice" class="block text-sm font-medium text-gray-700">Price</label>
+                            <input type="number" step="0.01" id="itemPrice" name="price" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        </div>
+                        <div class="mb-4">
+                            <label for="itemImageUrl" class="block text-sm font-medium text-gray-700">Image URL</label>
+                            <input type="url" id="itemImageUrl" name="imageUrl" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        </div>
+                        <div class="mb-4">
+                            <label for="itemCategory" class="block text-sm font-medium text-gray-700">Category</label>
+                            <input type="text" id="itemCategory" name="category" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        </div>
+                        <div class="flex items-center mb-4">
+                            <input type="checkbox" id="itemAvailable" name="isAvailable" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded">
+                            <label for="itemAvailable" class="ml-2 block text-sm text-gray-900">Is Available</label>
+                        </div>
+                        <div class="flex items-center mb-4">
+                            <input type="checkbox" id="itemTrending" name="isTrending" class="h-4 w-4 text-blue-600 border-gray-300 rounded">
+                            <label for="itemTrending" class="ml-2 block text-sm text-gray-900">Is Trending</label>
+                        </div>
+                        <button type="submit" class="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600">Add Item</button>
+                    </form>
+                `;
+                showGenericModal('Add New Menu Item', formHtml, async (formData) => {
+                    await fetchData('/api/admin/menu', {
+                        method: 'POST',
+                        body: JSON.stringify(formData)
+                    });
+                    alert('Menu item added successfully!');
+                });
+            });
+
+            menuSearchInput.addEventListener('input', fetchAndRenderMenuItems);
+            menuCategoryFilter.addEventListener('change', fetchAndRenderMenuItems);
+
+            fetchAndRenderMenuItems(); // Initial fetch
+        }
+
+        async function renderCustomerManagement() {
+            mainContent.innerHTML = `
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Customer Management</h2>
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <input type="text" id="customerSearch" placeholder="Search by Name, Phone..." class="w-1/2 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm mb-4">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Orders</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Order Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customersTableBody" class="bg-white divide-y divide-gray-200">
+                                <!-- Customers will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <p id="noCustomersMessage" class="text-center text-gray-500 mt-4 hidden">No customers found.</p>
+                </div>
+            `;
+
+            const customerSearchInput = document.getElementById('customerSearch');
+
+            const fetchAndRenderCustomers = async () => {
+                const customers = await fetchData('/api/admin/customers');
+                const customersTableBody = document.getElementById('customersTableBody');
+                customersTableBody.innerHTML = '';
+                document.getElementById('noCustomersMessage').classList.add('hidden');
+
+                if (!customers || customers.length === 0) {
+                    document.getElementById('noCustomersMessage').classList.remove('hidden');
+                    return;
+                }
+
+                const searchTerm = customerSearchInput.value.toLowerCase();
+
+                const filteredCustomers = customers.filter(customer => {
+                    return (customer.customerName && customer.customerName.toLowerCase().includes(searchTerm)) ||
+                           (customer.customerPhone && customer.customerPhone.toLowerCase().includes(searchTerm));
+                });
+
+                if (filteredCustomers.length === 0) {
+                    document.getElementById('noCustomersMessage').classList.remove('hidden');
+                    return;
+                }
+
+                filteredCustomers.forEach(customer => {
+                    const row = customersTableBody.insertRow();
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${customer.customerName || 'N/A'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${customer.customerPhone}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${customer.totalOrders}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${customer.lastOrderDate ? new Date(customer.lastOrderDate).toLocaleDateString() : 'N/A'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button class="text-blue-600 hover:text-blue-900 mr-3 view-customer-btn" data-customer-id="${customer._id}">View</button>
+                            <button class="text-red-600 hover:text-red-900 delete-customer-btn" data-customer-id="${customer._id}">Delete</button>
+                        </td>
+                    `;
+                });
+
+                customersTableBody.querySelectorAll('.view-customer-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const customerId = e.target.dataset.customerId;
+                        // Fetch customer details and their latest order
+                        const customer = customers.find(c => c._id === customerId);
+                        const latestOrder = await fetchData(`/api/admin/customers/${customer.customerPhone}/latest-order`); // Use phone for latest order API
+
+                        let content = `
+                            <p><strong>Name:</strong> ${customer.customerName || 'N/A'}</p>
+                            <p><strong>Phone:</strong> ${customer.customerPhone}</p>
+                            <p><strong>Total Orders:</strong> ${customer.totalOrders}</p>
+                            <p><strong>Last Order Date:</strong> ${customer.lastOrderDate ? new Date(customer.lastOrderDate).toLocaleString() : 'N/A'}</p>
+                            <p><strong>Last Known Location:</strong> ${customer.lastKnownLocation && customer.lastKnownLocation.address ? customer.lastKnownLocation.address : 'N/A'}</p>
+                        `;
+                        if (latestOrder) {
+                            content += `
+                                <h4 class="font-semibold mt-4">Latest Order:</h4>
+                                <p><strong>Order ID:</strong> ${latestOrder.customOrderId || latestOrder.pinId || latestOrder._id}</p>
+                                <p><strong>Status:</strong> ${latestOrder.status}</p>
+                                <p><strong>Total:</strong> ₹${latestOrder.totalAmount.toFixed(2)}</p>
+                                <p><strong>Items:</strong> ${latestOrder.items.map(item => `${item.name} x ${item.quantity}`).join(', ')}</p>
+                            `;
+                        } else {
+                            content += `<p class="mt-4 text-gray-500">No recent orders found for this customer.</p>`;
+                        }
+                        showGenericModal('Customer Details', content);
+                    });
+                });
+
+                customersTableBody.querySelectorAll('.delete-customer-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const customerId = e.target.dataset.customerId;
+                        if (confirm(`Are you sure you want to delete this customer? This will not delete their past orders.`)) {
+                            try {
+                                await fetchData(`/api/admin/customers/${customerId}`, { method: 'DELETE' });
+                                alert('Customer deleted successfully!');
+                                fetchAndRenderCustomers();
+                            } catch (error) {
+                                alert('Failed to delete customer: ' + error.message);
+                            }
+                        }
+                    });
+                });
+            };
+
+            customerSearchInput.addEventListener('input', fetchAndRenderCustomers);
+            fetchAndRenderCustomers(); // Initial fetch
+        }
+
+        async function renderSettingsManagement() {
+            mainContent.innerHTML = `
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Settings and Configuration</h2>
+                <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Shop Details</h3>
+                    <form id="shopDetailsForm">
+                        <div class="mb-4">
+                            <label for="shopNameInput" class="block text-sm font-medium text-gray-700">Shop Name</label>
+                            <input type="text" id="shopNameInput" name="shopName" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        </div>
+                        <div class="mb-4">
+                            <label for="shopLatitude" class="block text-sm font-medium text-gray-700">Shop Latitude</label>
+                            <input type="number" step="0.000001" id="shopLatitude" name="shopLocation.latitude" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        </div>
+                        <div class="mb-4">
+                            <label for="shopLongitude" class="block text-sm font-medium text-gray-700">Shop Longitude</label>
+                            <input type="number" step="0.000001" id="shopLongitude" name="shopLocation.longitude" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        </div>
+                        <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors duration-300 shadow-md">Save Shop Details</button>
+                    </form>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Delivery Rates</h3>
+                    <button id="addDeliveryRateBtn" class="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors duration-300 shadow-md mb-4">
+                        Add New Delivery Rate
+                    </button>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">KMs</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount (₹)</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="deliveryRatesTableBody" class="bg-white divide-y divide-gray-200">
+                                <!-- Delivery rates will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <p id="noDeliveryRatesMessage" class="text-center text-gray-500 mt-4 hidden">No delivery rates configured.</p>
+                </div>
+            `;
+
+            const shopDetailsForm = document.getElementById('shopDetailsForm');
+            const addDeliveryRateBtn = document.getElementById('addDeliveryRateBtn');
+            const deliveryRatesTableBody = document.getElementById('deliveryRatesTableBody');
+
+            const fetchAndRenderSettings = async () => {
+                const settings = await fetchData('/api/admin/settings');
+                if (settings) {
+                    document.getElementById('shopNameInput').value = settings.shopName || '';
+                    document.getElementById('shopLatitude').value = settings.shopLocation ? settings.shopLocation.latitude : '';
+                    document.getElementById('shopLongitude').value = settings.shopLocation ? settings.shopLocation.longitude : '';
+
+                    deliveryRatesTableBody.innerHTML = '';
+                    document.getElementById('noDeliveryRatesMessage').classList.add('hidden');
+
+                    if (settings.deliveryRates && settings.deliveryRates.length > 0) {
+                        settings.deliveryRates.forEach((rate, index) => {
+                            const row = deliveryRatesTableBody.insertRow();
+                            row.innerHTML = `
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${rate.kms}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₹${rate.amount.toFixed(2)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button class="text-blue-600 hover:text-blue-900 mr-3 edit-rate-btn" data-index="${index}">Edit</button>
+                                    <button class="text-red-600 hover:text-red-900 delete-rate-btn" data-index="${index}">Delete</button>
+                                </td>
+                            `;
+                        });
                     } else {
-                        console.log(result.message);
-                        // UI will be updated via socket.io events (status, qrCode)
+                        document.getElementById('noDeliveryRatesMessage').classList.remove('hidden');
                     }
+                }
+
+                // Add event listeners for delivery rates
+                deliveryRatesTableBody.querySelectorAll('.edit-rate-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const index = parseInt(e.target.dataset.index);
+                        const currentSettings = await fetchData('/api/admin/settings');
+                        const rateToEdit = currentSettings.deliveryRates[index];
+                        if (rateToEdit) {
+                            const formHtml = `
+                                <form>
+                                    <div class="mb-4">
+                                        <label for="editKms" class="block text-sm font-medium text-gray-700">KMs</label>
+                                        <input type="number" step="0.01" id="editKms" name="kms" value="${rateToEdit.kms}" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                                    </div>
+                                    <div class="mb-4">
+                                        <label for="editAmount" class="block text-sm font-medium text-gray-700">Amount (₹)</label>
+                                        <input type="number" step="0.01" id="editAmount" name="amount" value="${rateToEdit.amount}" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                                    </div>
+                                    <button type="submit" class="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600">Update Rate</button>
+                                </form>
+                            `;
+                            showGenericModal('Edit Delivery Rate', formHtml, async (formData) => {
+                                currentSettings.deliveryRates[index] = formData;
+                                await fetchData('/api/admin/settings', {
+                                    method: 'PUT',
+                                    body: JSON.stringify({ deliveryRates: currentSettings.deliveryRates })
+                                });
+                                alert('Delivery rate updated successfully!');
+                            });
+                        }
+                    });
+                });
+
+                deliveryRatesTableBody.querySelectorAll('.delete-rate-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const index = parseInt(e.target.dataset.index);
+                        if (confirm(`Are you sure you want to delete this delivery rate?`)) {
+                            try {
+                                const currentSettings = await fetchData('/api/admin/settings');
+                                currentSettings.deliveryRates.splice(index, 1);
+                                await fetchData('/api/admin/settings', {
+                                    method: 'PUT',
+                                    body: JSON.stringify({ deliveryRates: currentSettings.deliveryRates })
+                                });
+                                alert('Delivery rate deleted successfully!');
+                                fetchAndRenderSettings();
+                            } catch (error) {
+                                alert('Failed to delete delivery rate: ' + error.message);
+                            }
+                        }
+                    });
+                });
+            };
+
+            shopDetailsForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(shopDetailsForm);
+                const data = {};
+                formData.forEach((value, key) => {
+                    if (key.includes('.')) { // Handle nested objects like shopLocation.latitude
+                        const [parent, child] = key.split('.');
+                        if (!data[parent]) data[parent] = {};
+                        data[parent][child] = parseFloat(value) || value; // Parse numbers
+                    } else {
+                        data[key] = value;
+                    }
+                });
+                try {
+                    await fetchData('/api/admin/settings', {
+                        method: 'PUT',
+                        body: JSON.stringify(data)
+                    });
+                    alert('Shop details updated successfully!');
+                    fetchAndRenderSettings();
                 } catch (error) {
-                    console.error('Error loading session:', error);
-                    alert('Network error or server issue while trying to load session.');
+                    alert('Failed to update shop details: ' + error.message);
                 }
             });
 
-            // Logout button handler
-            document.getElementById('logoutBtn').addEventListener('click', () => {
-                setCookie('token', '', -1); // Clear the token cookie
-                window.location.href = '/admin/login'; // Redirect to login page
+            addDeliveryRateBtn.addEventListener('click', () => {
+                const formHtml = `
+                    <form>
+                        <div class="mb-4">
+                            <label for="newKms" class="block text-sm font-medium text-gray-700">KMs</label>
+                            <input type="number" step="0.01" id="newKms" name="kms" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        </div>
+                        <div class="mb-4">
+                            <label for="newAmount" class="block text-sm font-medium text-gray-700">Amount (₹)</label>
+                            <input type="number" step="0.01" id="newAmount" name="amount" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600">Add Rate</button>
+                    </form>
+                `;
+                showGenericModal('Add New Delivery Rate', formHtml, async (formData) => {
+                    const currentSettings = await fetchData('/api/admin/settings');
+                    const updatedRates = [...(currentSettings.deliveryRates || []), formData];
+                    await fetchData('/api/admin/settings', {
+                        method: 'PUT',
+                        body: JSON.stringify({ deliveryRates: updatedRates })
+                    });
+                    alert('Delivery rate added successfully!');
+                });
             });
 
-            // --- 2FA Modal Logic ---
-            const twoFAModal = document.getElementById('twoFAModal');
-            const close2FAModal = document.getElementById('close2FAModal');
-            const manage2FABtn = document.getElementById('manage2FABtn');
-            const modal2FAStatusText = document.getElementById('modal2FAStatusText');
-            const enable2FASection = document.getElementById('enable2FASection');
-            const disable2FASection = document.getElementById('disable2FASection');
-            const generate2FABtn = document.getElementById('generate2FABtn');
-            const qrCodeDisplay = document.getElementById('qrCodeDisplay');
-            const modalQrCodeImage = document.getElementById('modalQrCodeImage');
-            const manualSecret = document.getElementById('manualSecret');
-            const verifyTotpCodeInput = document.getElementById('verifyTotpCode');
-            const verify2FABtn = document.getElementById('verify2FABtn');
-            const disable2FABtn = document.getElementById('disable2FABtn');
-            const modalErrorMessage = document.getElementById('modalErrorMessage');
-            const modalSuccessMessage = document.getElementById('modalSuccessMessage');
+            fetchAndRenderSettings(); // Initial fetch
+        }
 
-            let currentGeneratedSecret = null; // To store the secret temporarily for verification
+        async function renderDiscountManagement() {
+            mainContent.innerHTML = `
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Discount Management</h2>
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <form id="discountSettingsForm">
+                        <div class="mb-4">
+                            <label for="minSubtotalForDiscountInput" class="block text-sm font-medium text-gray-700">Minimum Subtotal for Discount (₹)</label>
+                            <input type="number" step="0.01" id="minSubtotalForDiscountInput" name="minSubtotalForDiscount" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        </div>
+                        <div class="mb-4">
+                            <label for="discountPercentageInput" class="block text-sm font-medium text-gray-700">Discount Percentage (e.g., 0.20 for 20%)</label>
+                            <input type="number" step="0.01" min="0" max="1" id="discountPercentageInput" name="discountPercentage" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        </div>
+                        <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors duration-300 shadow-md">Save Discount Settings</button>
+                    </form>
+                </div>
+            `;
 
-            function showModalMessage(element, message, isSuccess = false) {
-                element.textContent = message;
-                element.classList.remove('hidden', 'text-red-600', 'text-green-600');
-                element.classList.add(isSuccess ? 'text-green-600' : 'text-red-600');
+            const discountSettingsForm = document.getElementById('discountSettingsForm');
+
+            const fetchAndRenderDiscountSettings = async () => {
+                const settings = await fetchData('/api/admin/discount-settings');
+                if (settings) {
+                    document.getElementById('minSubtotalForDiscountInput').value = settings.minSubtotalForDiscount;
+                    document.getElementById('discountPercentageInput').value = settings.discountPercentage;
+                }
+            };
+
+            discountSettingsForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(discountSettingsForm);
+                const data = {
+                    minSubtotalForDiscount: parseFloat(formData.get('minSubtotalForDiscount')),
+                    discountPercentage: parseFloat(formData.get('discountPercentage'))
+                };
+                try {
+                    await fetchData('/api/admin/discount-settings', {
+                        method: 'PUT',
+                        body: JSON.stringify(data)
+                    });
+                    alert('Discount settings updated successfully!');
+                    fetchAndRenderDiscountSettings();
+                } catch (error) {
+                    alert('Failed to update discount settings: ' + error.message);
+                }
+            });
+
+            fetchAndRenderDiscountSettings(); // Initial fetch
+        }
+
+        async function renderWhatsappStatus() {
+            mainContent.innerHTML = `
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">WhatsApp Bot Status</h2>
+                <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-blue-500">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-2xl font-semibold text-gray-800">Connection Status</h3>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle-code text-blue-500">
+                            <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="m10 10-2 2 2 2"/><path d="m14 14 2-2-2-2"/>
+                        </svg>
+                    </div>
+                    <p class="text-gray-600 mb-4">Monitor the status of your WhatsApp integration.</p>
+                    <div class="flex justify-between items-center text-gray-700 text-lg">
+                        <span>Status:</span>
+                        <span id="whatsappStatus" class="font-bold text-yellow-500">Loading...</span>
+                    </div>
+                    <div class="flex justify-between items-center text-gray-700 text-lg mt-2">
+                        <span>Last Authenticated:</span>
+                        <span id="lastAuthenticatedAt" class="font-bold text-gray-600">N/A</span>
+                    </div>
+                    <div id="qrCodeContainer" class="mt-4 flex justify-center items-center h-48 bg-gray-100 rounded-md p-2 hidden">
+                        <img id="qrCodeImage" src="" alt="QR Code" class="max-w-full max-h-full object-contain">
+                    </div>
+                    <p id="qrMessage" class="text-center text-blue-500 mt-2 text-sm hidden">Scan QR to connect WhatsApp.</p>
+
+                    <div class="mt-6 flex flex-col space-y-3">
+                        <button id="loadSessionBtn" class="w-full bg-blue-500 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition-colors duration-300 shadow-md">
+                            Load New Session / Get QR
+                        </button>
+                    </div>
+                </div>
+            `;
+            // Re-attach socket listeners specific to this section if needed, or ensure global ones are active
+            // For now, rely on global socket listeners, just update the UI elements.
+            const botStatus = await fetchData('/api/admin/bot-status');
+            if (botStatus) {
+                updateWhatsAppStatus(botStatus.status, botStatus.lastAuthenticatedAt, botStatus.qrCodeAvailable);
             }
 
-            function hideModalMessages() {
-                modalErrorMessage.classList.add('hidden');
-                modalSuccessMessage.classList.add('hidden');
+            document.getElementById('loadSessionBtn').addEventListener('click', async () => {
+                document.getElementById('whatsappStatus').textContent = 'INITIALIZING...';
+                document.getElementById('whatsappStatus').className = 'font-bold text-yellow-500';
+                try {
+                    const response = await fetchData('/api/admin/load-session', { method: 'POST', body: JSON.stringify({}) });
+                    alert(response.message);
+                } catch (error) {
+                    alert('Error: ' + error.message);
+                }
+            });
+        }
+
+        async function renderTwoFactorAuth() {
+            mainContent.innerHTML = `
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Two-Factor Authentication</h2>
+                <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-blue-500">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-2xl font-semibold text-gray-800">Security Status</h3>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield-check text-blue-500">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>
+                        </svg>
+                    </div>
+                    <p class="text-gray-600 mb-4">Enhance your dashboard security with 2FA.</p>
+                    <p id="current2FAStatusMain" class="text-lg font-medium mb-4">Current Status: <span class="font-bold" id="twoFactorStatusMainText">Loading...</span></p>
+
+                    <div id="enable2FASectionMain" class="hidden">
+                        <button id="generate2FABtnMain" class="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors duration-300 shadow-md mb-4">
+                            Generate New 2FA QR
+                        </button>
+                        <div id="qrCodeDisplayMain" class="text-center mb-4 hidden">
+                            <p class="text-gray-700 mb-2">Scan this QR code with your authenticator app (e.g., Google Authenticator):</p>
+                            <img id="modalQrCodeImageMain" src="" alt="2FA QR Code" class="mx-auto border p-2 rounded-md">
+                            <p class="text-sm text-gray-500 mt-2">Or manually enter secret: <span id="manualSecretMain" class="font-mono text-xs break-all"></span></p>
+                            <div class="mt-4">
+                                <label for="verifyTotpCodeMain" class="block text-sm font-medium text-gray-700 mb-1">Enter 2FA Code to Verify & Enable</label>
+                                <input type="text" id="verifyTotpCodeMain" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="6-digit code">
+                                <button id="verify2FABtnMain" class="w-full bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 transition-colors duration-300 shadow-md mt-3">
+                                    Verify & Enable 2FA
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="disable2FASectionMain" class="hidden">
+                        <p class="text-gray-700 mb-4">Two-Factor Authentication is currently enabled. You can disable it below.</p>
+                        <button id="disable2FABtnMain" class="w-full bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition-colors duration-300 shadow-md">
+                            Disable 2FA
+                        </button>
+                    </div>
+                    <div id="twoFAMainMessage" class="text-red-600 text-sm text-center mt-4 hidden"></div>
+                </div>
+            `;
+
+            const twoFactorStatusMainText = document.getElementById('twoFactorStatusMainText');
+            const enable2FASectionMain = document.getElementById('enable2FASectionMain');
+            const disable2FASectionMain = document.getElementById('disable2FASectionMain');
+            const generate2FABtnMain = document.getElementById('generate2FABtnMain');
+            const qrCodeDisplayMain = document.getElementById('qrCodeDisplayMain');
+            const modalQrCodeImageMain = document.getElementById('modalQrCodeImageMain');
+            const manualSecretMain = document.getElementById('manualSecretMain');
+            const verifyTotpCodeMainInput = document.getElementById('verifyTotpCodeMain');
+            const verify2FABtnMain = document.getElementById('verify2FABtnMain');
+            const disable2FABtnMain = document.getElementById('disable2FABtnMain');
+            const twoFAMainMessage = document.getElementById('twoFAMainMessage');
+
+            function show2FAMainMessage(message, isSuccess = false) {
+                twoFAMainMessage.textContent = message;
+                twoFAMainMessage.classList.remove('hidden', 'text-red-600', 'text-green-600');
+                twoFAMainMessage.classList.add(isSuccess ? 'text-green-600' : 'text-red-600');
             }
 
-            async function update2FAStatusInModal() {
-                hideModalMessages();
+            function hide2FAMainMessage() {
+                twoFAMainMessage.classList.add('hidden');
+            }
+
+            async function update2FAStatusInMain() {
+                hide2FAMainMessage();
                 const statusData = await fetchData('/api/admin/2fa/status');
                 if (statusData) {
-                    modal2FAStatusText.textContent = statusData.twoFactorEnabled ? 'Enabled' : 'Disabled';
-                    modal2FAStatusText.classList.remove('text-yellow-500', 'text-green-500', 'text-red-500');
-                    modal2FAStatusText.classList.add(statusData.twoFactorEnabled ? 'text-green-500' : 'text-red-500');
+                    twoFactorStatusMainText.textContent = statusData.twoFactorEnabled ? 'Enabled' : 'Disabled';
+                    twoFactorStatusMainText.classList.remove('text-yellow-500', 'text-green-500', 'text-red-500');
+                    twoFactorStatusMainText.classList.add(statusData.twoFactorEnabled ? 'text-green-500' : 'text-red-500');
 
                     if (statusData.twoFactorEnabled) {
-                        enable2FASection.classList.add('hidden');
-                        disable2FASection.classList.remove('hidden');
-                        document.getElementById('twoFactorStatus').textContent = 'Enabled';
-                        document.getElementById('twoFactorStatus').classList.remove('text-yellow-500', 'text-red-500');
-                        document.getElementById('twoFactorStatus').classList.add('text-green-500');
+                        enable2FASectionMain.classList.add('hidden');
+                        disable2FASectionMain.classList.remove('hidden');
+                        qrCodeDisplayMain.classList.add('hidden'); // Hide QR if already enabled
+                        modalQrCodeImageMain.src = '';
+                        manualSecretMain.textContent = '';
+                        verifyTotpCodeMainInput.value = '';
+                        currentGeneratedSecret = null;
                     } else {
-                        enable2FASection.classList.remove('hidden');
-                        disable2FASection.classList.add('hidden');
-                        qrCodeDisplay.classList.add('hidden'); // Hide QR section if 2FA is disabled
-                        modalQrCodeImage.src = '';
-                        manualSecret.textContent = '';
-                        verifyTotpCodeInput.value = '';
-                        currentGeneratedSecret = null; // Clear any temporary secret
-                        document.getElementById('twoFactorStatus').textContent = 'Disabled';
-                        document.getElementById('twoFactorStatus').classList.remove('text-yellow-500', 'text-green-500');
-                        document.getElementById('twoFactorStatus').classList.add('text-red-500');
+                        enable2FASectionMain.classList.remove('hidden');
+                        disable2FASectionMain.classList.add('hidden');
                     }
                 }
             }
 
-            manage2FABtn.addEventListener('click', () => {
-                twoFAModal.style.display = 'flex'; // Use flex to center
-                update2FAStatusInModal();
-            });
-
-            close2FAModal.addEventListener('click', () => {
-                twoFAModal.style.display = 'none';
-                hideModalMessages();
-            });
-
-            window.addEventListener('click', (event) => {
-                if (event.target == twoFAModal) {
-                    twoFAModal.style.display = 'none';
-                    hideModalMessages();
-                }
-            });
-
-            generate2FABtn.addEventListener('click', async () => {
-                hideModalMessages();
+            generate2FABtnMain.addEventListener('click', async () => {
+                hide2FAMainMessage();
                 try {
                     const data = await fetchData('/api/admin/2fa/generate');
                     if (data) {
-                        modalQrCodeImage.src = data.qrCodeUrl;
-                        manualSecret.textContent = data.secret;
-                        currentGeneratedSecret = data.secret; // Store for verification
-                        qrCodeDisplay.classList.remove('hidden');
-                        showModalMessage(modalSuccessMessage, 'New QR code generated. Scan and verify to enable 2FA.', true);
+                        modalQrCodeImageMain.src = data.qrCodeUrl;
+                        manualSecretMain.textContent = data.secret;
+                        currentGeneratedSecret = data.secret;
+                        qrCodeDisplayMain.classList.remove('hidden');
+                        show2FAMainMessage('New QR code generated. Scan and verify to enable 2FA.', true);
                     } else {
-                        showModalMessage(modalErrorMessage, 'Failed to generate QR code.');
+                        show2FAMainMessage('Failed to generate QR code.');
                     }
                 } catch (error) {
-                    showModalMessage(modalErrorMessage, 'Network error generating QR code.');
+                    show2FAMainMessage('Network error generating QR code.');
                 }
             });
 
-            verify2FABtn.addEventListener('click', async () => {
-                hideModalMessages();
-                const totpCode = verifyTotpCodeInput.value.trim();
+            verify2FABtnMain.addEventListener('click', async () => {
+                hide2FAMainMessage();
+                const totpCode = verifyTotpCodeMainInput.value.trim();
                 if (!totpCode || totpCode.length !== 6) {
-                    showModalMessage(modalErrorMessage, 'Please enter a valid 6-digit code.');
+                    show2FAMainMessage('Please enter a valid 6-digit code.');
                     return;
                 }
                 if (!currentGeneratedSecret) {
-                    showModalMessage(modalErrorMessage, 'Please generate a QR code first.');
+                    show2FAMainMessage('Please generate a QR code first.');
                     return;
                 }
 
@@ -669,18 +1359,18 @@
                     const data = await response.json();
 
                     if (response.ok && data.verified) {
-                        showModalMessage(modalSuccessMessage, '2FA successfully enabled!', true);
-                        update2FAStatusInModal(); // Refresh status in modal and dashboard
+                        show2FAMainMessage('2FA successfully enabled!', true);
+                        update2FAStatusInMain();
                     } else {
-                        showModalMessage(modalErrorMessage, data.message || 'Invalid 2FA code. Please try again.');
+                        show2FAMainMessage(data.message || 'Invalid 2FA code. Please try again.');
                     }
                 } catch (error) {
-                    showModalMessage(modalErrorMessage, 'Network error verifying 2FA code.');
+                    show2FAMainMessage('Network error verifying 2FA code.');
                 }
             });
 
-            disable2FABtn.addEventListener('click', async () => {
-                hideModalMessages();
+            disable2FABtnMain.addEventListener('click', async () => {
+                hide2FAMainMessage();
                 if (!confirm('Are you sure you want to disable Two-Factor Authentication?')) {
                     return;
                 }
@@ -695,27 +1385,197 @@
                     const data = await response.json();
 
                     if (response.ok) {
-                        showModalMessage(modalSuccessMessage, '2FA successfully disabled.', true);
-                        update2FAStatusInModal(); // Refresh status in modal and dashboard
+                        show2FAMainMessage('2FA successfully disabled.', true);
+                        update2FAStatusInMain();
                     } else {
-                        showModalMessage(modalErrorMessage, data.message || 'Failed to disable 2FA.');
+                        show2FAMainMessage(data.message || 'Failed to disable 2FA.');
                     }
                 } catch (error) {
-                    showModalMessage(modalErrorMessage, 'Network error disabling 2FA.');
+                    show2FAMainMessage('Network error disabling 2FA.');
                 }
             });
 
-            // Initial load of 2FA status for the main dashboard card
-            async function loadInitial2FAStatus() {
-                const statusData = await fetchData('/api/admin/2fa/status');
-                if (statusData) {
-                    const twoFactorStatusElement = document.getElementById('twoFactorStatus');
-                    twoFactorStatusElement.textContent = statusData.twoFactorEnabled ? 'Enabled' : 'Disabled';
-                    twoFactorStatusElement.classList.remove('text-yellow-500', 'text-green-500', 'text-red-500');
-                    twoFactorStatusElement.classList.add(statusData.twoFactorEnabled ? 'text-green-500' : 'text-red-500');
+            update2FAStatusInMain(); // Initial load for this section
+        }
+
+        // --- Main Navigation and Initialization ---
+
+        const sectionRenderers = {
+            'dashboard-overview': renderDashboardOverview,
+            'orders-management': renderOrdersManagement,
+            'menu-management': renderMenuManagement,
+            'customer-management': renderCustomerManagement,
+            'settings-management': renderSettingsManagement,
+            'discount-management': renderDiscountManagement,
+            'whatsapp-status': renderWhatsappStatus,
+            'two-factor-auth': renderTwoFactorAuth
+        };
+
+        function displayContent(sectionName) {
+            // Remove active class from all links
+            document.querySelectorAll('.sidebar-link').forEach(link => {
+                link.classList.remove('active');
+            });
+
+            // Add active class to the clicked link
+            const activeLink = document.querySelector(`.sidebar-link[data-section="${sectionName}"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+
+            // Clear previous content and render new section
+            mainContent.innerHTML = `<div class="text-center py-10 text-gray-500">Loading ${sectionName.replace(/-/g, ' ')}...</div>`;
+            if (sectionRenderers[sectionName]) {
+                sectionRenderers[sectionName]();
+            } else {
+                mainContent.innerHTML = `<div class="text-center py-10 text-red-500">Section not found.</div>`;
+            }
+        }
+
+        // Event listener for sidebar navigation
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const section = e.currentTarget.dataset.section;
+                displayContent(section);
+            });
+        });
+
+        // Logout button handler
+        logoutBtn.addEventListener('click', () => {
+            setCookie('token', '', -1); // Clear the token cookie
+            window.location.href = '/admin/login'; // Redirect to login page
+        });
+
+        // Close generic modal when clicking outside
+        window.addEventListener('click', (event) => {
+            if (event.target == genericModal) {
+                closeGenericModal();
+            }
+        });
+        document.getElementById('closeGenericModal').addEventListener('click', closeGenericModal);
+
+
+        // Initial load: Display dashboard overview by default
+        document.addEventListener('DOMContentLoaded', () => {
+            displayContent('dashboard-overview');
+
+            // Initialize Socket.io connection after DOM is ready
+            const socket = io();
+
+            socket.on('connect', () => {
+                console.log('Connected to Socket.io server.');
+            });
+
+            socket.on('status', (status) => {
+                const whatsappStatusSpan = document.getElementById('whatsappStatus');
+                if (whatsappStatusSpan) { // Check if the element exists in the current view
+                    whatsappStatusSpan.textContent = status.replace(/_/g, ' ').toUpperCase();
+                    updateStatusColor(status);
+                }
+            });
+
+            socket.on('sessionInfo', (info) => {
+                const lastAuthSpan = document.getElementById('lastAuthenticatedAt');
+                if (lastAuthSpan) { // Check if the element exists in the current view
+                    if (info.lastAuthenticatedAt) {
+                        const date = new Date(info.lastAuthenticatedAt);
+                        lastAuthSpan.textContent = date.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+                    } else {
+                        lastAuthSpan.textContent = 'N/A';
+                    }
+                }
+            });
+
+            socket.on('qrCode', (qrCodeData) => {
+                const qrCodeImage = document.getElementById('qrCodeImage');
+                const qrCodeContainer = document.getElementById('qrCodeContainer');
+                const qrMessage = document.getElementById('qrMessage');
+
+                if (qrCodeImage && qrCodeContainer && qrMessage) { // Check if elements exist
+                    if (qrCodeData) {
+                        qrCodeImage.src = qrCodeData;
+                        qrCodeContainer.classList.remove('hidden');
+                        qrMessage.classList.remove('hidden');
+                        console.log('QR Code received and displayed.');
+                    } else {
+                        qrCodeImage.src = '';
+                        qrCodeContainer.classList.add('hidden');
+                        qrMessage.classList.add('hidden');
+                        console.log('QR Code cleared.');
+                    }
+                }
+            });
+
+            socket.on('whatsapp_log', (logMessage) => {
+                console.log('[WhatsApp Log]', logMessage);
+            });
+
+            socket.on('new_order', (order) => {
+                console.log('New order received via socket:', order);
+                alert(`New Order Received! Order ID: ${order.customOrderId || order._id.substring(0, 6)}...`);
+                // If currently on orders page, re-render it
+                if (document.querySelector('.sidebar-link.active').dataset.section === 'orders-management') {
+                    renderOrdersManagement();
+                } else if (document.querySelector('.sidebar-link.active').dataset.section === 'dashboard-overview') {
+                    renderDashboardOverview(); // Update counts on overview
+                }
+            });
+
+            // Initial call to update WhatsApp status from API
+            async function updateWhatsAppStatus(status, lastAuthenticatedAt, qrCodeAvailable) {
+                const statusElement = document.getElementById('whatsappStatus');
+                const lastAuthElement = document.getElementById('lastAuthenticatedAt');
+                const qrCodeContainer = document.getElementById('qrCodeContainer');
+                const qrMessage = document.getElementById('qrMessage');
+                const qrCodeImage = document.getElementById('qrCodeImage');
+
+                if (statusElement) {
+                    statusElement.textContent = status.replace(/_/g, ' ').toUpperCase();
+                    statusElement.classList.remove('text-green-500', 'text-red-500', 'text-yellow-500', 'text-blue-500', 'text-orange-500');
+                    switch (status) {
+                        case 'ready':
+                            statusElement.classList.add('text-green-500');
+                            break;
+                        case 'disconnected':
+                        case 'auth_failure':
+                        case 'qr_error':
+                            statusElement.classList.add('text-red-500');
+                            break;
+                        case 'qr_received':
+                            statusElement.classList.add('text-orange-500');
+                            break;
+                        case 'authenticated':
+                        case 'initializing':
+                            statusElement.classList.add('text-yellow-500');
+                            break;
+                        default:
+                            statusElement.classList.add('text-gray-500');
+                            break;
+                    }
+                }
+
+                if (lastAuthElement) {
+                    if (lastAuthenticatedAt) {
+                        const date = new Date(lastAuthenticatedAt);
+                        lastAuthElement.textContent = date.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+                    } else {
+                        lastAuthElement.textContent = 'N/A';
+                    }
+                }
+
+                if (qrCodeContainer && qrCodeImage && qrMessage) {
+                    if (qrCodeAvailable && (status === 'qr_received' || status === 'qr_error')) {
+                        // QR code data will be sent via socket.io, so we just show the container
+                        qrCodeContainer.classList.remove('hidden');
+                        qrMessage.classList.remove('hidden');
+                    } else {
+                        qrCodeImage.src = ''; // Clear image
+                        qrCodeContainer.classList.add('hidden');
+                        qrMessage.classList.add('hidden');
+                    }
                 }
             }
-            loadInitial2FAStatus(); // Call on DOMContentLoaded
         });
     </script>
 </body>

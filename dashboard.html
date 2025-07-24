@@ -262,6 +262,10 @@
             font-size: 1em;
             box-sizing: border-box; /* Include padding in width */
         }
+        
+        .form-group select {
+            width: 100%; /* Ensure select takes full width */
+        }
 
         .form-group input[type="checkbox"] {
             margin-right: 10px;
@@ -504,6 +508,7 @@
 
         .toast.error { background-color: var(--error-red); }
         .toast.warning { background-color: var(--warning-orange); }
+        .toast.info { background-color: var(--primary-blue); }
 
         @keyframes slideIn {
             from { transform: translateX(100%); opacity: 0; }
@@ -1142,7 +1147,6 @@
 
             // If token is valid, proceed with dashboard initialization
             setupSocketIO();
-            loadAllData(); // Load initial data for all sections
             renderSection('bot-status'); // Default active section
         });
 
@@ -1154,6 +1158,11 @@
             socket.on('connect', () => {
                 console.log('Connected to Socket.IO');
                 showToast('Connected to real-time updates!', 'success');
+            });
+
+            socket.on('connect_error', (error) => {
+                console.error('Socket.IO connection error:', error);
+                showToast('Socket.IO connection error. Real-time updates may be affected.', 'error');
             });
 
             socket.on('disconnect', () => {
@@ -1181,7 +1190,7 @@
 
             socket.on('sessionInfo', (info) => {
                 console.log('Session Info:', info);
-                if (info.lastAuthenticatedAt) {
+                if (info && info.lastAuthenticatedAt) {
                     lastAuthenticatedAtSpan.textContent = new Date(info.lastAuthenticatedAt).toLocaleString();
                 } else {
                     lastAuthenticatedAtSpan.textContent = 'N/A';
@@ -1197,7 +1206,9 @@
 
             socket.on('new_order', (order) => {
                 showToast(`New Order Received! ID: ${order.customOrderId}`, 'info');
-                loadOrders(); // Refresh orders table
+                if (document.getElementById('order-management').classList.contains('active')) {
+                    loadOrders(); // Refresh orders table if active
+                }
             });
         }
 
@@ -1214,7 +1225,7 @@
             });
         });
 
-        function renderSection(sectionName) {
+        async function renderSection(sectionName) {
             sections.forEach(section => {
                 section.classList.remove('active');
             });
@@ -1224,32 +1235,30 @@
             // Load data specific to the section when it becomes active
             switch (sectionName) {
                 case 'bot-status':
-                    loadBotStatus();
+                    await loadBotStatus();
                     break;
                 case 'menu-management':
-                    loadMenuItems();
+                    await loadMenuItems();
                     break;
                 case 'order-management':
-                    loadOrders();
+                    await loadOrders();
                     break;
                 case 'customer-management':
-                    loadCustomers();
+                    await loadCustomers();
                     break;
                 case 'settings':
-                    loadSettings();
+                    await loadSettings();
                     break;
                 case '2fa-management':
-                    load2FAStatus();
+                    await load2FAStatus();
                     break;
             }
         }
 
         // --- Logout ---
-        logoutBtn.addEventListener('click', async () => {
-            showConfirmDialog('Are you sure you want to log out?', async () => {
+        logoutBtn.addEventListener('click', () => {
+            showConfirmDialog('Are you sure you want to log out?', () => {
                 localStorage.removeItem('jwtToken');
-                // Optionally call logout API if backend needs to invalidate session
-                // await fetchWithAuth(`${API_BASE_URL}/admin/logout`);
                 window.location.href = '/admin/login';
             });
         });
@@ -1305,7 +1314,15 @@
                 } else {
                     lastAuthenticatedAtSpan.textContent = 'N/A';
                 }
-                // QR code will be emitted via socket.io if available
+                if (data.qrCodeAvailable && data.status === 'qr_received') {
+                    // Request QR code explicitly if available and status is qr_received
+                    // Backend will emit it via socket.io
+                    showToast('QR code is available. Please scan.', 'info');
+                } else {
+                    qrCodeDisplay.src = '';
+                    qrCodeDisplay.style.display = 'none';
+                    qrCodeMessage.textContent = 'No QR code available.';
+                }
             }
         }
 
@@ -1318,20 +1335,20 @@
                 case 'disconnected':
                 case 'auth_failure':
                 case 'qr_error':
-                    botStatusIcon.style.color = var('--error-red');
+                    botStatusIcon.style.color = 'var(--error-red)';
                     break;
                 case 'qr_received':
-                    botStatusIcon.style.color = var('--warning-orange');
+                    botStatusIcon.style.color = 'var(--warning-orange)';
                     break;
                 case 'authenticated':
                 case 'initializing':
-                    botStatusIcon.style.color = var('--accent-blue');
+                    botStatusIcon.style.color = 'var(--accent-blue)';
                     break;
                 case 'ready':
-                    botStatusIcon.style.color = var('--success-green');
+                    botStatusIcon.style.color = 'var(--success-green)';
                     break;
                 default:
-                    botStatusIcon.style.color = var('--text-light');
+                    botStatusIcon.style.color = 'var(--text-light)';
             }
         }
 
@@ -1339,7 +1356,7 @@
             showConfirmDialog('This will disconnect the current WhatsApp session and generate a new QR code. Are you sure?', async () => {
                 const response = await fetchWithAuth(`${API_BASE_URL}/api/admin/load-session`, { method: 'POST' });
                 if (response) {
-                    showToast('WhatsApp session re-initialization requested.', 'info');
+                    showToast('WhatsApp session re-initialization requested. Please wait for QR code.', 'info');
                 }
             });
         });
@@ -1350,10 +1367,14 @@
             if (response) {
                 const items = await response.json();
                 menuItemsTableBody.innerHTML = '';
+                if (items.length === 0) {
+                    menuItemsTableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No menu items found. Add some!</td></tr>';
+                    return;
+                }
                 items.forEach(item => {
                     const row = menuItemsTableBody.insertRow();
                     row.innerHTML = `
-                        <td><img src="${item.imageUrl || 'https://placehold.co/50x50/E0E0E0/666666?text=No+Img'}" alt="${item.name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;"></td>
+                        <td><img src="${item.imageUrl || 'https://placehold.co/50x50/E0E0E0/666666?text=No+Img'}" alt="${item.name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;" onerror="this.onerror=null;this.src='https://placehold.co/50x50/E0E0E0/666666?text=No+Img';"></td>
                         <td>${item.name}</td>
                         <td>${item.description || '-'}</td>
                         <td>₹${item.price.toFixed(2)}</td>
@@ -1439,6 +1460,10 @@
             if (response) {
                 const orders = await response.json();
                 ordersTableBody.innerHTML = '';
+                if (orders.length === 0) {
+                    ordersTableBody.innerHTML = '<tr><td colspan="11" style="text-align: center;">No orders found.</td></tr>';
+                    return;
+                }
                 orders.forEach(order => {
                     const row = ordersTableBody.insertRow();
                     const orderItems = order.items.map(item => `${item.name} x ${item.quantity}`).join(', ');
@@ -1499,7 +1524,7 @@
                     <p><strong>Payment Method:</strong> ${order.paymentMethod}</p>
                     <p><strong>Order Date:</strong> ${new Date(order.orderDate).toLocaleString()}</p>
                     <p><strong>Delivery Address:</strong> ${order.deliveryAddress || 'N/A'}</p>
-                    ${order.customerLocation ? `<p><strong>Customer Location:</strong> Lat: ${order.customerLocation.latitude}, Lng: ${order.customerLocation.longitude} (${order.customerLocation.address || 'N/A'})</p>` : ''}
+                    ${order.customerLocation && order.customerLocation.latitude && order.customerLocation.longitude ? `<p><strong>Customer Location:</strong> Lat: ${order.customerLocation.latitude}, Lng: ${order.customerLocation.longitude} (${order.customerLocation.address || 'N/A'})</p>` : ''}
                     <h4>Items:</h4>
                     <ul>
                 `;
@@ -1533,17 +1558,23 @@
             if (response) {
                 const customers = await response.json();
                 customersTableBody.innerHTML = '';
+                if (customers.length === 0) {
+                    customersTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No customers found.</td></tr>';
+                    return;
+                }
                 customers.forEach(customer => {
                     const row = customersTableBody.insertRow();
                     const lastOrderDate = customer.lastOrderDate ? new Date(customer.lastOrderDate).toLocaleDateString() : 'N/A';
-                    const lastKnownLocation = customer.lastKnownLocation ? `${customer.lastKnownLocation.address || 'Location Shared'}` : 'N/A';
+                    const lastKnownLocation = customer.lastKnownLocation && (customer.lastKnownLocation.address || (customer.lastKnownLocation.latitude && customer.lastKnownLocation.longitude)) ? `${customer.lastKnownLocation.address || `Lat: ${customer.lastKnownLocation.latitude}, Lng: ${customer.lastKnownLocation.longitude}`}` : 'N/A';
 
                     row.innerHTML = `
                         <td>${customer.customerName || 'Unknown'}</td>
                         <td>${customer.customerPhone}</td>
                         <td>${customer.totalOrders}</td>
                         <td>${lastOrderDate}</td>
-                        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${lastKnownLocation}">${lastKnownLocation}</td>
+                        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${lastKnownLocation}">${lastKnownLocation}">
+                            ${lastKnownLocation}
+                        </td>
                         <td class="action-buttons">
                             <button class="btn btn-secondary btn-sm" onclick="viewCustomerLatestOrder('${customer.customerPhone}', '${customer.customerName || 'Unknown'}')"><i class="fas fa-history"></i> Latest Order</button>
                             <button class="btn btn-danger btn-sm" onclick="deleteCustomer('${customer._id}')"><i class="fas fa-trash-alt"></i></button>
@@ -1555,9 +1586,9 @@
 
         async function viewCustomerLatestOrder(phone, name) {
             const response = await fetchWithAuth(`${API_BASE_URL}/api/admin/customers/${phone}/latest-order`);
+            customerLatestOrderName.textContent = name; // Always set name
             if (response) {
                 const order = await response.json();
-                customerLatestOrderName.textContent = name;
                 let content = `
                     <p><strong>Order ID:</strong> ${order.customOrderId || order._id}</p>
                     <p><strong>PIN:</strong> ${order.pinId || 'N/A'}</p>
@@ -1574,7 +1605,6 @@
                 customerLatestOrderContent.innerHTML = content;
                 openModal(customerLatestOrderModal);
             } else {
-                customerLatestOrderName.textContent = name;
                 customerLatestOrderContent.innerHTML = '<p>No latest order found for this customer.</p>';
                 openModal(customerLatestOrderModal);
             }
@@ -1674,12 +1704,12 @@
                 const data = await response.json();
                 if (data.twoFactorEnabled) {
                     twoFaStatusText.textContent = 'Enabled';
-                    twoFaStatusText.style.color = var('--success-green');
+                    twoFaStatusText.style.color = 'var(--success-green)';
                     enable2FABtn.style.display = 'none';
                     disable2FABtn.style.display = 'inline-block';
                 } else {
                     twoFaStatusText.textContent = 'Disabled';
-                    twoFaStatusText.style.color = var('--error-red');
+                    twoFaStatusText.style.color = 'var(--error-red)';
                     enable2FABtn.style.display = 'inline-block';
                     disable2FABtn.style.display = 'none';
                 }
@@ -1737,15 +1767,6 @@
                 }
             });
         });
-
-        // --- Initial Data Load for all sections ---
-        async function loadAllData() {
-            // These will be called when their respective sections are activated,
-            // but calling them here ensures initial data is ready.
-            // For dashboard startup, only bot status is needed immediately.
-            // The `renderSection` function will trigger the specific loads.
-        }
-
     </script>
 </body>
 </html>

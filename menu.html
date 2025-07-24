@@ -10,7 +10,7 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f0f4f8; /* Light blue-grey background */
+            background-color: #f8f8f8; /* Light background from image */
             color: #334155; /* Darker text for readability */
         }
         /* Custom scrollbar for better aesthetics */
@@ -46,11 +46,22 @@
             background-color: #fefefe;
             margin: auto;
             padding: 2rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 1.5rem; /* More rounded corners */
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1); /* Stronger shadow */
             width: 90%;
             max-width: 600px; /* Increased max-width for better forms */
             position: relative;
+        }
+        .item-detail-modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 0; /* No padding for full image */
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 450px; /* Max width closer to mobile screenshot */
+            position: relative;
+            overflow: hidden; /* Ensure image corners are rounded */
         }
         .close-button {
             color: #aaa;
@@ -60,6 +71,14 @@
             font-size: 1.5rem;
             font-weight: bold;
             cursor: pointer;
+            z-index: 10; /* Ensure it's above image */
+            background-color: rgba(255,255,255,0.7);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         .close-button:hover,
         .close-button:focus {
@@ -68,35 +87,47 @@
             cursor: pointer;
         }
         .product-card {
-            display: flex;
-            flex-direction: column;
-            border-radius: 0.5rem;
+            background-color: white;
+            border-radius: 1rem; /* More rounded corners */
             overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); /* Lighter shadow */
             transition: transform 0.2s ease-in-out;
             height: 100%; /* Ensure cards are same height */
+            cursor: pointer; /* Indicate clickable */
         }
         .product-card:hover {
             transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.1);
         }
         .product-image {
             width: 100%;
-            height: 160px; /* Fixed height for images */
+            height: 120px; /* Smaller image height for grid */
             object-fit: cover;
+            border-radius: 0.75rem; /* Rounded image corners */
+            margin-bottom: 0.5rem;
+        }
+        .popular-item-image {
+            width: 100%;
+            height: 100px; /* Fixed height for popular items */
+            object-fit: cover;
+            border-radius: 0.75rem;
+            margin-bottom: 0.5rem;
         }
         .price-original {
             text-decoration: line-through;
             color: #6b7280; /* Gray for original price */
             margin-right: 0.5rem;
+            font-size: 0.875rem; /* Smaller for original price */
         }
         .price-discount {
             color: #10b981; /* Green for discount percentage */
             font-weight: 600;
+            font-size: 0.75rem; /* Smaller for discount percentage */
         }
         .price-final {
             color: #3b82f6; /* Blue for final price */
             font-weight: 700;
-            font-size: 1.25rem;
+            font-size: 1.125rem; /* Slightly smaller for grid */
         }
         .cart-item-image {
             width: 60px;
@@ -122,46 +153,130 @@
         .order-status-cancelled {
             color: #ef4444; /* Red */
         }
+        .category-pill {
+            @apply bg-white text-gray-700 px-4 py-2 rounded-full text-sm font-medium shadow-sm whitespace-nowrap;
+            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+        }
+        .category-pill.active {
+            @apply bg-blue-500 text-white;
+        }
+        .category-pill:hover {
+            @apply bg-blue-100;
+        }
+        .category-pill.active:hover {
+            @apply bg-blue-600;
+        }
+
+        /* Floating Cart Button */
+        #floatingCartBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #f59e0b; /* Amber color for cart from image */
+            color: white;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+            z-index: 999;
+        }
+        #floatingCartBtn:hover {
+            background-color: #d97706; /* Darker amber */
+        }
+        #floatingCartBtn #cartItemCount {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: #ef4444; /* Red dot */
+            color: white;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border-radius: 50%;
+            padding: 2px 6px;
+            min-width: 20px;
+            text-align: center;
+            line-height: 1;
+        }
     </style>
 </head>
 <body class="flex flex-col min-h-screen">
     <!-- Header -->
-    <header class="bg-blue-600 text-white p-4 shadow-md rounded-b-lg">
-        <div class="container mx-auto flex flex-col sm:flex-row justify-between items-center">
-            <h1 class="text-3xl font-bold mb-2 sm:mb-0">Delicious Bites</h1>
-            <nav>
-                <ul class="flex space-x-4 text-lg">
-                    <li><a href="#" id="viewCartBtn" class="hover:text-blue-200 transition-colors duration-200 relative">
-                        Cart (<span id="cartItemCount">0</span>)
-                    </a></li>
-                    <li><a href="#" id="trackOrderBtn" class="hover:text-blue-200 transition-colors duration-200">Track Order</a></li>
-                </ul>
-            </nav>
+    <header class="bg-white p-4 shadow-sm rounded-b-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <button class="text-gray-600 hover:text-blue-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-align-left"><line x1="21" x2="3" y1="6" y2="6"/><line x1="17" x2="3" y1="12" y2="12"/><line x1="19" x2="3" y1="18" y2="18"/></svg>
+                </button>
+                <div class="relative">
+                    <select id="locationDropdown" class="appearance-none bg-transparent border-none text-gray-800 font-semibold text-lg pr-8 focus:outline-none cursor-pointer">
+                        <option value="california">California</option>
+                        <option value="texas">Texas</option>
+                        <option value="newyork">New York</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                        <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                    </div>
+                </div>
+            </div>
+            <button class="text-gray-600 hover:text-blue-500" id="trackOrderBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            </button>
         </div>
     </header>
 
     <!-- Main Content Area -->
     <main class="container mx-auto p-4 flex-grow">
-        <h2 class="text-3xl font-bold text-gray-800 mb-6">Our Delicious Menu</h2>
+        <h2 class="text-3xl font-bold text-gray-800 mb-6 mt-4">Find your favourite foods 😋</h2>
 
-        <!-- Search and Filter -->
-        <div class="mb-6 flex flex-col sm:flex-row gap-4">
-            <input type="text" id="menuSearch" placeholder="Search menu items..." class="flex-grow px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-            <select id="menuCategoryFilter" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                <option value="">All Categories</option>
-            </select>
+        <!-- Search Input -->
+        <div class="mb-6">
+            <input type="text" id="menuSearch" placeholder="Search for food..." class="w-full px-5 py-3 border border-gray-200 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400 text-lg">
         </div>
 
-        <!-- Menu Items Grid -->
-        <div id="menuItemsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            <!-- Menu items will be loaded here -->
+        <!-- Category Pills -->
+        <div class="mb-8 overflow-x-auto whitespace-nowrap pb-2 -mx-4 px-4">
+            <div id="categoryPills" class="inline-flex space-x-3">
+                <button class="category-pill active" data-category="">All</button>
+                <!-- Categories will be loaded here -->
+            </div>
         </div>
-        <p id="noMenuItemsMessage" class="text-center text-gray-500 mt-8 hidden">No menu items found matching your criteria.</p>
-        <p id="loadingMessage" class="text-center text-blue-500 mt-8">Loading menu...</p>
+
+        <!-- Popular Items Section -->
+        <section class="mb-8">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold text-gray-800">Popular items</h3>
+                <a href="#" class="text-blue-500 hover:underline text-sm">See all</a>
+            </div>
+            <div id="popularItemsGrid" class="flex overflow-x-auto space-x-4 pb-4 -mx-4 px-4">
+                <!-- Popular items will be loaded here -->
+            </div>
+        </section>
+
+        <!-- All Menu Items Section -->
+        <section>
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">All Items</h3>
+            <div id="menuItemsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <!-- Menu items will be loaded here -->
+            </div>
+            <p id="noMenuItemsMessage" class="text-center text-gray-500 mt-8 hidden">No menu items found matching your criteria.</p>
+            <p id="loadingMessage" class="text-center text-blue-500 mt-8">Loading menu...</p>
+        </section>
     </main>
 
+    <!-- Floating Cart Button -->
+    <div id="floatingCartBtn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-cart"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+        <span id="cartItemCount" class="text-xs">0</span>
+    </div>
+
     <!-- Footer -->
-    <footer class="bg-blue-600 text-white p-4 mt-8 rounded-t-lg">
+    <footer class="bg-white text-gray-600 p-4 mt-8 rounded-t-lg shadow-inner">
         <div class="container mx-auto text-center text-sm">
             &copy; 2025 Delicious Bites. All rights reserved.
         </div>
@@ -230,6 +345,48 @@
         </div>
     </div>
 
+    <!-- Item Detail Modal -->
+    <div id="itemDetailModal" class="modal">
+        <div class="item-detail-modal-content">
+            <span class="close-button" id="closeItemDetailModal">&times;</span>
+            <img id="detailItemImage" src="" alt="Item Image" class="w-full h-64 object-cover">
+            <div class="p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 id="detailItemName" class="text-3xl font-bold text-gray-800"></h3>
+                    <div class="flex items-baseline">
+                        <span id="detailItemOriginalPrice" class="price-original"></span>
+                        <span id="detailItemPrice" class="price-final"></span>
+                        <span id="detailItemDiscount" class="price-discount ml-2"></span>
+                    </div>
+                </div>
+                <p id="detailItemDescription" class="text-gray-600 mb-4"></p>
+
+                <!-- Size/Options Placeholder -->
+                <div class="mb-6">
+                    <p class="text-gray-700 font-medium mb-2">Size</p>
+                    <div class="flex space-x-3">
+                        <button class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg border border-gray-200 hover:bg-blue-100 transition-colors">S</button>
+                        <button class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">M</button>
+                        <button class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg border border-gray-200 hover:bg-blue-100 transition-colors">L</button>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <button class="bg-gray-200 text-gray-700 px-4 py-2 rounded-l-xl hover:bg-gray-300 transition-colors duration-200" id="detailDecreaseQuantity">-</button>
+                        <span class="bg-gray-100 text-gray-800 px-6 py-2 border-t border-b border-gray-300 text-lg font-semibold" id="detailQuantityDisplay">1</span>
+                        <button class="bg-blue-500 text-white px-4 py-2 rounded-r-xl hover:bg-blue-600 transition-colors duration-200" id="detailIncreaseQuantity">+</button>
+                    </div>
+                    <button class="bg-orange-500 text-white py-3 px-6 rounded-xl hover:bg-orange-600 transition-colors duration-300 font-semibold flex items-center" id="addToCartDetailBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-bag mr-2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                        Add to Cart
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <!-- Order Tracking Modal -->
     <div id="trackOrderModal" class="modal">
         <div class="modal-content">
@@ -275,6 +432,7 @@
         let cart = JSON.parse(localStorage.getItem('cart')) || [];
         let shopSettings = {};
         let customerLocation = null; // Stores {latitude, longitude}
+        let currentDetailItem = null; // Stores the item currently shown in the detail modal
 
         // --- Utility Functions ---
         async function fetchData(url, options = {}) {
@@ -295,6 +453,7 @@
         function updateCartCount() {
             const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
             document.getElementById('cartItemCount').textContent = totalItems;
+            document.getElementById('cartItemCount').style.display = totalItems > 0 ? 'block' : 'none'; // Show/hide count
         }
 
         function saveCart() {
@@ -369,15 +528,17 @@
         async function loadMenu() {
             document.getElementById('loadingMessage').classList.remove('hidden');
             document.getElementById('menuItemsGrid').innerHTML = ''; // Clear previous items
+            document.getElementById('popularItemsGrid').innerHTML = '';
             document.getElementById('noMenuItemsMessage').classList.add('hidden');
 
             try {
                 const menuData = await fetchData('/api/menu');
                 allMenuItems = menuData;
-                renderMenuItems(); // Initial render
+                renderMenuItems(); // Initial render for both sections
                 populateCategoryFilter();
             } catch (error) {
                 document.getElementById('menuItemsGrid').innerHTML = `<p class="text-center text-red-600 col-span-full">Failed to load menu: ${error.message}</p>`;
+                document.getElementById('popularItemsGrid').innerHTML = `<p class="text-center text-red-600 col-span-full">Failed to load popular items.</p>`;
             } finally {
                 document.getElementById('loadingMessage').classList.add('hidden');
             }
@@ -388,11 +549,33 @@
             const filterSelect = document.getElementById('menuCategoryFilter');
             filterSelect.innerHTML = '<option value="">All Categories</option>' +
                 categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+
+            const categoryPillsContainer = document.getElementById('categoryPills');
+            categoryPillsContainer.innerHTML = '<button class="category-pill active" data-category="">All</button>'; // Reset and add 'All'
+            categories.forEach(cat => {
+                const button = document.createElement('button');
+                button.className = 'category-pill';
+                button.textContent = cat;
+                button.dataset.category = cat;
+                categoryPillsContainer.appendChild(button);
+            });
+
+            // Add event listeners to category pills
+            categoryPillsContainer.querySelectorAll('.category-pill').forEach(pill => {
+                pill.addEventListener('click', (e) => {
+                    categoryPillsContainer.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
+                    e.target.classList.add('active');
+                    document.getElementById('menuCategoryFilter').value = e.target.dataset.category; // Sync dropdown
+                    renderMenuItems();
+                });
+            });
         }
 
         function renderMenuItems() {
             const menuItemsGrid = document.getElementById('menuItemsGrid');
+            const popularItemsGrid = document.getElementById('popularItemsGrid');
             menuItemsGrid.innerHTML = '';
+            popularItemsGrid.innerHTML = '';
             document.getElementById('noMenuItemsMessage').classList.add('hidden');
 
             const searchTerm = document.getElementById('menuSearch').value.toLowerCase();
@@ -408,79 +591,134 @@
 
             if (filteredItems.length === 0) {
                 document.getElementById('noMenuItemsMessage').classList.remove('hidden');
-                return;
             }
 
+            const trendingItems = filteredItems.filter(item => item.isTrending);
+
+            // Render Popular Items
+            if (trendingItems.length > 0) {
+                trendingItems.forEach(item => {
+                    const card = createMenuItemCard(item, 'popular');
+                    popularItemsGrid.appendChild(card);
+                });
+            } else {
+                popularItemsGrid.innerHTML = '<p class="text-center text-gray-500 w-full">No popular items found.</p>';
+            }
+
+
+            // Render All Menu Items
             filteredItems.forEach(item => {
-                const cartItem = cart.find(cItem => cItem._id === item._id);
-                const quantityInCart = cartItem ? cartItem.quantity : 0;
-
-                let priceDisplay = `<span class="price-final">₹${item.price.toFixed(2)}</span>`;
-                if (item.displayOriginalPrice && item.displayOriginalPrice > item.price) {
-                    const discountPercentage = ((item.displayOriginalPrice - item.price) / item.displayOriginalPrice * 100).toFixed(0);
-                    priceDisplay = `
-                        <span class="price-original">₹${item.displayOriginalPrice.toFixed(2)}</span>
-                        <span class="price-final">₹${item.price.toFixed(2)}</span>
-                        <span class="price-discount ml-2">${discountPercentage}% OFF</span>
-                    `;
-                }
-
-                const card = document.createElement('div');
-                card.className = 'product-card bg-white rounded-lg shadow-md hover:shadow-xl';
-                card.innerHTML = `
-                    <img src="${item.imageUrl || 'https://placehold.co/400x200/E2E8F0/64748B?text=No+Image'}" alt="${item.name}" class="product-image">
-                    <div class="p-4 flex-grow flex flex-col">
-                        <h3 class="text-xl font-semibold text-gray-800 mb-2">${item.name} ${item.isTrending ? '<span class="text-purple-500 text-sm font-normal">✨ Trending</span>' : ''}</h3>
-                        <p class="text-gray-600 text-sm mb-3 flex-grow">${item.description || ''}</p>
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-baseline">
-                                ${priceDisplay}
-                            </div>
-                            <span class="text-gray-500 text-sm">${item.category || 'Other'}</span>
-                        </div>
-                        <div class="flex items-center justify-center mt-auto">
-                            <button class="bg-gray-200 text-gray-700 px-3 py-1 rounded-l-md hover:bg-gray-300 transition-colors duration-200 decrease-quantity" data-id="${item._id}">-</button>
-                            <span class="bg-gray-100 text-gray-800 px-4 py-1 border-t border-b border-gray-300 quantity-display" data-id="${item._id}">${quantityInCart}</span>
-                            <button class="bg-blue-500 text-white px-3 py-1 rounded-r-md hover:bg-blue-600 transition-colors duration-200 increase-quantity" data-id="${item._id}">+</button>
-                        </div>
-                    </div>
-                `;
+                const card = createMenuItemCard(item, 'grid');
                 menuItemsGrid.appendChild(card);
             });
 
-            // Add event listeners for quantity buttons
-            menuItemsGrid.querySelectorAll('.increase-quantity').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const itemId = e.target.dataset.id;
+             // Attach click listeners to all new cards for opening detail modal
+            menuItemsGrid.querySelectorAll('.product-card').forEach(card => {
+                card.addEventListener('click', (e) => {
+                    const itemId = e.currentTarget.dataset.id;
                     const item = allMenuItems.find(i => i._id === itemId);
                     if (item) {
-                        const cartItem = cart.find(cItem => cItem._id === itemId);
-                        if (cartItem) {
-                            cartItem.quantity++;
-                        } else {
-                            cart.push({ ...item, quantity: 1 });
-                        }
-                        saveCart();
-                        renderMenuItems(); // Re-render to update quantity display
+                        openItemDetailModal(item);
                     }
                 });
             });
+            popularItemsGrid.querySelectorAll('.product-card').forEach(card => {
+                card.addEventListener('click', (e) => {
+                    const itemId = e.currentTarget.dataset.id;
+                    const item = allMenuItems.find(i => i._id === itemId);
+                    if (item) {
+                        openItemDetailModal(item);
+                    }
+                });
+            });
+        }
 
-            menuItemsGrid.querySelectorAll('.decrease-quantity').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const itemId = e.target.dataset.id;
-                    const cartItemIndex = cart.findIndex(cItem => cItem._id === itemId);
-                    if (cartItemIndex > -1) {
-                        if (cart[cartItemIndex].quantity > 1) {
-                            cart[cartItemIndex].quantity--;
-                        } else {
-                            cart.splice(cartItemIndex, 1); // Remove item if quantity is 1
-                        }
-                        saveCart();
-                        renderMenuItems(); // Re-render to update quantity display
-                    }
-                });
-            });
+        function createMenuItemCard(item, type = 'grid') {
+            const card = document.createElement('div');
+            card.className = `product-card bg-white rounded-xl shadow-md hover:shadow-xl ${type === 'popular' ? 'flex-none w-40' : ''}`; // Fixed width for popular items
+            card.dataset.id = item._id; // Store item ID for detail view
+
+            let priceDisplay = `<span class="price-final">₹${item.price.toFixed(2)}</span>`;
+            if (item.displayOriginalPrice && item.displayOriginalPrice > item.price) {
+                const discountPercentage = ((item.displayOriginalPrice - item.price) / item.displayOriginalPrice * 100).toFixed(0);
+                priceDisplay = `
+                    <span class="price-original">₹${item.displayOriginalPrice.toFixed(2)}</span>
+                    <span class="price-final">₹${item.price.toFixed(2)}</span>
+                    <span class="price-discount ml-1">${discountPercentage}% OFF</span>
+                `;
+            }
+
+            const imageClass = type === 'popular' ? 'popular-item-image' : 'product-image';
+
+            card.innerHTML = `
+                <div class="p-2">
+                    <img src="${item.imageUrl || 'https://placehold.co/400x200/E2E8F0/64748B?text=No+Image'}" alt="${item.name}" class="${imageClass}">
+                    <div class="px-1 pb-2">
+                        <h3 class="text-base font-semibold text-gray-800 truncate">${item.name}</h3>
+                        <p class="text-gray-600 text-xs truncate">${item.description || ''}</p>
+                        <div class="flex items-baseline mt-2">
+                            ${priceDisplay}
+                        </div>
+                    </div>
+                </div>
+            `;
+            return card;
+        }
+
+        // --- Item Detail Modal Logic ---
+        function openItemDetailModal(item) {
+            currentDetailItem = { ...item, quantity: 1 }; // Initialize quantity to 1 for the modal
+            document.getElementById('detailItemImage').src = item.imageUrl || 'https://placehold.co/400x200/E2E8F0/64748B?text=No+Image';
+            document.getElementById('detailItemName').textContent = item.name;
+            document.getElementById('detailItemDescription').textContent = item.description || '';
+
+            let priceOriginalElement = document.getElementById('detailItemOriginalPrice');
+            let priceFinalElement = document.getElementById('detailItemPrice');
+            let discountElement = document.getElementById('detailItemDiscount');
+
+            priceOriginalElement.textContent = '';
+            discountElement.textContent = '';
+
+            if (item.displayOriginalPrice && item.displayOriginalPrice > item.price) {
+                const discountPercentage = ((item.displayOriginalPrice - item.price) / item.displayOriginalPrice * 100).toFixed(0);
+                priceOriginalElement.textContent = `₹${item.displayOriginalPrice.toFixed(2)}`;
+                priceFinalElement.textContent = `₹${item.price.toFixed(2)}`;
+                discountElement.textContent = `${discountPercentage}% OFF`;
+                priceOriginalElement.classList.remove('hidden');
+                discountElement.classList.remove('hidden');
+            } else {
+                priceFinalElement.textContent = `₹${item.price.toFixed(2)}`;
+                priceOriginalElement.classList.add('hidden');
+                discountElement.classList.add('hidden');
+            }
+
+            document.getElementById('detailQuantityDisplay').textContent = currentDetailItem.quantity;
+            showModal(document.getElementById('itemDetailModal'));
+        }
+
+        function updateDetailQuantity(change) {
+            if (currentDetailItem) {
+                currentDetailItem.quantity += change;
+                if (currentDetailItem.quantity < 1) {
+                    currentDetailItem.quantity = 1;
+                }
+                document.getElementById('detailQuantityDisplay').textContent = currentDetailItem.quantity;
+            }
+        }
+
+        function addItemToCartFromDetail() {
+            if (currentDetailItem) {
+                const existingCartItemIndex = cart.findIndex(item => item._id === currentDetailItem._id);
+                if (existingCartItemIndex > -1) {
+                    cart[existingCartItemIndex].quantity += currentDetailItem.quantity;
+                } else {
+                    cart.push(currentDetailItem);
+                }
+                saveCart();
+                hideModal(document.getElementById('itemDetailModal'));
+                renderMenuItems(); // Update quantities on main menu
+                alert(`${currentDetailItem.quantity} x ${currentDetailItem.name} added to cart!`);
+            }
         }
 
         // --- Cart Modal Logic ---
@@ -586,11 +824,19 @@
             const useCurrentLocationCheckbox = document.getElementById('useCurrentLocation');
             const locationMessage = document.getElementById('locationMessage');
             useCurrentLocationCheckbox.checked = false; // Reset on modal open
+            locationMessage.classList.add('hidden'); // Hide message initially
 
-            useCurrentLocationCheckbox.addEventListener('change', async () => {
+            // Remove previous listener to prevent duplicates
+            const oldUseCurrentLocationHandler = useCurrentLocationCheckbox.dataset.handler;
+            if (oldUseCurrentLocationHandler) {
+                useCurrentLocationCheckbox.removeEventListener('change', window[oldUseCurrentLocationHandler]);
+            }
+
+            const newUseCurrentLocationHandler = async () => {
                 if (useCurrentLocationCheckbox.checked) {
                     locationMessage.classList.remove('hidden');
                     locationMessage.textContent = 'Getting your location...';
+                    locationMessage.classList.remove('text-red-600');
                     try {
                         const position = await new Promise((resolve, reject) => {
                             navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
@@ -600,6 +846,7 @@
                             longitude: position.coords.longitude
                         };
                         locationMessage.textContent = 'Location obtained. Transport tax updated.';
+                        locationMessage.classList.remove('text-red-600');
                         // Recalculate and update summary with new location
                         const updatedSummary = calculateCartSummary();
                         document.getElementById('checkoutTransportTax').textContent = `₹${updatedSummary.transportTax.toFixed(2)}`;
@@ -623,7 +870,9 @@
                     document.getElementById('checkoutTransportTax').textContent = `₹${updatedSummary.transportTax.toFixed(2)}`;
                     document.getElementById('checkoutTotal').textContent = `₹${updatedSummary.totalAmount.toFixed(2)}`;
                 }
-            });
+            };
+            useCurrentLocationCheckbox.addEventListener('change', newUseCurrentLocationHandler);
+            useCurrentLocationCheckbox.dataset.handler = 'newUseCurrentLocationHandler'; // Store handler name for removal
         }
 
         // --- Order Tracking Modal Logic ---
@@ -679,14 +928,16 @@
             }
 
             loadMenu(); // Load menu items after settings
+            updateCartCount(); // Initial cart count display
 
             // Menu search and filter
             document.getElementById('menuSearch').addEventListener('input', renderMenuItems);
             document.getElementById('menuCategoryFilter').addEventListener('change', renderMenuItems);
 
-            // Cart Modal
+            // Floating Cart Button
+            const floatingCartBtn = document.getElementById('floatingCartBtn');
             const cartModal = document.getElementById('cartModal');
-            document.getElementById('viewCartBtn').addEventListener('click', (e) => {
+            floatingCartBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 renderCartModal();
                 showModal(cartModal);
@@ -799,16 +1050,22 @@
             document.getElementById('closeTrackOrderModal').addEventListener('click', () => hideModal(trackOrderModal));
             document.getElementById('lookupOrderBtn').addEventListener('click', lookupOrder);
 
+            // Item Detail Modal
+            const itemDetailModal = document.getElementById('itemDetailModal');
+            document.getElementById('closeItemDetailModal').addEventListener('click', () => hideModal(itemDetailModal));
+            document.getElementById('detailIncreaseQuantity').addEventListener('click', () => updateDetailQuantity(1));
+            document.getElementById('detailDecreaseQuantity').addEventListener('click', () => updateDetailQuantity(-1));
+            document.getElementById('addToCartDetailBtn').addEventListener('click', addItemToCartFromDetail);
+
+
             // Close modals when clicking outside
             window.addEventListener('click', (event) => {
                 if (event.target == cartModal) hideModal(cartModal);
                 if (event.target == checkoutModal) hideModal(checkoutModal);
                 if (event.target == trackOrderModal) hideModal(trackOrderModal);
+                if (event.target == itemDetailModal) hideModal(itemDetailModal);
                 if (event.target == document.getElementById('orderConfirmationModal')) hideModal(document.getElementById('orderConfirmationModal'));
             });
-
-            // Initial cart count update
-            updateCartCount();
 
             // Check URL for orderId to auto-open tracking modal
             const urlParams = new URLSearchParams(window.location.search);

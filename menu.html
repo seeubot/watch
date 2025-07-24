@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Delicious Bites - Web Menu</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <!-- Leaflet Geocoder CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <style>
         /* General Styles */
         body {
@@ -774,6 +778,28 @@
             font-weight: bold;
         }
 
+        /* Map Modal Styles */
+        #locationMapModal .modal-content {
+            max-width: 700px; /* Wider for map */
+        }
+        #map {
+            height: 400px; /* Larger map area */
+            width: 100%;
+            border-radius: 8px;
+            margin-top: 15px;
+            border: 1px solid var(--border-light);
+        }
+        .leaflet-container {
+            border-radius: 8px;
+        }
+        .leaflet-control-geocoder {
+            margin-bottom: 10px;
+        }
+        #mapLocationStatus {
+            margin-top: 10px;
+            font-weight: 500;
+        }
+
         /* Responsive Adjustments */
         @media (max-width: 992px) {
             .menu-container {
@@ -1071,10 +1097,29 @@
         </div>
     </div>
 
+    <!-- Location Map Modal -->
+    <div id="locationMapModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" data-modal-id="locationMapModal">&times;</span>
+            <h3>Select Delivery Location</h3>
+            <p>Click on the map to set your delivery pin or search for an address.</p>
+            <div id="map"></div>
+            <p id="mapLocationStatus" style="font-size: 0.9em; color: var(--text-light); margin-top: 10px;">No location pinned yet.</p>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-id="locationMapModal">Cancel</button>
+                <button type="button" class="btn" id="confirmLocationBtn"><i class="fas fa-check-circle"></i> Confirm Location</button>
+            </div>
+        </div>
+    </div>
+
     <div id="toastContainer"></div>
 
     <!-- Lottie Player Script -->
     <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <!-- Leaflet Geocoder JS -->
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
     <script>
         const API_BASE_URL = window.location.origin;
@@ -1135,6 +1180,13 @@
         const displayLocationSpan = document.getElementById('displayLocation');
         const changeLocationBtn = document.getElementById('changeLocationBtn');
 
+        // Location Map Modal
+        const locationMapModal = document.getElementById('locationMapModal');
+        const mapDiv = document.getElementById('map');
+        const mapLocationStatusP = document.getElementById('mapLocationStatus');
+        const confirmLocationBtn = document.getElementById('confirmLocationBtn');
+
+
         // --- Global State ---
         let cart = [];
         let menuItems = [];
@@ -1145,6 +1197,9 @@
             discountPercentage: 0.20
         };
         let customerLocation = null; // { latitude, longitude, address }
+        let map = null;
+        let mapMarker = null;
+        let tempMapLocation = null; // Temporarily store location selected on map until confirmed
 
         // --- Utility Functions ---
 
@@ -1227,7 +1282,7 @@
             const storedLng = localStorage.getItem('customerLongitude');
             const storedAddress = localStorage.getItem('customerAddress');
 
-            if (storedLat && storedLng && storedAddress) {
+            if (storedLat && storedLng && storedAddress && storedLat !== 'null' && storedLng !== 'null') { // Ensure not 'null' string
                 customerLocation = {
                     latitude: parseFloat(storedLat),
                     longitude: parseFloat(storedLng),
@@ -1248,10 +1303,10 @@
                 }, (error) => {
                     console.error('Error getting location:', error);
                     customerLocation = null; // Clear any partial location
-                    displayLocationSpan.textContent = 'Location detection failed. Please enter address manually.';
+                    displayLocationSpan.textContent = 'Location detection failed. Click "Change" to set manually.';
                     locationStatusIcon.className = 'fas fa-exclamation-triangle status-icon';
                     locationStatusIcon.style.color = 'var(--warning-orange)';
-                    showToast('Failed to detect location. Please enter manually.', 'warning');
+                    showToast('Failed to detect location. Please set manually.', 'warning');
                     updateLocationHeaderUI(); // Update UI to reflect failure
                 }, {
                     enableHighAccuracy: true, // Request GPS for high accuracy
@@ -1260,7 +1315,7 @@
                 });
             } else {
                 customerLocation = null;
-                displayLocationSpan.textContent = 'Geolocation not supported. Please enter address manually.';
+                displayLocationSpan.textContent = 'Geolocation not supported. Click "Change" to set manually.';
                 locationStatusIcon.className = 'fas fa-times-circle status-icon';
                 locationStatusIcon.style.color = 'var(--accent-red)';
                 showToast('Geolocation not supported by your browser.', 'error');
@@ -1276,7 +1331,14 @@
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const data = await response.json();
-                customerLocation.address = data.display_name || `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+                // Prioritize data.display_name, then fallback to parts of address
+                customerLocation.address = data.display_name || 
+                                           (data.address.road ? `${data.address.road}, ` : '') +
+                                           (data.address.neighbourhood ? `${data.address.neighbourhood}, ` : '') +
+                                           (data.address.suburb ? `${data.address.suburb}, ` : '') +
+                                           (data.address.city || data.address.town || data.address.village || '') +
+                                           (data.address.postcode ? ` - ${data.address.postcode}` : '') ||
+                                           `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
             } catch (error) {
                 console.error('Error during reverse geocoding:', error);
                 customerLocation.address = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)} (Address not found)`;
@@ -1284,7 +1346,7 @@
         }
 
         function updateLocationHeaderUI() {
-            if (customerLocation && customerLocation.address) {
+            if (customerLocation && customerLocation.address && customerLocation.address !== 'null') {
                 displayLocationSpan.textContent = customerLocation.address;
                 locationStatusIcon.className = 'fas fa-map-marker-alt status-icon';
                 locationStatusIcon.style.color = 'var(--primary-blue)';
@@ -1311,9 +1373,122 @@
         }
 
         changeLocationBtn.addEventListener('click', () => {
-            // This button will now trigger re-detection or allow manual entry
-            showToast('Attempting to re-detect location...', 'info');
-            getAndDisplayLocation();
+            // Open the map modal
+            openModal(locationMapModal);
+            // Use a small timeout to ensure modal is visible before map renders
+            setTimeout(() => {
+                if (map) {
+                    map.invalidateSize(); // Invalidate map size to fix rendering issues inside hidden modals
+                }
+                initMap(); // Initialize or re-initialize map
+            }, 100);
+        });
+
+
+        // --- Map Initialization and Interaction (for LocationMapModal) ---
+        function initMap() {
+            if (map) {
+                map.remove(); // Remove existing map instance if any
+            }
+
+            // Default to shop location if available, otherwise a general Indian city
+            const defaultLat = settings.shopLocation ? settings.shopLocation.latitude : 17.4399; // Hyderabad
+            const defaultLng = settings.shopLocation ? settings.shopLocation.longitude : 78.4983; // Hyderabad
+
+            // Use customer's current location if available, otherwise default
+            const initialMapLat = customerLocation ? customerLocation.latitude : defaultLat;
+            const initialMapLng = customerLocation ? customerLocation.longitude : defaultLng;
+            const initialMapZoom = customerLocation ? 16 : 13; // Zoom in more if location is known
+
+            map = L.map('map').setView([initialMapLat, initialMapLng], initialMapZoom);
+
+            // OpenStreetMap Satellite Tiles (using Esri World Imagery as a common satellite option)
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, swisstopo, and the GIS User Community',
+                maxZoom: 18
+            }).addTo(map);
+
+            // Add Geocoder for address search
+            const geocoder = L.Control.Geocoder.nominatim();
+            L.Control.geocoder({
+                geocoder: geocoder,
+                placeholder: 'Search for address...',
+                defaultMarkGeocodedLocation: false,
+                collapsed: false // Keep search bar open
+            }).on('markgeocode', function(e) {
+                const center = e.geocode.center;
+                setMapMarker(center.lat, center.lng, e.geocode.name);
+                map.setView(center, 16); // Zoom to result
+            }).addTo(map);
+
+            // Click event to set marker
+            map.on('click', function(e) {
+                setMapMarker(e.latlng.lat, e.latlng.lng);
+            });
+
+            // Set initial marker if customerLocation is already known or just detected
+            if (customerLocation && customerLocation.latitude && customerLocation.longitude) {
+                setMapMarker(customerLocation.latitude, customerLocation.longitude, customerLocation.address);
+            } else {
+                // If no customerLocation yet, try to get current location for map's initial marker
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition((position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        setMapMarker(lat, lng, 'Your current location');
+                        map.setView([lat, lng], 16); // Zoom to detected location
+                    }, (error) => {
+                        console.warn('Geolocation failed for map initial marker:', error);
+                        mapLocationStatusP.textContent = 'Click on the map to set your delivery pin or search for an address.';
+                    });
+                }
+            }
+        }
+
+        async function setMapMarker(lat, lng, address = null) {
+            if (mapMarker) {
+                map.removeLayer(mapMarker);
+            }
+            mapMarker = L.marker([lat, lng]).addTo(map);
+
+            tempMapLocation = { latitude: lat, longitude: lng }; // Store temporarily
+
+            if (address) {
+                tempMapLocation.address = address;
+                mapLocationStatusP.textContent = `Pinned location: ${address}`;
+            } else {
+                // Reverse geocode if address is not provided (e.g., direct map click)
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    tempMapLocation.address = data.display_name || 
+                                               (data.address.road ? `${data.address.road}, ` : '') +
+                                               (data.address.neighbourhood ? `${data.address.neighbourhood}, ` : '') +
+                                               (data.address.suburb ? `${data.address.suburb}, ` : '') +
+                                               (data.address.city || data.address.town || data.address.village || '') +
+                                               (data.address.postcode ? ` - ${data.address.postcode}` : '') ||
+                                               `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+                } catch (error) {
+                    console.error('Error during reverse geocoding for map:', error);
+                    tempMapLocation.address = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)} (Address not found)`;
+                }
+                mapLocationStatusP.textContent = `Pinned location: ${tempMapLocation.address}`;
+            }
+            mapLocationStatusP.style.color = 'var(--primary-blue)';
+        }
+
+        confirmLocationBtn.addEventListener('click', () => {
+            if (tempMapLocation && tempMapLocation.latitude && tempMapLocation.longitude && tempMapLocation.address && tempMapLocation.address !== 'Address not found') {
+                customerLocation = { ...tempMapLocation }; // Confirm the location
+                updateLocationHeaderUI(); // Update the main UI
+                closeModal(locationMapModal);
+                showToast('Delivery location updated!', 'success');
+            } else {
+                showToast('Please select a valid location on the map.', 'error');
+            }
         });
 
 
@@ -1539,14 +1714,14 @@
             customerPhoneInput.value = localStorage.getItem('customerPhone') || '';
             
             // Prioritize customerLocation from auto-detection, then localStorage for address field
-            if (customerLocation && customerLocation.address) {
+            if (customerLocation && customerLocation.address && customerLocation.address !== 'null') {
                 deliveryAddressInput.value = customerLocation.address;
                 customerLatitudeInput.value = customerLocation.latitude;
                 customerLongitudeInput.value = customerLocation.longitude;
                 customerAddressInput.value = customerLocation.address; // Store the geocoded address
                 addressHint.textContent = 'This address is automatically filled from your device\'s location. Please edit if incorrect.';
                 addressHint.style.color = 'var(--text-light)';
-            } else if (localStorage.getItem('customerAddress')) {
+            } else if (localStorage.getItem('customerAddress') && localStorage.getItem('customerAddress') !== 'null') {
                 const storedLat = localStorage.getItem('customerLatitude');
                 const storedLng = localStorage.getItem('customerLongitude');
                 const storedAddress = localStorage.getItem('customerAddress');
@@ -1678,6 +1853,15 @@
                 if (modalId === 'orderConfirmationModal') {
                     orderPlacedLottie.stop(); // Stop animation when closing
                 }
+                // If closing map modal, ensure map is properly removed to prevent issues
+                if (modalId === 'locationMapModal' && map) {
+                    map.remove();
+                    map = null;
+                    mapMarker = null;
+                    tempMapLocation = null;
+                    mapLocationStatusP.textContent = 'No location pinned yet.';
+                    mapLocationStatusP.style.color = 'var(--text-light)';
+                }
             });
         });
 
@@ -1685,6 +1869,15 @@
             button.addEventListener('click', (e) => {
                 const modalId = e.target.dataset.modalId;
                 closeModal(document.getElementById(modalId));
+                // If closing map modal, ensure map is properly removed to prevent issues
+                if (modalId === 'locationMapModal' && map) {
+                    map.remove();
+                    map = null;
+                    mapMarker = null;
+                    tempMapLocation = null;
+                    mapLocationStatusP.textContent = 'No location pinned yet.';
+                    mapLocationStatusP.style.color = 'var(--text-light)';
+                }
             });
         });
 

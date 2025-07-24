@@ -289,7 +289,7 @@
                             // Handle booleans from checkboxes
                             if (form.elements[key] && form.elements[key].type === 'checkbox') {
                                 data[key] = form.elements[key].checked;
-                            } else if (key === 'price' || key === 'quantity' || key === 'minSubtotalForDiscount' || key === 'discountPercentage' || key === 'latitude' || key === 'longitude' || key === 'kms' || key === 'amount') {
+                            } else if (key === 'price' || key === 'displayOriginalPrice' || key === 'quantity' || key === 'minSubtotalForDiscount' || key === 'discountPercentage' || key === 'latitude' || key === 'longitude' || key === 'kms' || key === 'amount') {
                                 data[key] = parseFloat(value);
                             } else {
                                 data[key] = value;
@@ -434,9 +434,9 @@
             mainContent.innerHTML = `
                 <h2 class="text-3xl font-bold text-gray-800 mb-6">Orders Management</h2>
                 <div class="bg-white p-6 rounded-lg shadow-lg">
-                    <div class="flex justify-between items-center mb-4">
-                        <input type="text" id="orderSearch" placeholder="Search by ID, Customer, Phone..." class="w-1/2 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                        <select id="orderStatusFilter" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <div class="flex flex-wrap gap-4 justify-between items-center mb-4">
+                        <input type="text" id="orderSearch" placeholder="Search by ID, Customer, Phone..." class="flex-grow max-w-full md:max-w-xs px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <select id="orderStatusFilter" class="flex-grow max-w-full md:max-w-xs px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                             <option value="">All Statuses</option>
                             <option value="Pending">Pending</option>
                             <option value="Confirmed">Confirmed</option>
@@ -602,9 +602,9 @@
                     <button id="addMenuItemBtn" class="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors duration-300 shadow-md mb-4">
                         Add New Menu Item
                     </button>
-                    <div class="flex justify-between items-center mb-4">
-                        <input type="text" id="menuSearch" placeholder="Search by name, category..." class="w-1/2 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                        <select id="menuCategoryFilter" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <div class="flex flex-wrap gap-4 justify-between items-center mb-4">
+                        <input type="text" id="menuSearch" placeholder="Search by name, category..." class="flex-grow max-w-full md:max-w-xs px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <select id="menuCategoryFilter" class="flex-grow max-w-full md:max-w-xs px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                             <option value="">All Categories</option>
                             <!-- Categories will be loaded here -->
                         </select>
@@ -616,7 +616,9 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Original Price</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discount</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Final Price</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Available</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trending</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -668,11 +670,27 @@
                 }
 
                 filteredItems.forEach(item => {
+                    let displayOriginalPriceHtml = `<span>N/A</span>`;
+                    let discountHtml = `<span>No Discount</span>`;
+
+                    if (item.displayOriginalPrice && item.displayOriginalPrice > item.price) {
+                        const discountAmount = item.displayOriginalPrice - item.price;
+                        const discountPercentage = (discountAmount / item.displayOriginalPrice) * 100;
+                        displayOriginalPriceHtml = `<span class="line-through text-gray-500">₹${item.displayOriginalPrice.toFixed(2)}</span>`;
+                        discountHtml = `<span class="text-green-600 font-semibold">${discountPercentage.toFixed(0)}% OFF</span>`;
+                    } else if (item.displayOriginalPrice && item.displayOriginalPrice <= item.price) {
+                         displayOriginalPriceHtml = `<span class="text-gray-500">₹${item.displayOriginalPrice.toFixed(2)}</span>`;
+                         discountHtml = `<span>No Discount</span>`;
+                    }
+
+
                     const row = menuTableBody.insertRow();
                     row.innerHTML = `
                         <td class="px-6 py-4 whitespace-nowrap"><img src="${item.imageUrl || 'https://placehold.co/50x50/E2E8F0/64748B?text=No+Img'}" alt="${item.name}" class="h-12 w-12 rounded-md object-cover"></td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.name}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.category || 'N/A'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${displayOriginalPriceHtml}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${discountHtml}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₹${item.price.toFixed(2)}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                             <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded-md toggle-available" ${item.isAvailable ? 'checked' : ''} data-item-id="${item._id}">
@@ -738,7 +756,11 @@
                                         <textarea id="itemDescription" name="description" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">${item.description || ''}</textarea>
                                     </div>
                                     <div class="mb-4">
-                                        <label for="itemPrice" class="block text-sm font-medium text-gray-700">Price</label>
+                                        <label for="itemOriginalPrice" class="block text-sm font-medium text-gray-700">Original Price (for discount display)</label>
+                                        <input type="number" step="0.01" id="itemOriginalPrice" name="displayOriginalPrice" value="${item.displayOriginalPrice || ''}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                                    </div>
+                                    <div class="mb-4">
+                                        <label for="itemPrice" class="block text-sm font-medium text-gray-700">Final Selling Price</label>
                                         <input type="number" step="0.01" id="itemPrice" name="price" value="${item.price}" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
                                     </div>
                                     <div class="mb-4">
@@ -799,7 +821,11 @@
                             <textarea id="itemDescription" name="description" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"></textarea>
                         </div>
                         <div class="mb-4">
-                            <label for="itemPrice" class="block text-sm font-medium text-gray-700">Price</label>
+                            <label for="itemOriginalPrice" class="block text-sm font-medium text-gray-700">Original Price (for discount display)</label>
+                            <input type="number" step="0.01" id="itemOriginalPrice" name="displayOriginalPrice" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" placeholder="Optional: Higher price for discount display">
+                        </div>
+                        <div class="mb-4">
+                            <label for="itemPrice" class="block text-sm font-medium text-gray-700">Final Selling Price</label>
                             <input type="number" step="0.01" id="itemPrice" name="price" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
                         </div>
                         <div class="mb-4">
@@ -840,7 +866,7 @@
             mainContent.innerHTML = `
                 <h2 class="text-3xl font-bold text-gray-800 mb-6">Customer Management</h2>
                 <div class="bg-white p-6 rounded-lg shadow-lg">
-                    <input type="text" id="customerSearch" placeholder="Search by Name, Phone..." class="w-1/2 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm mb-4">
+                    <input type="text" id="customerSearch" placeholder="Search by Name, Phone..." class="w-full md:w-1/2 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm mb-4">
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
@@ -1133,7 +1159,7 @@
 
         async function renderDiscountManagement() {
             mainContent.innerHTML = `
-                <h2 class="text-3xl font-bold text-gray-800 mb-6">Discount Management</h2>
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Global Discount Settings</h2>
                 <div class="bg-white p-6 rounded-lg shadow-lg">
                     <form id="discountSettingsForm">
                         <div class="mb-4">
@@ -1499,10 +1525,9 @@
                         qrMessage.classList.remove('hidden');
                         console.log('QR Code received and displayed.');
                     } else {
-                        qrCodeImage.src = '';
+                        qrCodeImage.src = ''; // Clear image
                         qrCodeContainer.classList.add('hidden');
                         qrMessage.classList.add('hidden');
-                        console.log('QR Code cleared.');
                     }
                 }
             });
@@ -1523,7 +1548,7 @@
             });
 
             // Initial call to update WhatsApp status from API
-            async function updateWhatsAppStatus(status, lastAuthenticatedAt, qrCodeAvailable) {
+            function updateWhatsAppStatus(status, lastAuthenticatedAt, qrCodeAvailable) {
                 const statusElement = document.getElementById('whatsappStatus');
                 const lastAuthElement = document.getElementById('lastAuthenticatedAt');
                 const qrCodeContainer = document.getElementById('qrCodeContainer');

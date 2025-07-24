@@ -8,6 +8,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""/>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -43,6 +47,15 @@
         .input-field {
             @apply w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500;
         }
+        /* Leaflet map styling */
+        #map {
+            height: 300px;
+            width: 100%;
+            border-radius: 8px;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            z-index: 0; /* Ensure map is behind modal content */
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -63,7 +76,7 @@
     <!-- Main Content Area -->
     <main class="container mx-auto p-4 flex-grow">
         <!-- Message Display Area -->
-        <div id="messageDisplay" class="hidden bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 rounded-lg shadow-md mb-6" role="alert">
+        <div id="messageDisplay" class="hidden bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 rounded-lg shadow-md mb-6 relative" role="alert">
             <p class="font-bold">Info:</p>
             <p id="messageText"></p>
             <button id="closeMessage" class="absolute top-2 right-2 text-blue-700 hover:text-blue-900 focus:outline-none">
@@ -131,13 +144,26 @@
                     <div>
                         <label for="deliveryAddress" class="block text-gray-700 text-sm font-bold mb-2">Delivery Address:</label>
                         <textarea id="deliveryAddress" name="deliveryAddress" rows="3" class="input-field" placeholder="Flat No, Building, Street, Landmark, City, Pincode" required></textarea>
+                        <input type="hidden" id="deliveryLat" name="deliveryLat">
+                        <input type="hidden" id="deliveryLon" name="deliveryLon">
                     </div>
+                    <button type="button" id="openMapBtn" class="btn-secondary w-full flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                        </svg>
+                        Select Location on Map
+                    </button>
+                    <div id="map" class="hidden"></div>
                     <button type="submit" class="btn-primary w-full">Place Order</button>
                 </form>
             </div>
         </div>
     </div>
 
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/4K9+sGFu4GVxX+g=="
+        crossorigin=""></script>
     <script src="/js/menu.js"></script>
 </body>
 </html>

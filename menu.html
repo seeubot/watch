@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Delicious Bites - Web Menu</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <!-- Leaflet Geocoder CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <style>
         /* General Styles */
         body {
@@ -36,15 +32,17 @@
             --shadow-light: rgba(0, 0, 0, 0.08);
             --shadow-medium: rgba(0, 0, 0, 0.15);
             --shadow-strong: rgba(0, 0, 0, 0.25);
+            --card-bg: #FFFFFF;
+            --button-dark: #333; /* For the "Pay" button in the image */
         }
 
         /* Header */
         .header {
-            background-color: var(--primary-blue);
-            color: var(--white);
+            background-color: var(--white); /* Changed to white for a cleaner look like the image */
+            color: var(--text-dark);
             padding: 20px;
             text-align: center;
-            box-shadow: 0 4px 10px var(--shadow-medium);
+            box-shadow: 0 2px 5px var(--shadow-light); /* Lighter shadow */
             position: sticky;
             top: 0;
             z-index: 100;
@@ -58,12 +56,13 @@
             font-size: 2.2em;
             letter-spacing: 1px;
             flex-grow: 1;
+            color: var(--primary-blue); /* Keep shop name blue */
         }
 
         .header .cart-icon {
             background: none;
             border: none;
-            color: var(--white);
+            color: var(--primary-blue); /* Cart icon blue */
             font-size: 1.8em;
             cursor: pointer;
             position: relative;
@@ -155,6 +154,11 @@
             position: sticky; /* Sticky cart on desktop */
             top: 150px; /* Adjust based on header + location header height */
             align-self: flex-start; /* Align to top */
+            display: none; /* Hidden by default, shown on mobile cart toggle */
+        }
+
+        .cart-summary-section.active {
+            display: flex; /* Show when active */
         }
 
         /* Menu Categories */
@@ -191,107 +195,118 @@
             box-shadow: 0 4px 8px var(--shadow-medium);
         }
 
-        /* Menu Item Cards */
+        /* Menu Item Cards (Inspired by image) */
         .menu-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 25px;
+            gap: 20px; /* Slightly reduced gap */
         }
 
         .menu-item-card {
-            background-color: var(--white);
-            border-radius: 12px;
-            box-shadow: 0 5px 15px var(--shadow-light);
+            background-color: var(--card-bg); /* White background */
+            border-radius: 16px; /* More rounded corners */
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.05); /* Softer, larger shadow */
             overflow: hidden;
             display: flex;
             flex-direction: column;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
+            padding: 15px; /* Padding inside the card */
         }
 
         .menu-item-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 8px 20px var(--shadow-medium);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1); /* More pronounced hover shadow */
         }
 
         .menu-item-card img {
-            width: 100%;
-            height: 180px;
+            width: 100px; /* Fixed width for image */
+            height: 100px; /* Fixed height for image */
             object-fit: cover;
-            border-bottom: 1px solid var(--border-light);
+            border-radius: 10px; /* Rounded image corners */
+            margin-bottom: 10px;
+            align-self: center; /* Center the image */
         }
 
         .item-details {
-            padding: 15px;
+            padding: 0; /* No padding here, handled by card padding */
             flex-grow: 1;
             display: flex;
             flex-direction: column;
+            text-align: center; /* Center text */
         }
 
         .item-details h3 {
             margin-top: 0;
-            margin-bottom: 8px;
+            margin-bottom: 5px; /* Reduced margin */
             color: var(--text-dark);
-            font-size: 1.4em;
+            font-size: 1.3em; /* Slightly smaller heading */
+            font-weight: 600; /* Semi-bold */
         }
 
         .item-details p {
-            font-size: 0.9em;
+            font-size: 0.85em; /* Smaller description */
             color: var(--text-light);
-            margin-bottom: 15px;
+            margin-bottom: 10px; /* Reduced margin */
             flex-grow: 1;
+            opacity: 0.8; /* Slightly faded description */
         }
 
         .item-price-add {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column; /* Stack price and button */
+            align-items: center; /* Center them */
             margin-top: 10px;
+            gap: 8px; /* Gap between price and button */
         }
 
         .item-price {
-            font-size: 1.3em;
+            font-size: 1.4em; /* Slightly larger price */
             font-weight: bold;
             color: var(--primary-blue);
         }
 
         .add-to-cart-btn {
-            background-color: var(--accent-red);
+            background-color: var(--primary-blue); /* Blue button */
             color: var(--white);
             border: none;
-            padding: 10px 18px;
-            border-radius: 25px;
+            padding: 10px 25px; /* More padding */
+            border-radius: 30px; /* More rounded */
             cursor: pointer;
             font-size: 1em;
             font-weight: bold;
-            transition: background-color 0.2s ease, transform 0.1s ease;
+            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 8px; /* Increased gap */
+            box-shadow: 0 4px 8px rgba(33, 150, 243, 0.2); /* Blue shadow */
         }
 
         .add-to-cart-btn:hover {
-            background-color: #D32F2F;
+            background-color: #1976D2;
             transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(33, 150, 243, 0.3);
         }
 
-        /* Cart Summary */
+        /* Cart Summary (Purchasing View) */
         .cart-summary {
-            background-color: var(--white);
-            border-radius: 12px;
-            box-shadow: 0 5px 15px var(--shadow-light);
-            padding: 20px;
+            background-color: var(--card-bg);
+            border-radius: 16px; /* More rounded */
+            box-shadow: 0 8px 20px var(--shadow-light); /* Softer shadow */
+            padding: 25px; /* More padding */
             display: flex;
             flex-direction: column;
-            height: fit-content; /* Adjust height to content */
+            height: fit-content;
         }
 
         .cart-summary h2 {
             margin-top: 0;
-            color: var(--primary-blue);
+            color: var(--text-dark); /* Dark text for Purchasing title */
             font-size: 1.8em;
-            border-bottom: 1px solid var(--border-light);
-            padding-bottom: 15px;
-            margin-bottom: 20px;
+            border-bottom: none; /* No border */
+            padding-bottom: 0;
+            margin-bottom: 25px; /* More margin */
+            text-align: center;
+            font-weight: 700; /* Bold */
         }
 
         #cartItemsList {
@@ -299,63 +314,74 @@
             padding: 0;
             margin: 0;
             flex-grow: 1;
-            max-height: 400px; /* Limit height for long lists */
-            overflow-y: auto; /* Scroll if too many items */
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 20px; /* Space before totals */
         }
 
         #cartItemsList li {
+            background-color: #F8F8F8; /* Light gray background for cart items */
+            border-radius: 12px;
+            padding: 12px 15px;
+            margin-bottom: 10px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px dashed var(--border-light);
-        }
-
-        #cartItemsList li:last-child {
-            border-bottom: none;
+            justify-content: space-between;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03); /* Subtle shadow */
         }
 
         .cart-item-info {
             flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
         }
 
         .cart-item-info span {
-            font-weight: bold;
+            font-weight: 600; /* Semi-bold */
             color: var(--text-dark);
+            font-size: 1.05em;
+        }
+
+        .cart-item-info small {
+            font-size: 0.85em;
+            color: var(--text-light);
+            margin-top: 3px;
         }
 
         .cart-item-controls {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 8px; /* Increased gap */
         }
 
         .quantity-btn {
-            background-color: var(--light-blue);
+            background-color: var(--white);
             color: var(--primary-blue);
-            border: 1px solid var(--primary-blue);
-            border-radius: 50%;
-            width: 28px;
-            height: 28px;
+            border: 1px solid var(--border-light); /* Lighter border */
+            border-radius: 8px; /* Square buttons */
+            width: 32px; /* Larger buttons */
+            height: 32px;
             display: flex;
             justify-content: center;
             align-items: center;
             cursor: pointer;
-            font-size: 1.2em;
+            font-size: 1.1em;
             font-weight: bold;
-            transition: background-color 0.2s ease;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
         }
 
         .quantity-btn:hover {
-            background-color: var(--primary-blue);
-            color: var(--white);
+            background-color: var(--light-blue);
+            border-color: var(--primary-blue);
         }
 
         .remove-item-btn {
             background: none;
             border: none;
             color: var(--accent-red);
-            font-size: 1.3em;
+            font-size: 1.4em; /* Larger icon */
             cursor: pointer;
             margin-left: 10px;
             transition: color 0.2s ease;
@@ -366,7 +392,7 @@
         }
 
         .cart-totals {
-            margin-top: 20px;
+            margin-top: 0; /* No margin top */
             padding-top: 15px;
             border-top: 1px solid var(--border-light);
         }
@@ -374,46 +400,89 @@
         .cart-totals div {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 8px;
+            margin-bottom: 10px; /* More space */
         }
 
         .cart-totals div span:first-child {
             color: var(--text-light);
+            font-size: 1em;
         }
 
         .cart-totals div span:last-child {
             font-weight: bold;
             color: var(--text-dark);
+            font-size: 1.1em;
         }
 
         .cart-totals .total-amount {
-            font-size: 1.5em;
+            font-size: 1.6em; /* Larger total */
             font-weight: bold;
-            color: var(--accent-red);
+            color: var(--text-dark); /* Dark total, like image */
             margin-top: 15px;
             padding-top: 10px;
-            border-top: 2px dashed var(--accent-red);
+            border-top: none; /* No border */
         }
 
         .checkout-btn {
             width: 100%;
-            background-color: var(--primary-blue);
+            background-color: var(--button-dark); /* Dark button like image */
             color: var(--white);
             border: none;
-            padding: 15px;
-            border-radius: 25px;
+            padding: 18px; /* Larger padding */
+            border-radius: 30px; /* More rounded */
             cursor: pointer;
-            font-size: 1.2em;
+            font-size: 1.3em; /* Larger font */
             font-weight: bold;
-            margin-top: 20px;
-            transition: background-color 0.2s ease, transform 0.1s ease;
-            box-shadow: 0 4px 10px var(--shadow-light);
+            margin-top: 25px; /* More space */
+            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2); /* Stronger shadow */
         }
 
         .checkout-btn:hover {
-            background-color: #1976D2;
-            transform: translateY(-2px);
+            background-color: #000;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
         }
+
+        /* Floating Checkout Button (Mobile Only) */
+        .floating-checkout-btn {
+            display: none; /* Hidden by default */
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 40px); /* Full width with padding */
+            max-width: 400px; /* Max width for larger screens */
+            background-color: var(--button-dark);
+            color: var(--white);
+            border: none;
+            padding: 18px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 1.3em;
+            font-weight: bold;
+            box-shadow: 0 8px 20px var(--shadow-strong);
+            z-index: 100;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+
+        .floating-checkout-btn:hover {
+            background-color: #000;
+            transform: translateX(-50%) translateY(-3px);
+        }
+
+        .floating-checkout-btn.visible {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .floating-checkout-btn .total-price {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
 
         /* Empty Cart Message */
         #emptyCartMessage {
@@ -705,24 +774,6 @@
             font-weight: bold;
         }
 
-        /* Map Styles */
-        #map {
-            height: 300px; /* Fixed height for the map */
-            width: 100%;
-            border-radius: 8px;
-            margin-top: 15px;
-            border: 1px solid var(--border-light);
-        }
-
-        .leaflet-container {
-            border-radius: 8px; /* Apply border-radius to the map container */
-        }
-
-        .leaflet-control-geocoder {
-            margin-top: 10px;
-            margin-bottom: 10px;
-        }
-
         /* Responsive Adjustments */
         @media (max-width: 992px) {
             .menu-container {
@@ -747,7 +798,7 @@
             }
 
             .cart-summary {
-                display: none; /* Hide cart summary by default on mobile */
+                display: none; /* Hidden by default, shown on mobile cart toggle */
             }
 
             .cart-summary.active {
@@ -757,6 +808,10 @@
             .location-header {
                 top: 75px; /* Adjust sticky position for mobile header */
                 font-size: 1em;
+            }
+
+            .floating-checkout-btn.visible {
+                display: flex; /* Show floating button on mobile */
             }
         }
 
@@ -776,7 +831,8 @@
             }
 
             .menu-item-card img {
-                height: 150px;
+                height: 120px; /* Slightly smaller image */
+                width: 120px;
             }
 
             .item-details h3 {
@@ -813,6 +869,10 @@
             .btn {
                 padding: 10px 20px;
                 font-size: 1em;
+            }
+            .floating-checkout-btn {
+                padding: 15px;
+                font-size: 1.1em;
             }
         }
 
@@ -854,6 +914,10 @@
             .location-header i {
                 font-size: 1em;
             }
+            .floating-checkout-btn {
+                padding: 12px;
+                font-size: 1em;
+            }
         }
     </style>
 </head>
@@ -875,7 +939,7 @@
     <!-- Location Header -->
     <div class="location-header">
         <i id="locationStatusIcon" class="fas fa-map-marker-alt status-icon"></i>
-        <span id="displayLocation">Detecting your location...</span>
+        <span id="displayLocation">Detecting your precise location...</span>
         <button id="changeLocationBtn">Change</button>
     </div>
 
@@ -892,9 +956,10 @@
             </div>
         </section>
 
+        <!-- Cart Summary (Hidden by default on desktop, toggled on mobile) -->
         <aside class="cart-summary-section" id="cartSummarySection">
             <div class="cart-summary">
-                <h2>Your Cart</h2>
+                <h2>Purchasing</h2>
                 <ul id="cartItemsList">
                     <!-- Cart items will be loaded here by JS -->
                 </ul>
@@ -919,10 +984,16 @@
                     </div>
                 </div>
 
-                <button class="checkout-btn" id="checkoutBtn"><i class="fas fa-cash-register"></i> Checkout</button>
+                <button class="checkout-btn" id="checkoutBtn"><i class="fas fa-wallet"></i> Pay</button>
             </div>
         </aside>
     </div>
+
+    <!-- Floating Checkout Button (Mobile Only) -->
+    <button class="floating-checkout-btn" id="floatingCheckoutBtn">
+        <span id="floatingCartCount">0</span> Items <span class="total-price">₹<span id="floatingTotalAmount">0.00</span></span>
+        <i class="fas fa-arrow-right"></i>
+    </button>
 
     <!-- Modals -->
 
@@ -930,7 +1001,7 @@
     <div id="checkoutModal" class="modal">
         <div class="modal-content">
             <span class="close-button" data-modal-id="checkoutModal">&times;</span>
-            <h3>Checkout</h3>
+            <h3>Confirm Order Details</h3>
             <form id="checkoutForm">
                 <div class="form-group">
                     <label for="customerName">Your Name:</label>
@@ -943,15 +1014,13 @@
                 <div class="form-group">
                     <label for="deliveryAddress">Delivery Address:</label>
                     <textarea id="deliveryAddress" rows="3" required></textarea>
+                    <small style="color: var(--text-light);">This address is automatically filled from your location or can be edited.</small>
                 </div>
-                <div class="form-group">
-                    <label>Confirm Delivery Location on Map:</label>
-                    <div id="map"></div>
-                    <p id="mapLocationStatus" style="font-size: 0.9em; color: var(--text-light); margin-top: 10px;">Click on the map to set your delivery pin or search for an address.</p>
-                    <input type="hidden" id="customerLatitude">
-                    <input type="hidden" id="customerLongitude">
-                    <input type="hidden" id="customerAddress">
-                </div>
+                
+                <!-- Hidden inputs for lat/lng -->
+                <input type="hidden" id="customerLatitude">
+                <input type="hidden" id="customerLongitude">
+                <input type="hidden" id="customerAddress"> <!-- This will store the geocoded address -->
 
                 <div id="checkoutOrderSummary">
                     <h4>Order Summary</h4>
@@ -1004,10 +1073,6 @@
 
     <!-- Lottie Player Script -->
     <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <!-- Leaflet Geocoder JS -->
-    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
     <script>
         const API_BASE_URL = window.location.origin;
@@ -1032,17 +1097,23 @@
         const checkoutBtn = document.getElementById('checkoutBtn');
         const toastContainer = document.getElementById('toastContainer');
 
+        // Floating Checkout Button
+        const floatingCheckoutBtn = document.getElementById('floatingCheckoutBtn');
+        const floatingCartCount = document.getElementById('floatingCartCount');
+        const floatingTotalAmount = document.getElementById('floatingTotalAmount');
+
+
         // Modals
         const checkoutModal = document.getElementById('checkoutModal');
         const checkoutForm = document.getElementById('checkoutForm');
         const customerNameInput = document.getElementById('customerName');
         const customerPhoneInput = document.getElementById('customerPhone');
         const deliveryAddressInput = document.getElementById('deliveryAddress');
-        const mapDiv = document.getElementById('map');
-        const mapLocationStatusP = document.getElementById('mapLocationStatus');
+        // Removed map related elements
+
         const customerLatitudeInput = document.getElementById('customerLatitude');
         const customerLongitudeInput = document.getElementById('customerLongitude');
-        const customerAddressInput = document.getElementById('customerAddress');
+        const customerAddressInput = document.getElementById('customerAddress'); // This will store the geocoded address
 
         const checkoutSummaryItemsList = document.getElementById('checkoutSummaryItems');
         const checkoutSubtotalSpan = document.getElementById('checkoutSubtotal');
@@ -1072,8 +1143,6 @@
             discountPercentage: 0.20
         };
         let customerLocation = null; // { latitude, longitude, address }
-        let map = null;
-        let mapMarker = null;
 
         // --- Utility Functions ---
 
@@ -1148,7 +1217,7 @@
 
         async function getAndDisplayLocation() {
             locationStatusIcon.className = 'fas fa-spinner fa-spin status-icon'; // Spinner
-            displayLocationSpan.textContent = 'Detecting your precise location (using GPS)...';
+            displayLocationSpan.textContent = 'Detecting your precise location...';
             locationStatusIcon.style.color = 'var(--primary-blue)';
 
             // Check localStorage first
@@ -1177,10 +1246,10 @@
                 }, (error) => {
                     console.error('Error getting location:', error);
                     customerLocation = null; // Clear any partial location
-                    displayLocationSpan.textContent = 'Location detection failed. Please set manually.';
+                    displayLocationSpan.textContent = 'Location detection failed. Please enter address manually.';
                     locationStatusIcon.className = 'fas fa-exclamation-triangle status-icon';
                     locationStatusIcon.style.color = 'var(--warning-orange)';
-                    showToast('Failed to detect location. Please set manually.', 'warning');
+                    showToast('Failed to detect location. Please enter manually.', 'warning');
                     updateLocationHeaderUI(); // Update UI to reflect failure
                 }, {
                     enableHighAccuracy: true, // Request GPS for high accuracy
@@ -1189,9 +1258,9 @@
                 });
             } else {
                 customerLocation = null;
-                displayLocationSpan.textContent = 'Geolocation not supported. Please set manually.';
+                displayLocationSpan.textContent = 'Geolocation not supported. Please enter address manually.';
                 locationStatusIcon.className = 'fas fa-times-circle status-icon';
-                locationStatusIcon.style.color = 'var(--error-red)';
+                locationStatusIcon.style.color = 'var(--accent-red)';
                 showToast('Geolocation not supported by your browser.', 'error');
                 updateLocationHeaderUI(); // Update UI to reflect no support
             }
@@ -1235,97 +1304,10 @@
         }
 
         changeLocationBtn.addEventListener('click', () => {
-            // Open the checkout modal directly to the map section
-            prepareCheckoutModal();
-            openModal(checkoutModal);
-            initMap(); // Ensure map is initialized when modal opens
+            // This button will now trigger re-detection or allow manual entry
+            showToast('Attempting to re-detect location...', 'info');
+            getAndDisplayLocation();
         });
-
-
-        // --- Map Initialization and Interaction ---
-        function initMap() {
-            if (map) {
-                map.remove(); // Remove existing map instance if any
-            }
-
-            // Default to shop location if available, otherwise a general Indian city
-            const defaultLat = settings.shopLocation ? settings.shopLocation.latitude : 17.4399; // Hyderabad
-            const defaultLng = settings.shopLocation ? settings.shopLocation.longitude : 78.4983; // Hyderabad
-
-            // Use customer's current location if available, otherwise default
-            const initialMapLat = customerLocation ? customerLocation.latitude : defaultLat;
-            const initialMapLng = customerLocation ? customerLocation.longitude : defaultLng;
-            const initialMapZoom = customerLocation ? 16 : 13; // Zoom in more if location is known
-
-            map = L.map('map').setView([initialMapLat, initialMapLng], initialMapZoom);
-
-            // OpenStreetMap Satellite Tiles (using Esri World Imagery as a common satellite option)
-            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, swisstopo, and the GIS User Community',
-                maxZoom: 18
-            }).addTo(map);
-
-            // Add Geocoder for address search
-            const geocoder = L.Control.Geocoder.nominatim();
-            L.Control.geocoder({
-                geocoder: geocoder,
-                placeholder: 'Search for address...',
-                defaultMarkGeocodedLocation: false,
-                collapsed: false // Keep search bar open
-            }).on('markgeocode', function(e) {
-                const center = e.geocode.center;
-                setMapMarker(center.lat, center.lng, e.geocode.name);
-                map.setView(center, 16); // Zoom to result
-            }).addTo(map);
-
-            // Click event to set marker
-            map.on('click', function(e) {
-                setMapMarker(e.latlng.lat, e.latlng.lng);
-            });
-
-            // Set initial marker if customerLocation is already known or just detected
-            if (customerLocation && customerLocation.latitude && customerLocation.longitude) {
-                setMapMarker(customerLocation.latitude, customerLocation.longitude, customerLocation.address);
-            } else {
-                // If no customerLocation yet, try to get current location for map's initial marker
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition((position) => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        setMapMarker(lat, lng, 'Your current location');
-                        map.setView([lat, lng], 16); // Zoom to detected location
-                    }, (error) => {
-                        console.warn('Geolocation failed for map initial marker:', error);
-                        mapLocationStatusP.textContent = 'Click on the map to set your delivery pin or search for an address.';
-                    });
-                }
-            }
-        }
-
-        async function setMapMarker(lat, lng, address = null) {
-            if (mapMarker) {
-                map.removeLayer(mapMarker);
-            }
-            mapMarker = L.marker([lat, lng]).addTo(map);
-
-            customerLatitudeInput.value = lat;
-            customerLongitudeInput.value = lng;
-
-            if (address) {
-                customerAddressInput.value = address;
-                mapLocationStatusP.textContent = `Pinned location: ${address}`;
-                customerLocation = { latitude: lat, longitude: lng, address: address }; // Update global state
-                deliveryAddressInput.value = address; // Update delivery address input
-            } else {
-                // Reverse geocode if address is not provided (e.g., direct map click)
-                await reverseGeocode(lat, lng);
-                customerAddressInput.value = customerLocation.address;
-                mapLocationStatusP.textContent = `Pinned location: ${customerLocation.address}`;
-                customerLocation = { latitude: lat, longitude: lng, address: customerLocation.address }; // Update global state
-                deliveryAddressInput.value = customerLocation.address; // Update delivery address input
-            }
-            mapLocationStatusP.style.color = 'var(--primary-blue)';
-        }
 
 
         // --- Menu Rendering ---
@@ -1352,7 +1334,7 @@
                     const card = document.createElement('div');
                     card.classList.add('menu-item-card');
                     card.innerHTML = `
-                        <img src="${item.imageUrl || 'https://placehold.co/400x200/E0E0E0/666666?text=No+Image'}" alt="${item.name}" onerror="this.onerror=null;this.src='https://placehold.co/400x200/E0E0E0/666666?text=No+Image';">
+                        <img src="${item.imageUrl || 'https://placehold.co/100x100/E0E0E0/666666?text=No+Image'}" alt="${item.name}" onerror="this.onerror=null;this.src='https://placehold.co/100x100/E0E0E0/666666?text=No+Image';">
                         <div class="item-details">
                             <h3>${item.name} ${item.isTrending ? '<i class="fas fa-fire" style="color: var(--warning-orange); font-size: 0.8em;"></i>' : ''}</h3>
                             <p>${item.description || 'No description available.'}</p>
@@ -1435,14 +1417,17 @@
             if (cart.length === 0) {
                 emptyCartMessage.style.display = 'block';
                 checkoutBtn.disabled = true;
+                floatingCheckoutBtn.classList.remove('visible');
             } else {
                 emptyCartMessage.style.display = 'none';
                 checkoutBtn.disabled = false;
+                floatingCheckoutBtn.classList.add('visible');
+
                 cart.forEach(item => {
                     const li = document.createElement('li');
                     li.innerHTML = `
                         <div class="cart-item-info">
-                            <span>${item.name}</span><br>
+                            <span>${item.name}</span>
                             <small>₹${item.price.toFixed(2)} each</small>
                         </div>
                         <div class="cart-item-controls">
@@ -1474,6 +1459,8 @@
             }
 
             cartCount.textContent = totalItemsInCart;
+            floatingCartCount.textContent = totalItemsInCart;
+
             subtotalAmountSpan.textContent = `₹${subtotal.toFixed(2)}`;
 
             // Calculate Transport Tax
@@ -1498,24 +1485,23 @@
 
             const totalAmount = subtotal - discountAmount + transportTax;
             totalAmountSpan.textContent = `₹${totalAmount.toFixed(2)}`;
+            floatingTotalAmount.textContent = totalAmount.toFixed(2);
         }
 
         // --- Checkout Process ---
 
-        checkoutBtn.addEventListener('click', () => {
+        function openCheckoutModal() {
             if (cart.length === 0) {
                 showToast('Your cart is empty!', 'warning');
                 return;
             }
             prepareCheckoutModal();
             openModal(checkoutModal);
-            // Ensure map is initialized and rendered when modal opens
-            // Use a small timeout to ensure modal is visible before map renders
-            setTimeout(() => {
-                map.invalidateSize(); // Invalidate map size to fix rendering issues inside hidden modals
-                initMap();
-            }, 100);
-        });
+        }
+
+        checkoutBtn.addEventListener('click', openCheckoutModal);
+        floatingCheckoutBtn.addEventListener('click', openCheckoutModal);
+
 
         function prepareCheckoutModal() {
             checkoutSummaryItemsList.innerHTML = '';
@@ -1550,9 +1536,7 @@
                 deliveryAddressInput.value = customerLocation.address;
                 customerLatitudeInput.value = customerLocation.latitude;
                 customerLongitudeInput.value = customerLocation.longitude;
-                customerAddressInput.value = customerLocation.address;
-                mapLocationStatusP.textContent = `Pinned location: ${customerLocation.address}`;
-                mapLocationStatusP.style.color = 'var(--primary-blue)';
+                customerAddressInput.value = customerLocation.address; // Store the geocoded address
             } else if (localStorage.getItem('customerAddress')) {
                 const storedLat = localStorage.getItem('customerLatitude');
                 const storedLng = localStorage.getItem('customerLongitude');
@@ -1566,15 +1550,11 @@
                 customerLatitudeInput.value = storedLat;
                 customerLongitudeInput.value = storedLng;
                 customerAddressInput.value = storedAddress;
-                mapLocationStatusP.textContent = `Pinned location: ${storedAddress}`;
-                mapLocationStatusP.style.color = 'var(--primary-blue)';
             } else {
-                mapLocationStatusP.textContent = 'Click on the map to set your delivery pin.';
-                mapLocationStatusP.style.color = 'var(--text-light)';
+                deliveryAddressInput.value = '';
                 customerLatitudeInput.value = '';
                 customerLongitudeInput.value = '';
                 customerAddressInput.value = '';
-                deliveryAddressInput.value = '';
             }
         }
 
@@ -1584,18 +1564,21 @@
             const customerName = customerNameInput.value.trim();
             const customerPhone = customerPhoneInput.value.trim();
             const deliveryAddress = deliveryAddressInput.value.trim(); // The address displayed in the textarea
-            const orderLatitude = customerLatitudeInput.value ? parseFloat(customerLatitudeInput.value) : null;
-            const orderLongitude = customerLongitudeInput.value ? parseFloat(customerLongitudeInput.value) : null;
-            const orderAddressFromMap = customerAddressInput.value.trim(); // The address obtained from map/geocoding
+            
+            // Use the geocoded address from customerLocation (or fallback to textarea content if no geocoding happened)
+            const orderLatitude = customerLocation ? customerLocation.latitude : null;
+            const orderLongitude = customerLocation ? customerLocation.longitude : null;
+            const orderAddressForBackend = customerLocation ? customerLocation.address : deliveryAddress; // Backend expects the geocoded address if available
 
             if (!customerName || !customerPhone || !deliveryAddress) {
                 showToast('Please fill in all required customer details.', 'error');
                 return;
             }
             
-            if (!orderLatitude || !orderLongitude || !orderAddressFromMap || orderAddressFromMap === 'Click on the map to set your delivery pin.' || orderAddressFromMap === 'Your current location' || orderAddressFromMap === 'Address not found') {
-                showToast('Please confirm your delivery location on the map by pinning it or searching for an address.', 'error');
-                return;
+            // Basic validation for location data, though not as strict as map pinning
+            if (!orderLatitude || !orderLongitude || !orderAddressForBackend || orderAddressForBackend === 'Location not set. Click "Change" to set.' || orderAddressForBackend === 'Location detection failed. Please enter address manually.' || orderAddressForBackend === 'Geolocation not supported. Please enter address manually.' || orderAddressForBackend.includes('Address not found')) {
+                showToast('Please ensure your delivery address is accurate. If location detection failed, please type it manually.', 'warning');
+                // Allow submission but warn the user. Backend can handle null lat/lng.
             }
 
             // Save customer details to localStorage for next time
@@ -1604,7 +1587,7 @@
             localStorage.setItem('deliveryAddress', deliveryAddress); // Save the manually entered address too
             localStorage.setItem('customerLatitude', orderLatitude);
             localStorage.setItem('customerLongitude', orderLongitude);
-            localStorage.setItem('customerAddress', orderAddressFromMap); // Save the geocoded address
+            localStorage.setItem('customerAddress', orderAddressForBackend); // Save the geocoded address
 
 
             const orderPayload = {
@@ -1617,7 +1600,7 @@
                 customerName: customerName,
                 customerPhone: customerPhone,
                 deliveryAddress: deliveryAddress, // Send the address from the text area
-                customerLocation: { latitude: orderLatitude, longitude: orderLongitude, address: orderAddressFromMap }, // Send the map-pinned location
+                customerLocation: { latitude: orderLatitude, longitude: orderLongitude, address: orderAddressForBackend }, // Send the geocoded location
                 subtotal: parseFloat(subtotalAmountSpan.textContent.replace('₹', '')),
                 transportTax: parseFloat(transportTaxAmountSpan.textContent.replace('₹', '')),
                 discountAmount: parseFloat(discountAmountSpan.textContent.replace('-₹', '')),
@@ -1699,7 +1682,7 @@
         document.addEventListener('click', (e) => {
             if (window.innerWidth <= 992 && cartSummarySection.classList.contains('active')) {
                 // Check if the click was outside the cart summary and not on the toggle button itself
-                if (!cartSummarySection.contains(e.target) && !toggleCartBtn.contains(e.target)) {
+                if (!cartSummarySection.contains(e.target) && !toggleCartBtn.contains(e.target) && !floatingCheckoutBtn.contains(e.target)) {
                     cartSummarySection.classList.remove('active');
                 }
             }

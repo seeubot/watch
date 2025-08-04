@@ -3,164 +3,791 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>THE JAR - Delicious Food Delivered!</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>StreamCast - Telegram Media Player</title>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
+        * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            /* Ensure full height for background and centering */
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-        html.dark {
-            /* Tailwind handles dark mode via classes */
-        }
-        /* Custom scrollbar for better aesthetics in dark mode */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #e0e0e0;
-            border-radius: 10px;
-        }
-        html.dark ::-webkit-scrollbar-track {
-            background: #374151; /* gray-700 */
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 10px;
-        }
-        html.dark ::-webkit-scrollbar-thumb {
-            background: #6b7280; /* gray-600 */
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-        html.dark ::-webkit-scrollbar-thumb:hover {
-            background: #4b5563; /* gray-500 */
         }
 
-        /* Custom animation for subtle entrance */
-        @keyframes fadeInScale {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            min-height: 100vh;
         }
-        .animate-fadeInScale {
-            animation: fadeInScale 0.7s ease-out forwards;
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .telegram-config {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .config-section {
+            margin-bottom: 20px;
+        }
+
+        .config-section h3 {
+            color: #4ecdc4;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        input, select, button {
+            padding: 12px 15px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #4ecdc4;
+            box-shadow: 0 0 10px rgba(78, 205, 196, 0.3);
+        }
+
+        button {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .player-container {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            background: #000;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .controls-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .video-wrapper:hover .controls-overlay {
+            opacity: 1;
+        }
+
+        .progress-container {
+            margin-bottom: 15px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
+        .buffer-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            width: 0%;
+        }
+
+        .video-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .controls-left, .controls-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .quality-selector {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .volume-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .volume-slider {
+            width: 80px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            cursor: pointer;
+        }
+
+        .file-list {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .file-item:hover {
+            background: rgba(78, 205, 196, 0.2);
+            border-color: #4ecdc4;
+            transform: translateX(5px);
+        }
+
+        .file-item.active {
+            background: rgba(78, 205, 196, 0.3);
+            border-color: #4ecdc4;
+        }
+
+        .file-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .file-name {
+            font-weight: bold;
+            color: #4ecdc4;
+        }
+
+        .file-meta {
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .status.success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4CAF50;
+            color: #4CAF50;
+        }
+
+        .status.error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid #f44336;
+            color: #f44336;
+        }
+
+        .status.info {
+            background: rgba(33, 150, 243, 0.2);
+            border: 1px solid #2196F3;
+            color: #2196F3;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #4ecdc4;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #4ecdc4;
+        }
+
+        .fullscreen-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 18px;
         }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-white transition-colors duration-500 ease-in-out p-4">
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>StreamCast</h1>
+            <p>Advanced Telegram Media Streaming Platform</p>
+        </header>
 
-    <!-- Tailwind CSS Configuration for dark mode -->
-    <script>
-        tailwind.config = {
-            darkMode: 'class', // Enable dark mode based on 'dark' class on <html>
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                },
-            },
-        };
-    </script>
-
-    <div class="max-w-5xl w-full mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-fadeInScale">
-
-        <!-- Left Section - Image/Visual -->
-        <div class="md:w-1/2 p-6 flex items-center justify-center bg-gray-100 dark:bg-gray-700">
-            <img
-                src="https://i.postimg.cc/t4B8fw2d/IMG-20250525-WA0003.jpg"
-                alt="Delicious Food"
-                class="w-full h-auto rounded-lg shadow-lg object-cover max-h-96 md:max-h-full"
-                onerror="this.onerror=null;this.src='https://placehold.co/600x400/E0E0E0/333333?text=Food+Image';"
-            />
+        <div class="telegram-config">
+            <div class="config-section">
+                <h3>🔗 Telegram Configuration</h3>
+                <div class="input-group">
+                    <input type="text" id="apiId" placeholder="API ID" />
+                    <input type="password" id="apiHash" placeholder="API Hash" />
+                    <input type="text" id="phoneNumber" placeholder="Phone Number" />
+                </div>
+                <div class="input-group">
+                    <input type="text" id="channelUsername" placeholder="Channel/Group Username (@channel)" />
+                    <select id="mediaType">
+                        <option value="all">All Media</option>
+                        <option value="video">Videos Only</option>
+                        <option value="audio">Audio Only</option>
+                        <option value="document">Documents</option>
+                    </select>
+                    <button onclick="connectTelegram()">Connect</button>
+                </div>
+            </div>
         </div>
 
-        <!-- Right Section - Content & Buttons -->
-        <div class="md:w-1/2 p-8 md:p-12 flex flex-col justify-center text-center md:text-left">
-            <div class="flex justify-center md:justify-start mb-4">
-                <button id="theme-toggle" class="p-3 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200">
-                    <svg class="w-7 h-7 text-gray-700 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.325 6.786l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                </button>
+        <div id="status" class="status info" style="display: none;"></div>
+
+        <div class="player-container">
+            <div class="video-wrapper">
+                <video id="mainVideo" preload="metadata">
+                    <source src="" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+                
+                <div class="controls-overlay">
+                    <div class="progress-container">
+                        <div class="progress-bar" onclick="seekVideo(event)">
+                            <div class="buffer-fill" id="bufferFill"></div>
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="video-controls">
+                        <div class="controls-left">
+                            <button class="control-btn" onclick="togglePlay()">
+                                <span id="playIcon">▶️</span>
+                            </button>
+                            <button class="control-btn" onclick="skipTime(-10)">⏪</button>
+                            <button class="control-btn" onclick="skipTime(10)">⏩</button>
+                            <div class="volume-container">
+                                <button class="control-btn" onclick="toggleMute()">
+                                    <span id="volumeIcon">🔊</span>
+                                </button>
+                                <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="100" onchange="setVolume(this.value)">
+                            </div>
+                            <span id="timeDisplay">00:00 / 00:00</span>
+                        </div>
+                        
+                        <div class="controls-right">
+                            <select class="quality-selector" id="qualitySelect" onchange="changeQuality(this.value)">
+                                <option value="auto">Auto</option>
+                                <option value="1080p">1080p HD</option>
+                                <option value="720p">720p HD</option>
+                                <option value="480p">480p</option>
+                                <option value="360p">360p</option>
+                            </select>
+                            <button class="control-btn" onclick="changePlaybackSpeed()">
+                                <span id="speedIcon">1x</span>
+                            </button>
+                            <button class="fullscreen-btn" onclick="toggleFullscreen()">⛶</button>
+                        </div>
+                    </div>
+                </div>
             </div>
+        </div>
 
-            <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-4 leading-tight text-gray-800 dark:text-white">
-                Taste the <span class="text-blue-600">Flavor</span>, Order with Ease!
-            </h1>
-            <p class="text-lg sm:text-xl mb-8 leading-relaxed text-gray-600 dark:text-gray-300">
-                Discover a world of delicious dishes, delivered right to your doorstep. Fast, fresh, and flavorful!
-            </p>
+        <div class="file-list">
+            <h3>📁 Media Files</h3>
+            <div id="filesList">
+                <div class="file-item" onclick="loadSampleVideo()">
+                    <div class="file-info">
+                        <div class="file-name">Sample Video.mp4</div>
+                        <div class="file-meta">Duration: 2:30 • Size: 45 MB • Quality: 1080p</div>
+                    </div>
+                    <div>▶️</div>
+                </div>
+            </div>
+        </div>
 
-            <div class="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-                <a href="menu.html" class="inline-flex items-center justify-center px-8 py-4 bg-blue-500 hover:bg-blue-600 text-white font-bold text-lg rounded-full shadow-lg transform hover:scale-105 transition duration-300 ease-in-out">
-                    <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                    Order Now
-                </a>
-                <a id="whatsapp-chat-link" href="#" target="_blank" class="inline-flex items-center justify-center px-8 py-4 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold text-lg rounded-full shadow-lg transform hover:scale-105 transition duration-300 ease-in-out dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white">
-                    <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
-                    Chat on WhatsApp
-                </a>
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="connectedChannels">0</div>
+                <div>Connected Channels</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalFiles">1</div>
+                <div>Media Files</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="streamQuality">1080p</div>
+                <div>Stream Quality</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="bufferHealth">100%</div>
+                <div>Buffer Health</div>
             </div>
         </div>
     </div>
 
     <script>
-        // --- Configuration ---
-        // IMPORTANT: Replace '91XXXXXXXXXX' with your actual WhatsApp number (including country code, without + or spaces)
-        const ADMIN_WHATSAPP_NUMBER = '918897350151'; // Example: '919876543210'
+        // Global variables
+        let currentVideo = null;
+        let mediaFiles = [];
+        let currentPlaybackSpeed = 1;
+        let playbackSpeeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
+        let speedIndex = 2;
+        let isConnected = false;
 
-        // --- DOM Elements ---
-        const themeToggle = document.getElementById('theme-toggle');
-        const whatsappChatLink = document.getElementById('whatsapp-chat-link');
+        // Initialize the application
+        function initializeApp() {
+            const video = document.getElementById('mainVideo');
+            
+            // Video event listeners
+            video.addEventListener('loadedmetadata', updateDuration);
+            video.addEventListener('timeupdate', updateProgress);
+            video.addEventListener('progress', updateBuffer);
+            video.addEventListener('ended', playNext);
+            video.addEventListener('loadstart', () => showStatus('Loading video...', 'info'));
+            video.addEventListener('canplay', () => hideStatus());
+            video.addEventListener('error', (e) => showStatus('Error loading video', 'error'));
 
-        // --- Global State ---
-        let currentTheme = localStorage.getItem('theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-
-        // --- Theme Management ---
-        function applyTheme(theme) {
-            if (theme === 'dark') {
-                document.documentElement.classList.add('dark');
-                // Update SVG for dark mode (Moon icon)
-                themeToggle.querySelector('svg path').setAttribute('d', 'M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z');
-            } else {
-                document.documentElement.classList.remove('dark');
-                // Update SVG for light mode (Sun icon)
-                themeToggle.querySelector('svg path').setAttribute('d', 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.325 6.786l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z');
-            }
-            localStorage.setItem('theme', theme);
+            // Keyboard shortcuts
+            document.addEventListener('keydown', handleKeyboard);
+            
+            // Sample data
+            loadSampleData();
         }
 
-        function toggleTheme() {
-            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
-            applyTheme(currentTheme);
+        // Telegram connection simulation
+        function connectTelegram() {
+            const apiId = document.getElementById('apiId').value;
+            const apiHash = document.getElementById('apiHash').value;
+            const phoneNumber = document.getElementById('phoneNumber').value;
+            const channelUsername = document.getElementById('channelUsername').value;
+
+            if (!apiId || !apiHash || !phoneNumber || !channelUsername) {
+                showStatus('Please fill in all Telegram configuration fields', 'error');
+                return;
+            }
+
+            showStatus('Connecting to Telegram...', 'info');
+
+            // Simulate connection process
+            setTimeout(() => {
+                showStatus('Connected successfully! Fetching media files...', 'success');
+                isConnected = true;
+                document.getElementById('connectedChannels').textContent = '1';
+                
+                // Simulate fetching files
+                setTimeout(() => {
+                    loadTelegramFiles();
+                    hideStatus();
+                }, 2000);
+            }, 3000);
         }
 
-        // --- Event Listeners ---
-        document.addEventListener('DOMContentLoaded', () => {
-            applyTheme(currentTheme); // Apply theme on load
+        // Load sample files (simulation)
+        function loadSampleData() {
+            mediaFiles = [
+                {
+                    id: 1,
+                    name: "Sample Video.mp4",
+                    duration: "2:30",
+                    size: "45 MB",
+                    quality: "1080p",
+                    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+                    type: "video"
+                }
+            ];
+            updateFilesList();
+        }
 
-            themeToggle.addEventListener('click', toggleTheme);
+        // Simulate loading files from Telegram
+        function loadTelegramFiles() {
+            const sampleFiles = [
+                {
+                    id: 2,
+                    name: "Movie_2024_HD.mp4",
+                    duration: "2:15:30",
+                    size: "2.1 GB",
+                    quality: "1080p",
+                    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+                    type: "video"
+                },
+                {
+                    id: 3,
+                    name: "Documentary_Nature.mkv",
+                    duration: "58:45",
+                    size: "890 MB",
+                    quality: "720p",
+                    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+                    type: "video"
+                },
+                {
+                    id: 4,
+                    name: "Series_S01E01.mp4",
+                    duration: "42:18",
+                    size: "650 MB",
+                    quality: "1080p",
+                    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+                    type: "video"
+                }
+            ];
 
-            // Set the WhatsApp chat link
-            if (ADMIN_WHATSAPP_NUMBER && ADMIN_WHATSAPP_NUMBER !== '918897350151') {
-                whatsappChatLink.href = `https://wa.me/${ADMIN_WHATSAPP_NUMBER}`;
+            mediaFiles = [...mediaFiles, ...sampleFiles];
+            document.getElementById('totalFiles').textContent = mediaFiles.length;
+            updateFilesList();
+        }
+
+        // Update files list display
+        function updateFilesList() {
+            const filesList = document.getElementById('filesList');
+            filesList.innerHTML = '';
+
+            mediaFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.onclick = () => loadVideo(file, index);
+
+                fileItem.innerHTML = `
+                    <div class="file-info">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-meta">Duration: ${file.duration} • Size: ${file.size} • Quality: ${file.quality}</div>
+                    </div>
+                    <div>▶️</div>
+                `;
+
+                filesList.appendChild(fileItem);
+            });
+        }
+
+        // Load and play video
+        function loadVideo(file, index) {
+            const video = document.getElementById('mainVideo');
+            
+            // Remove active class from all items
+            document.querySelectorAll('.file-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Add active class to current item
+            document.querySelectorAll('.file-item')[index].classList.add('active');
+            
+            currentVideo = { file, index };
+            video.src = file.url;
+            video.load();
+            
+            showStatus(`Loading ${file.name}...`, 'info');
+            document.getElementById('streamQuality').textContent = file.quality;
+        }
+
+        // Sample video loader
+        function loadSampleVideo() {
+            loadVideo(mediaFiles[0], 0);
+        }
+
+        // Video controls
+        function togglePlay() {
+            const video = document.getElementById('mainVideo');
+            const playIcon = document.getElementById('playIcon');
+
+            if (video.paused) {
+                video.play();
+                playIcon.textContent = '⏸️';
             } else {
-                // Fallback or warning if number is not set
-                whatsappChatLink.href = '#';
-                whatsappChatLink.onclick = () => alert('WhatsApp number not configured. Please contact the administrator.');
+                video.pause();
+                playIcon.textContent = '▶️';
             }
-        });
+        }
+
+        function skipTime(seconds) {
+            const video = document.getElementById('mainVideo');
+            video.currentTime += seconds;
+        }
+
+        function seekVideo(event) {
+            const video = document.getElementById('mainVideo');
+            const progressBar = event.currentTarget;
+            const rect = progressBar.getBoundingClientRect();
+            const percent = (event.clientX - rect.left) / rect.width;
+            video.currentTime = percent * video.duration;
+        }
+
+        function toggleMute() {
+            const video = document.getElementById('mainVideo');
+            const volumeIcon = document.getElementById('volumeIcon');
+            const volumeSlider = document.getElementById('volumeSlider');
+
+            video.muted = !video.muted;
+            volumeIcon.textContent = video.muted ? '🔇' : '🔊';
+            volumeSlider.value = video.muted ? 0 : video.volume * 100;
+        }
+
+        function setVolume(value) {
+            const video = document.getElementById('mainVideo');
+            const volumeIcon = document.getElementById('volumeIcon');
+            
+            video.volume = value / 100;
+            video.muted = false;
+            volumeIcon.textContent = value > 0 ? '🔊' : '🔇';
+        }
+
+        function changeQuality(quality) {
+            showStatus(`Switching to ${quality} quality...`, 'info');
+            document.getElementById('streamQuality').textContent = quality;
+            
+            setTimeout(() => {
+                hideStatus();
+                showStatus(`Quality changed to ${quality}`, 'success');
+                setTimeout(hideStatus, 2000);
+            }, 1500);
+        }
+
+        function changePlaybackSpeed() {
+            const video = document.getElementById('mainVideo');
+            const speedIcon = document.getElementById('speedIcon');
+            
+            speedIndex = (speedIndex + 1) % playbackSpeeds.length;
+            currentPlaybackSpeed = playbackSpeeds[speedIndex];
+            video.playbackRate = currentPlaybackSpeed;
+            speedIcon.textContent = `${currentPlaybackSpeed}x`;
+        }
+
+        function toggleFullscreen() {
+            const videoWrapper = document.querySelector('.video-wrapper');
+            
+            if (!document.fullscreenElement) {
+                videoWrapper.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Progress and buffer updates
+        function updateProgress() {
+            const video = document.getElementById('mainVideo');
+            const progressFill = document.getElementById('progressFill');
+            const timeDisplay = document.getElementById('timeDisplay');
+
+            if (video.duration) {
+                const percent = (video.currentTime / video.duration) * 100;
+                progressFill.style.width = percent + '%';
+
+                const currentTime = formatTime(video.currentTime);
+                const duration = formatTime(video.duration);
+                timeDisplay.textContent = `${currentTime} / ${duration}`;
+            }
+        }
+
+        function updateBuffer() {
+            const video = document.getElementById('mainVideo');
+            const bufferFill = document.getElementById('bufferFill');
+            const bufferHealth = document.getElementById('bufferHealth');
+
+            if (video.buffered.length > 0) {
+                const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+                const duration = video.duration;
+                
+                if (duration > 0) {
+                    const percent = (bufferedEnd / duration) * 100;
+                    bufferFill.style.width = percent + '%';
+                    bufferHealth.textContent = Math.round(percent) + '%';
+                }
+            }
+        }
+
+        function updateDuration() {
+            const video = document.getElementById('mainVideo');
+            const timeDisplay = document.getElementById('timeDisplay');
+            
+            if (video.duration) {
+                const duration = formatTime(video.duration);
+                timeDisplay.textContent = `00:00 / ${duration}`;
+            }
+        }
+
+        // Utility functions
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = Math.floor(seconds % 60);
+            return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+
+        function playNext() {
+            if (currentVideo && currentVideo.index < mediaFiles.length - 1) {
+                loadVideo(mediaFiles[currentVideo.index + 1], currentVideo.index + 1);
+            }
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+        }
+
+        function hideStatus() {
+            const status = document.getElementById('status');
+            status.style.display = 'none';
+        }
+
+        // Keyboard shortcuts
+        function handleKeyboard(event) {
+            const video = document.getElementById('mainVideo');
+            
+            switch(event.code) {
+                case 'Space':
+                    event.preventDefault();
+                    togglePlay();
+                    break;
+                case 'ArrowLeft':
+                    event.preventDefault();
+                    skipTime(-10);
+                    break;
+                case 'ArrowRight':
+                    event.preventDefault();
+                    skipTime(10);
+                    break;
+                case 'ArrowUp':
+                    event.preventDefault();
+                    setVolume(Math.min(100, video.volume * 100 + 10));
+                    document.getElementById('volumeSlider').value = video.volume * 100;
+                    break;
+                case 'ArrowDown':
+                    event.preventDefault();
+                    setVolume(Math.max(0, video.volume * 100 - 10));
+                    document.getElementById('volumeSlider').value = video.volume * 100;
+                    break;
+                case 'KeyF':
+                    event.preventDefault();
+                    toggleFullscreen();
+                    break;
+                case 'KeyM':
+                    event.preventDefault();
+                    toggleMute();
+                    break;
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initializeApp);
     </script>
 </body>
 </html>
-

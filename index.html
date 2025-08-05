@@ -3,791 +3,296 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StreamCast - Telegram Media Player</title>
+    <title>Movie & Series Search</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
+        /* Custom styles for better aesthetics */
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px;
             box-sizing: border-box;
         }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
-            color: #ffffff;
-            min-height: 100vh;
-        }
-
         .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 20px;
+            background-color: #ffffff;
             border-radius: 15px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+            margin-top: 50px;
         }
-
-        .header h1 {
-            font-size: 2.5em;
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 10px;
+        .search-input {
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 12px 18px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
         }
-
-        .telegram-config {
-            background: rgba(255, 255, 255, 0.08);
-            padding: 25px;
-            border-radius: 15px;
-            margin-bottom: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .config-section {
-            margin-bottom: 20px;
-        }
-
-        .config-section h3 {
-            color: #4ecdc4;
-            margin-bottom: 10px;
-            font-size: 1.2em;
-        }
-
-        .input-group {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-
-        input, select, button {
-            padding: 12px 15px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            color: #ffffff;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-
-        input:focus, select:focus {
+        .search-input:focus {
             outline: none;
-            border-color: #4ecdc4;
-            box-shadow: 0 0 10px rgba(78, 205, 196, 0.3);
+            border-color: #6366f1; /* Indigo 500 */
         }
-
-        button {
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s ease;
+        .search-button {
+            background-color: #6366f1; /* Indigo 500 */
+            color: white;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3);
         }
-
-        button:hover {
+        .search-button:hover {
+            background-color: #4f46e5; /* Indigo 600 */
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
         }
-
-        .player-container {
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 15px;
+        .search-button:active {
+            transform: translateY(0);
+        }
+        .result-card {
+            background-color: #f8fafc; /* Slate 50 */
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
             overflow: hidden;
-            margin-bottom: 25px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            transition: transform 0.2s ease;
         }
-
-        .video-wrapper {
-            position: relative;
+        .result-card:hover {
+            transform: translateY(-5px);
+        }
+        .poster-image {
             width: 100%;
-            height: 500px;
-            background: #000;
+            height: 250px; /* Fixed height for consistency */
+            object-fit: cover;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
         }
-
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-
-        .controls-overlay {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
-            padding: 20px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .video-wrapper:hover .controls-overlay {
-            opacity: 1;
-        }
-
-        .progress-container {
-            margin-bottom: 15px;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 6px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 3px;
-            cursor: pointer;
-            position: relative;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #ff6b6b, #4ecdc4);
-            border-radius: 3px;
-            width: 0%;
-            transition: width 0.1s ease;
-        }
-
-        .buffer-fill {
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 3px;
-            width: 0%;
-        }
-
-        .video-controls {
+        .no-image {
+            background-color: #cbd5e1; /* Slate 300 */
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
-        .controls-left, .controls-right {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .control-btn {
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
             justify-content: center;
-            transition: all 0.3s ease;
-        }
-
-        .control-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(1.1);
-        }
-
-        .quality-selector {
-            background: rgba(0, 0, 0, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .volume-container {
-            display: flex;
             align-items: center;
-            gap: 10px;
-        }
-
-        .volume-slider {
-            width: 80px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 2px;
-            cursor: pointer;
-        }
-
-        .file-list {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 25px;
-        }
-
-        .file-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            margin-bottom: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 1px solid transparent;
-        }
-
-        .file-item:hover {
-            background: rgba(78, 205, 196, 0.2);
-            border-color: #4ecdc4;
-            transform: translateX(5px);
-        }
-
-        .file-item.active {
-            background: rgba(78, 205, 196, 0.3);
-            border-color: #4ecdc4;
-        }
-
-        .file-info {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .file-name {
-            font-weight: bold;
-            color: #4ecdc4;
-        }
-
-        .file-meta {
-            font-size: 0.9em;
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .status {
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 8px;
+            color: #475569; /* Slate 700 */
+            font-weight: 600;
             text-align: center;
+            height: 250px;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
         }
-
-        .status.success {
-            background: rgba(76, 175, 80, 0.2);
-            border: 1px solid #4CAF50;
-            color: #4CAF50;
-        }
-
-        .status.error {
-            background: rgba(244, 67, 54, 0.2);
-            border: 1px solid #f44336;
-            color: #f44336;
-        }
-
-        .status.info {
-            background: rgba(33, 150, 243, 0.2);
-            border: 1px solid #2196F3;
-            color: #2196F3;
-        }
-
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #6366f1;
             border-radius: 50%;
-            border-top-color: #4ecdc4;
-            animation: spin 1s ease-in-out infinite;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
         }
-
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .stat-item {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #4ecdc4;
-        }
-
-        .fullscreen-btn {
-            background: none;
-            border: none;
-            color: white;
-            cursor: pointer;
-            font-size: 18px;
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin-top: 20px;
+            }
+            .search-area {
+                flex-direction: column;
+                gap: 15px;
+            }
+            .search-input {
+                width: 100%;
+            }
+            .search-button {
+                width: 100%;
+            }
+            .result-card {
+                flex-basis: calc(100% - 20px); /* Full width on small screens */
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <header class="header">
-            <h1>StreamCast</h1>
-            <p>Advanced Telegram Media Streaming Platform</p>
-        </header>
+        <h1 class="text-4xl font-extrabold text-gray-900 mb-6 text-center">
+            Movie & Series Search
+        </h1>
 
-        <div class="telegram-config">
-            <div class="config-section">
-                <h3>🔗 Telegram Configuration</h3>
-                <div class="input-group">
-                    <input type="text" id="apiId" placeholder="API ID" />
-                    <input type="password" id="apiHash" placeholder="API Hash" />
-                    <input type="text" id="phoneNumber" placeholder="Phone Number" />
-                </div>
-                <div class="input-group">
-                    <input type="text" id="channelUsername" placeholder="Channel/Group Username (@channel)" />
-                    <select id="mediaType">
-                        <option value="all">All Media</option>
-                        <option value="video">Videos Only</option>
-                        <option value="audio">Audio Only</option>
-                        <option value="document">Documents</option>
-                    </select>
-                    <button onclick="connectTelegram()">Connect</button>
-                </div>
-            </div>
+        <div class="flex flex-col sm:flex-row gap-4 mb-8 search-area">
+            <input
+                type="text"
+                id="searchInput"
+                placeholder="Search for movies or series..."
+                class="flex-grow search-input"
+            />
+            <button id="searchButton" class="search-button">
+                Search
+            </button>
         </div>
 
-        <div id="status" class="status info" style="display: none;"></div>
-
-        <div class="player-container">
-            <div class="video-wrapper">
-                <video id="mainVideo" preload="metadata">
-                    <source src="" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
-                
-                <div class="controls-overlay">
-                    <div class="progress-container">
-                        <div class="progress-bar" onclick="seekVideo(event)">
-                            <div class="buffer-fill" id="bufferFill"></div>
-                            <div class="progress-fill" id="progressFill"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="video-controls">
-                        <div class="controls-left">
-                            <button class="control-btn" onclick="togglePlay()">
-                                <span id="playIcon">▶️</span>
-                            </button>
-                            <button class="control-btn" onclick="skipTime(-10)">⏪</button>
-                            <button class="control-btn" onclick="skipTime(10)">⏩</button>
-                            <div class="volume-container">
-                                <button class="control-btn" onclick="toggleMute()">
-                                    <span id="volumeIcon">🔊</span>
-                                </button>
-                                <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="100" onchange="setVolume(this.value)">
-                            </div>
-                            <span id="timeDisplay">00:00 / 00:00</span>
-                        </div>
-                        
-                        <div class="controls-right">
-                            <select class="quality-selector" id="qualitySelect" onchange="changeQuality(this.value)">
-                                <option value="auto">Auto</option>
-                                <option value="1080p">1080p HD</option>
-                                <option value="720p">720p HD</option>
-                                <option value="480p">480p</option>
-                                <option value="360p">360p</option>
-                            </select>
-                            <button class="control-btn" onclick="changePlaybackSpeed()">
-                                <span id="speedIcon">1x</span>
-                            </button>
-                            <button class="fullscreen-btn" onclick="toggleFullscreen()">⛶</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div id="loadingIndicator" class="hidden flex justify-center items-center py-8">
+            <div class="loading-spinner"></div>
         </div>
 
-        <div class="file-list">
-            <h3>📁 Media Files</h3>
-            <div id="filesList">
-                <div class="file-item" onclick="loadSampleVideo()">
-                    <div class="file-info">
-                        <div class="file-name">Sample Video.mp4</div>
-                        <div class="file-meta">Duration: 2:30 • Size: 45 MB • Quality: 1080p</div>
-                    </div>
-                    <div>▶️</div>
-                </div>
-            </div>
+        <div id="errorMessage" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4" role="alert">
+            <strong class="font-bold">Error!</strong>
+            <span class="block sm:inline" id="errorText"></span>
         </div>
 
-        <div class="stats">
-            <div class="stat-item">
-                <div class="stat-value" id="connectedChannels">0</div>
-                <div>Connected Channels</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="totalFiles">1</div>
-                <div>Media Files</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="streamQuality">1080p</div>
-                <div>Stream Quality</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="bufferHealth">100%</div>
-                <div>Buffer Health</div>
-            </div>
+        <div id="resultsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Search results will be loaded here -->
         </div>
     </div>
 
     <script>
-        // Global variables
-        let currentVideo = null;
-        let mediaFiles = [];
-        let currentPlaybackSpeed = 1;
-        let playbackSpeeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
-        let speedIndex = 2;
-        let isConnected = false;
+        // Get references to DOM elements
+        const searchInput = document.getElementById('searchInput');
+        const searchButton = document.getElementById('searchButton');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
 
-        // Initialize the application
-        function initializeApp() {
-            const video = document.getElementById('mainVideo');
-            
-            // Video event listeners
-            video.addEventListener('loadedmetadata', updateDuration);
-            video.addEventListener('timeupdate', updateProgress);
-            video.addEventListener('progress', updateBuffer);
-            video.addEventListener('ended', playNext);
-            video.addEventListener('loadstart', () => showStatus('Loading video...', 'info'));
-            video.addEventListener('canplay', () => hideStatus());
-            video.addEventListener('error', (e) => showStatus('Error loading video', 'error'));
+        // OMDb API Key (Replace with your actual OMDb API key if you have one)
+        // For local development, you might need to get a free key from http://www.omdbapi.com/
+        // As per instructions, leaving it as an empty string. Canvas will provide it at runtime.
+        const OMDb_API_KEY = ""; 
 
-            // Keyboard shortcuts
-            document.addEventListener('keydown', handleKeyboard);
-            
-            // Sample data
-            loadSampleData();
+        /**
+         * Hides the error message.
+         */
+        function hideError() {
+            errorMessage.classList.add('hidden');
+            errorText.textContent = '';
         }
 
-        // Telegram connection simulation
-        function connectTelegram() {
-            const apiId = document.getElementById('apiId').value;
-            const apiHash = document.getElementById('apiHash').value;
-            const phoneNumber = document.getElementById('phoneNumber').value;
-            const channelUsername = document.getElementById('channelUsername').value;
+        /**
+         * Displays an error message.
+         * @param {string} message - The error message to display.
+         */
+        function showError(message) {
+            errorText.textContent = message;
+            errorMessage.classList.remove('hidden');
+        }
 
-            if (!apiId || !apiHash || !phoneNumber || !channelUsername) {
-                showStatus('Please fill in all Telegram configuration fields', 'error');
+        /**
+         * Fetches movie/series data from the OMDb API.
+         * Implements exponential backoff for API calls.
+         * @param {string} query - The search query.
+         * @param {number} retries - Number of retries for the API call.
+         * @param {number} delay - Initial delay for exponential backoff.
+         * @returns {Promise<Object|null>} - The JSON response from the API or null on failure.
+         */
+        async function fetchMovies(query, retries = 3, delay = 1000) {
+            hideError(); // Clear previous errors
+            loadingIndicator.classList.remove('hidden'); // Show loading spinner
+            resultsContainer.innerHTML = ''; // Clear previous results
+
+            if (!query.trim()) {
+                showError("Please enter a movie or series title to search.");
+                loadingIndicator.classList.add('hidden');
+                return null;
+            }
+
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const url = `https://www.omdbapi.com/?apikey=${OMDb_API_KEY}&s=${encodeURIComponent(query)}`;
+                    const response = await fetch(url);
+
+                    if (!response.ok) {
+                        // If response is not OK, throw an error to trigger retry or catch block
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    loadingIndicator.classList.add('hidden'); // Hide loading spinner
+                    return data;
+                } catch (error) {
+                    console.error(`Attempt ${i + 1} failed:`, error);
+                    if (i < retries - 1) {
+                        // Exponential backoff
+                        await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+                    } else {
+                        loadingIndicator.classList.add('hidden'); // Hide loading spinner on final failure
+                        showError("Failed to fetch data. Please try again later.");
+                        return null;
+                    }
+                }
+            }
+            return null; // Should not reach here if retries are exhausted
+        }
+
+        /**
+         * Displays the search results in the UI.
+         * @param {Array<Object>} results - An array of movie/series objects.
+         */
+        function displayResults(results) {
+            resultsContainer.innerHTML = ''; // Clear existing results
+
+            if (!results || results.length === 0) {
+                resultsContainer.innerHTML = `
+                    <p class="text-center text-gray-600 col-span-full py-8">
+                        No results found. Try a different search term.
+                    </p>
+                `;
                 return;
             }
 
-            showStatus('Connecting to Telegram...', 'info');
-
-            // Simulate connection process
-            setTimeout(() => {
-                showStatus('Connected successfully! Fetching media files...', 'success');
-                isConnected = true;
-                document.getElementById('connectedChannels').textContent = '1';
-                
-                // Simulate fetching files
-                setTimeout(() => {
-                    loadTelegramFiles();
-                    hideStatus();
-                }, 2000);
-            }, 3000);
-        }
-
-        // Load sample files (simulation)
-        function loadSampleData() {
-            mediaFiles = [
-                {
-                    id: 1,
-                    name: "Sample Video.mp4",
-                    duration: "2:30",
-                    size: "45 MB",
-                    quality: "1080p",
-                    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-                    type: "video"
-                }
-            ];
-            updateFilesList();
-        }
-
-        // Simulate loading files from Telegram
-        function loadTelegramFiles() {
-            const sampleFiles = [
-                {
-                    id: 2,
-                    name: "Movie_2024_HD.mp4",
-                    duration: "2:15:30",
-                    size: "2.1 GB",
-                    quality: "1080p",
-                    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-                    type: "video"
-                },
-                {
-                    id: 3,
-                    name: "Documentary_Nature.mkv",
-                    duration: "58:45",
-                    size: "890 MB",
-                    quality: "720p",
-                    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-                    type: "video"
-                },
-                {
-                    id: 4,
-                    name: "Series_S01E01.mp4",
-                    duration: "42:18",
-                    size: "650 MB",
-                    quality: "1080p",
-                    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
-                    type: "video"
-                }
-            ];
-
-            mediaFiles = [...mediaFiles, ...sampleFiles];
-            document.getElementById('totalFiles').textContent = mediaFiles.length;
-            updateFilesList();
-        }
-
-        // Update files list display
-        function updateFilesList() {
-            const filesList = document.getElementById('filesList');
-            filesList.innerHTML = '';
-
-            mediaFiles.forEach((file, index) => {
-                const fileItem = document.createElement('div');
-                fileItem.className = 'file-item';
-                fileItem.onclick = () => loadVideo(file, index);
-
-                fileItem.innerHTML = `
-                    <div class="file-info">
-                        <div class="file-name">${file.name}</div>
-                        <div class="file-meta">Duration: ${file.duration} • Size: ${file.size} • Quality: ${file.quality}</div>
+            results.forEach(item => {
+                const posterUrl = item.Poster !== 'N/A' ? item.Poster : `https://placehold.co/300x450/cbd5e1/475569?text=No+Image`;
+                const cardHtml = `
+                    <div class="result-card flex flex-col">
+                        ${item.Poster !== 'N/A' ?
+                            `<img src="${posterUrl}" alt="${item.Title} Poster" class="poster-image" onerror="this.onerror=null;this.src='https://placehold.co/300x450/cbd5e1/475569?text=No+Image';">` :
+                            `<div class="no-image">No Image Available</div>`
+                        }
+                        <div class="p-4 flex-grow flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-xl font-semibold text-gray-800 mb-1">${item.Title}</h3>
+                                <p class="text-gray-600 text-sm mb-2">${item.Year} | ${item.Type.charAt(0).toUpperCase() + item.Type.slice(1)}</p>
+                            </div>
+                            <!-- You could add more details here if fetching full details per item -->
+                        </div>
                     </div>
-                    <div>▶️</div>
                 `;
-
-                filesList.appendChild(fileItem);
+                resultsContainer.innerHTML += cardHtml;
             });
         }
 
-        // Load and play video
-        function loadVideo(file, index) {
-            const video = document.getElementById('mainVideo');
-            
-            // Remove active class from all items
-            document.querySelectorAll('.file-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            
-            // Add active class to current item
-            document.querySelectorAll('.file-item')[index].classList.add('active');
-            
-            currentVideo = { file, index };
-            video.src = file.url;
-            video.load();
-            
-            showStatus(`Loading ${file.name}...`, 'info');
-            document.getElementById('streamQuality').textContent = file.quality;
-        }
+        /**
+         * Handles the search button click and Enter key press.
+         */
+        async function handleSearch() {
+            const query = searchInput.value;
+            const data = await fetchMovies(query);
 
-        // Sample video loader
-        function loadSampleVideo() {
-            loadVideo(mediaFiles[0], 0);
-        }
-
-        // Video controls
-        function togglePlay() {
-            const video = document.getElementById('mainVideo');
-            const playIcon = document.getElementById('playIcon');
-
-            if (video.paused) {
-                video.play();
-                playIcon.textContent = '⏸️';
-            } else {
-                video.pause();
-                playIcon.textContent = '▶️';
+            if (data && data.Response === "True") {
+                displayResults(data.Search);
+            } else if (data && data.Response === "False") {
+                showError(data.Error);
+                resultsContainer.innerHTML = ''; // Clear results if API returns an error message
             }
         }
 
-        function skipTime(seconds) {
-            const video = document.getElementById('mainVideo');
-            video.currentTime += seconds;
-        }
-
-        function seekVideo(event) {
-            const video = document.getElementById('mainVideo');
-            const progressBar = event.currentTarget;
-            const rect = progressBar.getBoundingClientRect();
-            const percent = (event.clientX - rect.left) / rect.width;
-            video.currentTime = percent * video.duration;
-        }
-
-        function toggleMute() {
-            const video = document.getElementById('mainVideo');
-            const volumeIcon = document.getElementById('volumeIcon');
-            const volumeSlider = document.getElementById('volumeSlider');
-
-            video.muted = !video.muted;
-            volumeIcon.textContent = video.muted ? '🔇' : '🔊';
-            volumeSlider.value = video.muted ? 0 : video.volume * 100;
-        }
-
-        function setVolume(value) {
-            const video = document.getElementById('mainVideo');
-            const volumeIcon = document.getElementById('volumeIcon');
-            
-            video.volume = value / 100;
-            video.muted = false;
-            volumeIcon.textContent = value > 0 ? '🔊' : '🔇';
-        }
-
-        function changeQuality(quality) {
-            showStatus(`Switching to ${quality} quality...`, 'info');
-            document.getElementById('streamQuality').textContent = quality;
-            
-            setTimeout(() => {
-                hideStatus();
-                showStatus(`Quality changed to ${quality}`, 'success');
-                setTimeout(hideStatus, 2000);
-            }, 1500);
-        }
-
-        function changePlaybackSpeed() {
-            const video = document.getElementById('mainVideo');
-            const speedIcon = document.getElementById('speedIcon');
-            
-            speedIndex = (speedIndex + 1) % playbackSpeeds.length;
-            currentPlaybackSpeed = playbackSpeeds[speedIndex];
-            video.playbackRate = currentPlaybackSpeed;
-            speedIcon.textContent = `${currentPlaybackSpeed}x`;
-        }
-
-        function toggleFullscreen() {
-            const videoWrapper = document.querySelector('.video-wrapper');
-            
-            if (!document.fullscreenElement) {
-                videoWrapper.requestFullscreen();
-            } else {
-                document.exitFullscreen();
+        // Event Listeners
+        searchButton.addEventListener('click', handleSearch);
+        searchInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                handleSearch();
             }
-        }
+        });
 
-        // Progress and buffer updates
-        function updateProgress() {
-            const video = document.getElementById('mainVideo');
-            const progressFill = document.getElementById('progressFill');
-            const timeDisplay = document.getElementById('timeDisplay');
-
-            if (video.duration) {
-                const percent = (video.currentTime / video.duration) * 100;
-                progressFill.style.width = percent + '%';
-
-                const currentTime = formatTime(video.currentTime);
-                const duration = formatTime(video.duration);
-                timeDisplay.textContent = `${currentTime} / ${duration}`;
-            }
-        }
-
-        function updateBuffer() {
-            const video = document.getElementById('mainVideo');
-            const bufferFill = document.getElementById('bufferFill');
-            const bufferHealth = document.getElementById('bufferHealth');
-
-            if (video.buffered.length > 0) {
-                const bufferedEnd = video.buffered.end(video.buffered.length - 1);
-                const duration = video.duration;
-                
-                if (duration > 0) {
-                    const percent = (bufferedEnd / duration) * 100;
-                    bufferFill.style.width = percent + '%';
-                    bufferHealth.textContent = Math.round(percent) + '%';
-                }
-            }
-        }
-
-        function updateDuration() {
-            const video = document.getElementById('mainVideo');
-            const timeDisplay = document.getElementById('timeDisplay');
-            
-            if (video.duration) {
-                const duration = formatTime(video.duration);
-                timeDisplay.textContent = `00:00 / ${duration}`;
-            }
-        }
-
-        // Utility functions
-        function formatTime(seconds) {
-            const minutes = Math.floor(seconds / 60);
-            const remainingSeconds = Math.floor(seconds % 60);
-            return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-        }
-
-        function playNext() {
-            if (currentVideo && currentVideo.index < mediaFiles.length - 1) {
-                loadVideo(mediaFiles[currentVideo.index + 1], currentVideo.index + 1);
-            }
-        }
-
-        function showStatus(message, type) {
-            const status = document.getElementById('status');
-            status.textContent = message;
-            status.className = `status ${type}`;
-            status.style.display = 'block';
-        }
-
-        function hideStatus() {
-            const status = document.getElementById('status');
-            status.style.display = 'none';
-        }
-
-        // Keyboard shortcuts
-        function handleKeyboard(event) {
-            const video = document.getElementById('mainVideo');
-            
-            switch(event.code) {
-                case 'Space':
-                    event.preventDefault();
-                    togglePlay();
-                    break;
-                case 'ArrowLeft':
-                    event.preventDefault();
-                    skipTime(-10);
-                    break;
-                case 'ArrowRight':
-                    event.preventDefault();
-                    skipTime(10);
-                    break;
-                case 'ArrowUp':
-                    event.preventDefault();
-                    setVolume(Math.min(100, video.volume * 100 + 10));
-                    document.getElementById('volumeSlider').value = video.volume * 100;
-                    break;
-                case 'ArrowDown':
-                    event.preventDefault();
-                    setVolume(Math.max(0, video.volume * 100 - 10));
-                    document.getElementById('volumeSlider').value = video.volume * 100;
-                    break;
-                case 'KeyF':
-                    event.preventDefault();
-                    toggleFullscreen();
-                    break;
-                case 'KeyM':
-                    event.preventDefault();
-                    toggleMute();
-                    break;
-            }
-        }
-
-        // Initialize when page loads
-        document.addEventListener('DOMContentLoaded', initializeApp);
+        // Initial focus on the search input
+        window.onload = () => {
+            searchInput.focus();
+        };
     </script>
 </body>
 </html>
+

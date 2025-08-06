@@ -3,296 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Movie & Series Search</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Exo Video Player</title>
     <style>
-        /* Custom styles for better aesthetics */
         body {
-            font-family: "Inter", sans-serif;
-            background-color: #f0f2f5;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        .container {
-            background-color: #ffffff;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-            max-width: 900px;
-            width: 100%;
-            margin-top: 50px;
-        }
-        .search-input {
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 12px 18px;
-            font-size: 1rem;
-            transition: border-color 0.3s ease;
-        }
-        .search-input:focus {
-            outline: none;
-            border-color: #6366f1; /* Indigo 500 */
-        }
-        .search-button {
-            background-color: #6366f1; /* Indigo 500 */
-            color: white;
-            padding: 12px 25px;
-            border-radius: 10px;
-            font-weight: 600;
-            transition: background-color 0.3s ease, transform 0.1s ease;
-            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3);
-        }
-        .search-button:hover {
-            background-color: #4f46e5; /* Indigo 600 */
-            transform: translateY(-2px);
-        }
-        .search-button:active {
-            transform: translateY(0);
-        }
-        .result-card {
-            background-color: #f8fafc; /* Slate 50 */
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-            overflow: hidden;
-            transition: transform 0.2s ease;
-        }
-        .result-card:hover {
-            transform: translateY(-5px);
-        }
-        .poster-image {
-            width: 100%;
-            height: 250px; /* Fixed height for consistency */
-            object-fit: cover;
-            border-top-left-radius: 12px;
-            border-top-right-radius: 12px;
-        }
-        .no-image {
-            background-color: #cbd5e1; /* Slate 300 */
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
             display: flex;
             justify-content: center;
             align-items: center;
-            color: #475569; /* Slate 700 */
-            font-weight: 600;
-            text-align: center;
-            height: 250px;
-            border-top-left-radius: 12px;
-            border-top-right-radius: 12px;
+            height: 100vh;
+            margin: 0;
         }
-        .loading-spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            border-left-color: #6366f1;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
+        .player-container {
+            width: 80%;
+            max-width: 800px;
+            background: #1e1e1e;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        video {
+            width: 100%;
+            height: auto;
+            display: block;
         }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .container {
-                padding: 20px;
-                margin-top: 20px;
-            }
-            .search-area {
-                flex-direction: column;
-                gap: 15px;
-            }
-            .search-input {
-                width: 100%;
-            }
-            .search-button {
-                width: 100%;
-            }
-            .result-card {
-                flex-basis: calc(100% - 20px); /* Full width on small screens */
-            }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #2c2c2c;
+            padding: 10px;
+        }
+        .controls button {
+            background: #e50914;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .controls button:hover {
+            background: #c50914;
+        }
+        .url-input {
+            display: flex;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .url-input input {
+            width: 80%;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 5px 0 0 5px;
+            color: #fff;
+            background: #1e1e1e;
+        }
+        .url-input button {
+            padding: 10px 20px;
+            border: 1px solid #333;
+            border-radius: 0 5px 5px 0;
+            background: #e50914;
+            color: white;
+            cursor: pointer;
+        }
+        .url-input button:hover {
+            background: #c50914;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1 class="text-4xl font-extrabold text-gray-900 mb-6 text-center">
-            Movie & Series Search
-        </h1>
-
-        <div class="flex flex-col sm:flex-row gap-4 mb-8 search-area">
-            <input
-                type="text"
-                id="searchInput"
-                placeholder="Search for movies or series..."
-                class="flex-grow search-input"
-            />
-            <button id="searchButton" class="search-button">
-                Search
-            </button>
+    <div class="player-container">
+        <video id="videoPlayer" controls>
+            Your browser does not support the video tag.
+        </video>
+        <div class="controls">
+            <button id="playPause">Play</button>
+            <button id="muteUnmute">Mute</button>
         </div>
-
-        <div id="loadingIndicator" class="hidden flex justify-center items-center py-8">
-            <div class="loading-spinner"></div>
-        </div>
-
-        <div id="errorMessage" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4" role="alert">
-            <strong class="font-bold">Error!</strong>
-            <span class="block sm:inline" id="errorText"></span>
-        </div>
-
-        <div id="resultsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Search results will be loaded here -->
+        <div class="url-input">
+            <input type="text" id="videoUrl" placeholder="Enter video URL">
+            <button onclick="loadVideo()">Load Video</button>
         </div>
     </div>
 
     <script>
-        // Get references to DOM elements
-        const searchInput = document.getElementById('searchInput');
-        const searchButton = document.getElementById('searchButton');
-        const resultsContainer = document.getElementById('resultsContainer');
-        const loadingIndicator = document.getElementById('loadingIndicator');
-        const errorMessage = document.getElementById('errorMessage');
-        const errorText = document.getElementById('errorText');
+        const videoPlayer = document.getElementById('videoPlayer');
+        const playPauseButton = document.getElementById('playPause');
+        const muteUnmuteButton = document.getElementById('muteUnmute');
 
-        // OMDb API Key (Replace with your actual OMDb API key if you have one)
-        // For local development, you might need to get a free key from http://www.omdbapi.com/
-        // As per instructions, leaving it as an empty string. Canvas will provide it at runtime.
-        const OMDb_API_KEY = ""; 
-
-        /**
-         * Hides the error message.
-         */
-        function hideError() {
-            errorMessage.classList.add('hidden');
-            errorText.textContent = '';
-        }
-
-        /**
-         * Displays an error message.
-         * @param {string} message - The error message to display.
-         */
-        function showError(message) {
-            errorText.textContent = message;
-            errorMessage.classList.remove('hidden');
-        }
-
-        /**
-         * Fetches movie/series data from the OMDb API.
-         * Implements exponential backoff for API calls.
-         * @param {string} query - The search query.
-         * @param {number} retries - Number of retries for the API call.
-         * @param {number} delay - Initial delay for exponential backoff.
-         * @returns {Promise<Object|null>} - The JSON response from the API or null on failure.
-         */
-        async function fetchMovies(query, retries = 3, delay = 1000) {
-            hideError(); // Clear previous errors
-            loadingIndicator.classList.remove('hidden'); // Show loading spinner
-            resultsContainer.innerHTML = ''; // Clear previous results
-
-            if (!query.trim()) {
-                showError("Please enter a movie or series title to search.");
-                loadingIndicator.classList.add('hidden');
-                return null;
-            }
-
-            for (let i = 0; i < retries; i++) {
-                try {
-                    const url = `https://www.omdbapi.com/?apikey=${OMDb_API_KEY}&s=${encodeURIComponent(query)}`;
-                    const response = await fetch(url);
-
-                    if (!response.ok) {
-                        // If response is not OK, throw an error to trigger retry or catch block
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    loadingIndicator.classList.add('hidden'); // Hide loading spinner
-                    return data;
-                } catch (error) {
-                    console.error(`Attempt ${i + 1} failed:`, error);
-                    if (i < retries - 1) {
-                        // Exponential backoff
-                        await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
-                    } else {
-                        loadingIndicator.classList.add('hidden'); // Hide loading spinner on final failure
-                        showError("Failed to fetch data. Please try again later.");
-                        return null;
-                    }
-                }
-            }
-            return null; // Should not reach here if retries are exhausted
-        }
-
-        /**
-         * Displays the search results in the UI.
-         * @param {Array<Object>} results - An array of movie/series objects.
-         */
-        function displayResults(results) {
-            resultsContainer.innerHTML = ''; // Clear existing results
-
-            if (!results || results.length === 0) {
-                resultsContainer.innerHTML = `
-                    <p class="text-center text-gray-600 col-span-full py-8">
-                        No results found. Try a different search term.
-                    </p>
-                `;
-                return;
-            }
-
-            results.forEach(item => {
-                const posterUrl = item.Poster !== 'N/A' ? item.Poster : `https://placehold.co/300x450/cbd5e1/475569?text=No+Image`;
-                const cardHtml = `
-                    <div class="result-card flex flex-col">
-                        ${item.Poster !== 'N/A' ?
-                            `<img src="${posterUrl}" alt="${item.Title} Poster" class="poster-image" onerror="this.onerror=null;this.src='https://placehold.co/300x450/cbd5e1/475569?text=No+Image';">` :
-                            `<div class="no-image">No Image Available</div>`
-                        }
-                        <div class="p-4 flex-grow flex flex-col justify-between">
-                            <div>
-                                <h3 class="text-xl font-semibold text-gray-800 mb-1">${item.Title}</h3>
-                                <p class="text-gray-600 text-sm mb-2">${item.Year} | ${item.Type.charAt(0).toUpperCase() + item.Type.slice(1)}</p>
-                            </div>
-                            <!-- You could add more details here if fetching full details per item -->
-                        </div>
-                    </div>
-                `;
-                resultsContainer.innerHTML += cardHtml;
-            });
-        }
-
-        /**
-         * Handles the search button click and Enter key press.
-         */
-        async function handleSearch() {
-            const query = searchInput.value;
-            const data = await fetchMovies(query);
-
-            if (data && data.Response === "True") {
-                displayResults(data.Search);
-            } else if (data && data.Response === "False") {
-                showError(data.Error);
-                resultsContainer.innerHTML = ''; // Clear results if API returns an error message
-            }
-        }
-
-        // Event Listeners
-        searchButton.addEventListener('click', handleSearch);
-        searchInput.addEventListener('keypress', (event) => {
-            if (event.key === 'Enter') {
-                handleSearch();
+        playPauseButton.addEventListener('click', () => {
+            if (videoPlayer.paused) {
+                videoPlayer.play();
+                playPauseButton.textContent = 'Pause';
+            } else {
+                videoPlayer.pause();
+                playPauseButton.textContent = 'Play';
             }
         });
 
-        // Initial focus on the search input
-        window.onload = () => {
-            searchInput.focus();
-        };
+        muteUnmuteButton.addEventListener('click', () => {
+            if (videoPlayer.muted) {
+                videoPlayer.muted = false;
+                muteUnmuteButton.textContent = 'Mute';
+            } else {
+                videoPlayer.muted = true;
+                muteUnmuteButton.textContent = 'Unmute';
+            }
+        });
+
+        function loadVideo() {
+            const url = document.getElementById('videoUrl').value;
+            videoPlayer.src = url;
+            videoPlayer.load();
+            videoPlayer.play();
+            playPauseButton.textContent = 'Pause';
+        }
     </script>
 </body>
 </html>
-

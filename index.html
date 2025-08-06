@@ -6,7 +6,7 @@
     <title>Exo Video Player</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
             background-color: #121212;
             color: #ffffff;
             display: flex;
@@ -17,11 +17,12 @@
         }
         .player-container {
             width: 80%;
-            max-width: 800px;
+            max-width: 1200px;
             background: #1e1e1e;
-            border-radius: 10px;
+            border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+            position: relative;
         }
         video {
             width: 100%;
@@ -33,7 +34,15 @@
             justify-content: space-between;
             align-items: center;
             background: #2c2c2c;
-            padding: 10px;
+            padding: 15px;
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+        .controls:hover {
+            opacity: 1;
         }
         .controls button {
             background: #e50914;
@@ -42,6 +51,7 @@
             padding: 10px 20px;
             border-radius: 5px;
             cursor: pointer;
+            margin: 0 5px;
         }
         .controls button:hover {
             background: #c50914;
@@ -50,6 +60,9 @@
             display: flex;
             align-items: center;
             margin-top: 20px;
+            padding: 15px;
+            background: #2c2c2c;
+            border-radius: 10px;
         }
         .url-input input {
             width: 80%;
@@ -70,6 +83,31 @@
         .url-input button:hover {
             background: #c50914;
         }
+        .seek-bar {
+            width: 100%;
+            height: 5px;
+            background: #333;
+            border-radius: 5px;
+            position: relative;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        .seek-bar .progress {
+            height: 100%;
+            background: #e50914;
+            border-radius: 5px;
+            width: 0;
+        }
+        .seek-bar .thumb {
+            width: 15px;
+            height: 15px;
+            background: #e50914;
+            border-radius: 50%;
+            position: absolute;
+            top: -5px;
+            left: 0;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -80,6 +118,10 @@
         <div class="controls">
             <button id="playPause">Play</button>
             <button id="muteUnmute">Mute</button>
+            <div class="seek-bar">
+                <div class="progress"></div>
+                <div class="thumb"></div>
+            </div>
         </div>
         <div class="url-input">
             <input type="text" id="videoUrl" placeholder="Enter video URL">
@@ -91,6 +133,9 @@
         const videoPlayer = document.getElementById('videoPlayer');
         const playPauseButton = document.getElementById('playPause');
         const muteUnmuteButton = document.getElementById('muteUnmute');
+        const seekBar = document.querySelector('.seek-bar');
+        const progress = document.querySelector('.progress');
+        const thumb = document.querySelector('.thumb');
 
         playPauseButton.addEventListener('click', () => {
             if (videoPlayer.paused) {
@@ -110,6 +155,19 @@
                 videoPlayer.muted = true;
                 muteUnmuteButton.textContent = 'Unmute';
             }
+        });
+
+        videoPlayer.addEventListener('timeupdate', () => {
+            const progressPercent = (videoPlayer.currentTime / videoPlayer.duration) * 100;
+            progress.style.width = `${progressPercent}%`;
+            thumb.style.left = `calc(${progressPercent}% - 7.5px)`;
+        });
+
+        seekBar.addEventListener('click', (e) => {
+            const seekBarWidth = seekBar.clientWidth;
+            const clickX = e.offsetX;
+            const duration = videoPlayer.duration;
+            videoPlayer.currentTime = (clickX / seekBarWidth) * duration;
         });
 
         function loadVideo() {

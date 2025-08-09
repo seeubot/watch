@@ -1,28 +1,12 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced HLS Video Player</title>
+    <title>Video Player</title>
     <!-- Use Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Include HLS.js for handling adaptive video streams -->
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-        .scrollbar-hide {
-            -ms-overflow-style: none; /* IE and Edge */
-            scrollbar-width: none; /* Firefox */
-        }
-    </style>
 </head>
 <body class="bg-gray-900 text-gray-100 flex items-center justify-center min-h-screen p-4">
 
@@ -36,256 +20,32 @@
 
         <!-- Video player container -->
         <div class="relative w-full pb-[56.25%] rounded-xl overflow-hidden">
+            <!--
+                The <video> tag is a powerful HTML5 element for embedding video.
+                - 'controls': Displays the standard playback controls like play/pause, volume, and fullscreen.
+                - 'autoplay': Starts the video automatically when the page loads.
+                - 'class': Uses Tailwind CSS for responsive styling, ensuring it fills the container.
+                - 'src': This is the URL of the video content provided by the user.
+            -->
             <video
                 id="myVideoPlayer"
                 controls
+                autoplay
                 playsinline
                 class="absolute top-0 left-0 w-full h-full object-cover rounded-xl"
-            ></video>
-            <!-- Overlay for loading and error messages -->
-            <div id="overlay" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 transition-opacity duration-300">
-                <p id="overlay-text" class="text-white text-lg font-semibold text-center p-4">Loading video...</p>
-            </div>
+                onerror="this.onerror=null; this.src='https://placehold.co/1920x1080/000000/FFFFFF?text=Video+Loading+Error';"
+            >
+                <source src="https://xenophobic-hali-school1660440-2ed04e4c.koyeb.app/dl/689740fb0dc4ac1ee4952470" type="video/mp4">
+                <!-- Fallback message for browsers that don't support the video tag -->
+                Your browser does not support the video tag.
+            </video>
         </div>
 
-        <!-- Controls for URL, Quality, and Audio Tracks -->
-        <div class="space-y-4 mt-6">
-            <!-- URL Input and Load Button -->
-            <div class="flex flex-col sm:flex-row gap-2">
-                <input type="text" id="url-input" placeholder="Enter a video URL (e.g., HLS .m3u8)" class="flex-grow p-3 rounded-xl bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <button id="load-btn" class="p-3 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors duration-200 font-semibold shadow-md">
-                    Load Video
-                </button>
-            </div>
-            
-            <!-- Quality and Audio Track Buttons -->
-            <div class="flex flex-row gap-2 justify-center">
-                <button id="quality-btn" class="w-1/2 p-3 rounded-xl bg-purple-600 hover:bg-purple-700 transition-colors duration-200 font-semibold shadow-md disabled:bg-gray-600 disabled:cursor-not-allowed" disabled>
-                    Select Quality
-                </button>
-                <button id="audio-btn" class="w-1/2 p-3 rounded-xl bg-green-600 hover:bg-green-700 transition-colors duration-200 font-semibold shadow-md disabled:bg-gray-600 disabled:cursor-not-allowed" disabled>
-                    Select Audio Track
-                </button>
-            </div>
+        <div class="text-center text-gray-400 mt-4">
+            <p>If the video does not play, it may be due to a network error, an unsupported format, or a server issue with the provided URL.</p>
         </div>
 
     </div>
-
-    <!-- Modals for Selection -->
-    <!-- Quality Selection Modal -->
-    <div id="quality-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto scrollbar-hide border border-gray-700">
-            <h2 class="text-2xl font-bold mb-4 border-b border-gray-700 pb-2">Select Quality</h2>
-            <ul id="quality-list" class="space-y-2 mb-4"></ul>
-            <div class="flex justify-end gap-2 border-t border-gray-700 pt-4">
-                <button id="quality-cancel-btn" class="p-2 px-4 rounded-xl bg-gray-600 hover:bg-gray-700 transition-colors duration-200">Cancel</button>
-                <button id="quality-ok-btn" class="p-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors duration-200">OK</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Audio Track Selection Modal -->
-    <div id="audio-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto scrollbar-hide border border-gray-700">
-            <h2 class="text-2xl font-bold mb-4 border-b border-gray-700 pb-2">Select Audio Track</h2>
-            <ul id="audio-list" class="space-y-2 mb-4"></ul>
-            <div class="flex justify-end gap-2 border-t border-gray-700 pt-4">
-                <button id="audio-cancel-btn" class="p-2 px-4 rounded-xl bg-gray-600 hover:bg-gray-700 transition-colors duration-200">Cancel</button>
-                <button id="audio-ok-btn" class="p-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors duration-200">OK</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const defaultUrl = 'https://xenophobic-hali-school1660440-2ed04e4c.koyeb.app/dl/689740fb0dc4ac1ee4952470';
-        const video = document.getElementById('myVideoPlayer');
-        const urlInput = document.getElementById('url-input');
-        const loadBtn = document.getElementById('load-btn');
-        const overlay = document.getElementById('overlay');
-        const overlayText = document.getElementById('overlay-text');
-
-        const qualityBtn = document.getElementById('quality-btn');
-        const qualityModal = document.getElementById('quality-modal');
-        const qualityList = document.getElementById('quality-list');
-        const qualityOkBtn = document.getElementById('quality-ok-btn');
-        const qualityCancelBtn = document.getElementById('quality-cancel-btn');
-
-        const audioBtn = document.getElementById('audio-btn');
-        const audioModal = document.getElementById('audio-modal');
-        const audioList = document.getElementById('audio-list');
-        const audioOkBtn = document.getElementById('audio-ok-btn');
-        const audioCancelBtn = document.getElementById('audio-cancel-btn');
-        
-        let hls;
-
-        // Function to show/hide the loading overlay
-        const showOverlay = (text) => {
-            overlayText.textContent = text;
-            overlay.classList.remove('hidden');
-        };
-
-        const hideOverlay = () => {
-            overlay.classList.add('hidden');
-        };
-
-        // Function to disable control buttons
-        const disableControls = () => {
-            qualityBtn.disabled = true;
-            audioBtn.disabled = true;
-        };
-
-        // Function to enable control buttons
-        const enableControls = () => {
-            qualityBtn.disabled = hls.levels.length <= 1;
-            audioBtn.disabled = hls.audioTracks.length <= 1;
-        };
-
-        // Function to load and play the HLS video
-        const loadVideo = (url) => {
-            showOverlay('Loading video...');
-            disableControls();
-            
-            // Destroy existing Hls instance if it exists
-            if (hls) {
-                hls.destroy();
-                hls = null;
-            }
-
-            if (Hls.isSupported()) {
-                hls = new Hls();
-                hls.attachMedia(video);
-                hls.loadSource(url);
-
-                hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-                    console.log('Manifest parsed. Video has been loaded successfully.');
-                    hideOverlay();
-                    video.play();
-                    
-                    // Populate and enable buttons
-                    populateQualityModal(data.levels);
-                    populateAudioModal(data.audioTracks);
-                    enableControls();
-                });
-
-                hls.on(Hls.Events.ERROR, (event, data) => {
-                    console.error('HLS.js error:', data);
-                    if (data.fatal) {
-                        showOverlay('Error loading video. Please check the URL or try again.');
-                        hls.destroy();
-                    }
-                });
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                // Fallback for native HLS support (e.g., Safari)
-                video.src = url;
-                video.addEventListener('loadedmetadata', () => {
-                    hideOverlay();
-                    video.play();
-                });
-                video.addEventListener('error', () => {
-                    showOverlay('Error loading video. Native HLS playback failed.');
-                });
-            } else {
-                showOverlay('HLS is not supported on this browser.');
-            }
-        };
-
-        // Populate the quality selection modal
-        const populateQualityModal = (levels) => {
-            qualityList.innerHTML = '';
-            // Add 'Auto' quality option
-            const autoLi = document.createElement('li');
-            autoLi.innerHTML = `
-                <label class="flex items-center space-x-3 p-3 cursor-pointer rounded-xl hover:bg-gray-700 transition-colors duration-200">
-                    <input type="radio" name="quality" value="-1" ${hls.currentLevel === -1 ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 focus:ring-blue-500">
-                    <span class="text-sm font-medium">Auto</span>
-                </label>
-            `;
-            qualityList.appendChild(autoLi);
-
-            // Add other quality levels
-            levels.forEach((level, index) => {
-                const li = document.createElement('li');
-                const resolution = level.height ? `${level.height}p` : 'Unknown';
-                const isSelected = index === hls.currentLevel;
-                li.innerHTML = `
-                    <label class="flex items-center space-x-3 p-3 cursor-pointer rounded-xl hover:bg-gray-700 transition-colors duration-200">
-                        <input type="radio" name="quality" value="${index}" ${isSelected ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 focus:ring-blue-500">
-                        <span class="text-sm font-medium">${resolution}</span>
-                    </label>
-                `;
-                qualityList.appendChild(li);
-            });
-        };
-
-        // Populate the audio track selection modal
-        const populateAudioModal = (tracks) => {
-            audioList.innerHTML = '';
-            tracks.forEach((track, index) => {
-                const isSelected = index === hls.audioTrack;
-                const li = document.createElement('li');
-                li.innerHTML = `
-                    <label class="flex items-center space-x-3 p-3 cursor-pointer rounded-xl hover:bg-gray-700 transition-colors duration-200">
-                        <input type="radio" name="audio-track" value="${index}" ${isSelected ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 focus:ring-blue-500">
-                        <span class="text-sm font-medium">${track.name || 'Track ' + (index + 1)}</span>
-                    </label>
-                `;
-                audioList.appendChild(li);
-            });
-        };
-
-        // Event listeners
-        window.addEventListener('load', () => {
-            urlInput.value = defaultUrl;
-            loadVideo(defaultUrl);
-        });
-
-        loadBtn.addEventListener('click', () => {
-            const newUrl = urlInput.value.trim();
-            if (newUrl) {
-                loadVideo(newUrl);
-            }
-        });
-
-        qualityBtn.addEventListener('click', () => {
-            qualityModal.classList.remove('hidden');
-        });
-
-        qualityCancelBtn.addEventListener('click', () => {
-            qualityModal.classList.add('hidden');
-        });
-
-        qualityOkBtn.addEventListener('click', () => {
-            const selectedRadio = qualityList.querySelector('input[name="quality"]:checked');
-            if (selectedRadio && hls) {
-                const newQualityIndex = parseInt(selectedRadio.value, 10);
-                if (hls.currentLevel !== newQualityIndex) {
-                    hls.currentLevel = newQualityIndex;
-                }
-            }
-            qualityModal.classList.add('hidden');
-        });
-
-        audioBtn.addEventListener('click', () => {
-            audioModal.classList.remove('hidden');
-        });
-
-        audioCancelBtn.addEventListener('click', () => {
-            audioModal.classList.add('hidden');
-        });
-
-        audioOkBtn.addEventListener('click', () => {
-            const selectedRadio = audioList.querySelector('input[name="audio-track"]:checked');
-            if (selectedRadio && hls) {
-                const newAudioIndex = parseInt(selectedRadio.value, 10);
-                if (hls.audioTrack !== newAudioIndex) {
-                    hls.audioTrack = newAudioIndex;
-                }
-            }
-            audioModal.classList.add('hidden');
-        });
-        
-    </script>
 
 </body>
 </html>
-

@@ -3,198 +3,575 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JW Player Dynamic</title>
-    <!-- Use Tailwind CSS for a modern, responsive design -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Multi-Audio Track Video Player</title>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        /* Custom styles for the player container */
-        .jwplayer-container {
-            width: 100%;
-            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            font-weight: 300;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .url-input-section {
+            margin-bottom: 30px;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s ease;
+        }
+
+        .url-input-section:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .url-input-section h3 {
+            color: #555;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        #urlInput {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            min-width: 300px;
+        }
+
+        #urlInput:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 15px rgba(102, 126, 234, 0.2);
+        }
+
+        #loadBtn {
+            padding: 15px 30px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        #loadBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        #loadBtn:active {
+            transform: translateY(0);
+        }
+
+        .player-section {
+            background: #000;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
             position: relative;
         }
+
+        #videoPlayer {
+            width: 100%;
+            height: auto;
+            min-height: 400px;
+            background: #000;
+            display: block;
+        }
+
+        .controls-section {
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            border: 2px solid #e0e0e0;
+            backdrop-filter: blur(10px);
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .control-group {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #ddd;
+            transition: all 0.3s ease;
+        }
+
+        .control-group:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            border-color: #667eea;
+        }
+
+        .control-group h4 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control-group h4::before {
+            content: "🎵";
+            font-size: 1.2rem;
+        }
+
+        .audio-track-info h4::before {
+            content: "📊";
+        }
+
+        select, button {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        select:focus, button:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.2);
+        }
+
+        button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            border: none;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .audio-track-info {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .track-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .track-detail {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #555;
+        }
+
+        .track-detail strong {
+            color: #333;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #28a745;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .error-message {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+            
+            #urlInput {
+                min-width: auto;
+            }
+            
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
-    <!-- JW Player Library via CDN. Note: A valid license key is typically required for production use. -->
-    <script src="https://cdn.jsdelivr.net/npm/jwplayer@8.29.0/jwplayer.js"></script>
 </head>
-<body class="bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100 flex items-center justify-center min-h-screen p-4">
-
-    <!-- Main container for the video player -->
-    <div class="w-full max-w-5xl bg-gray-900 border border-gray-700 rounded-3xl shadow-xl overflow-hidden p-8 space-y-8">
-
-        <header class="text-center">
-            <h1 class="text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-500">
-                JW Media Player
-            </h1>
-            <p class="mt-2 text-lg text-gray-400">Stream your content with multi-track audio support using JW Player.</p>
-        </header>
-
-        <!-- Section for URL input and load button -->
-        <div class="flex flex-col sm:flex-row gap-4">
-            <input
-                id="videoUrlInput"
-                type="text"
-                placeholder="Paste video URL here..."
-                value="https://xenophobic-hali-school1660440-2ed04e4c.koyeb.app/dl/689740fb0dc4ac1ee4952470"
-                class="flex-1 px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
-            />
-            <button
-                id="loadButton"
-                class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200 transform hover:scale-105 active:scale-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900"
-            >
-                Load Video
-            </button>
+<body>
+    <div class="container">
+        <h1>🎬 Multi-Audio Track Video Player</h1>
+        
+        <div class="url-input-section">
+            <h3>Video URL Input</h3>
+            <div class="input-group">
+                <input type="url" id="urlInput" placeholder="Enter video URL here..." 
+                       value="https://xenophobic-hali-school1660440-2ed04e4c.koyeb.app/dl/689740fb0dc4ac1ee4952470">
+                <button id="loadBtn">Load Video</button>
+            </div>
+            <div id="errorMessage" class="error-message"></div>
         </div>
 
-        <!-- Container where JW Player will be initialized -->
-        <div id="jwplayer-container" class="jwplayer-container rounded-2xl overflow-hidden shadow-lg">
-            <p class="absolute inset-0 flex items-center justify-center bg-black text-gray-400 font-bold">
-                Loading player...
-            </p>
+        <div class="player-section">
+            <video id="videoPlayer" controls preload="metadata">
+                <source id="videoSource" src="https://xenophobic-hali-school1660440-2ed04e4c.koyeb.app/dl/689740fb0dc4ac1ee4952470" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
         </div>
 
-        <!-- Controls section for audio tracks -->
-        <div class="flex flex-col sm:flex-row items-center justify-between p-4 bg-gray-800 rounded-xl border border-gray-700">
-            <label for="audioTracks" class="text-lg font-medium text-gray-300 mb-2 sm:mb-0">
-                Audio Track:
-            </label>
-            <select id="audioTracks" class="w-full sm:w-auto px-4 py-2 rounded-lg bg-gray-700 border border-gray-600 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200" disabled>
-                <option value="" disabled selected>No tracks available</option>
-            </select>
+        <div class="controls-section">
+            <div class="controls-grid">
+                <div class="control-group">
+                    <h4>Audio Track Selection</h4>
+                    <select id="audioTrackSelect">
+                        <option value="">Loading audio tracks...</option>
+                    </select>
+                    <button id="refreshTracksBtn">Refresh Audio Tracks</button>
+                </div>
+
+                <div class="control-group audio-track-info">
+                    <h4>Current Track Info</h4>
+                    <div id="currentTrackInfo">
+                        <span class="status-indicator"></span>
+                        <span id="trackStatus">Loading video...</span>
+                    </div>
+                    <div id="trackDetails" class="track-details"></div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- JavaScript for handling JW Player's API and dynamic functionality -->
     <script>
-        // Store the JW Player instance
-        let jwPlayerInstance;
-
-        const videoUrlInput = document.getElementById('videoUrlInput');
-        const loadButton = document.getElementById('loadButton');
-        const audioTracksSelect = document.getElementById('audioTracks');
-        const playerContainer = document.getElementById('jwplayer-container');
-
-        // Function to initialize JW Player
-        const initializePlayer = (url) => {
-            // Remove any existing JW Player instance to prevent issues
-            if (jwPlayerInstance) {
-                jwPlayerInstance.remove();
+        class VideoPlayer {
+            constructor() {
+                this.video = document.getElementById('videoPlayer');
+                this.audioTrackSelect = document.getElementById('audioTrackSelect');
+                this.currentTrackInfo = document.getElementById('trackStatus');
+                this.trackDetails = document.getElementById('trackDetails');
+                this.urlInput = document.getElementById('urlInput');
+                this.loadBtn = document.getElementById('loadBtn');
+                this.refreshBtn = document.getElementById('refreshTracksBtn');
+                this.errorMessage = document.getElementById('errorMessage');
+                
+                this.init();
             }
 
-            // A placeholder for the JW Player license key.
-            // A key is needed to unlock full features and remove the watermark.
-            // For a free developer license, you can sign up on the JW Player website.
-            const licenseKey = "YOUR_JWPLAYER_LICENSE_KEY";
+            init() {
+                this.setupEventListeners();
+                this.loadDefaultVideo();
+            }
 
-            // Initialize JW Player with configuration
-            jwPlayerInstance = jwplayer('jwplayer-container').setup({
-                file: url,
-                width: '100%',
-                aspectratio: '16:9',
-                autostart: true,
-                controls: true,
-                key: licenseKey,
-                // Add an error handler for the player
-                events: {
-                    onError: (event) => {
-                        console.error('JW Player Error:', event.message);
-                        playerContainer.innerHTML = `
-                            <p class="absolute inset-0 flex items-center justify-center bg-black text-red-400 text-xl font-bold">
-                                Error playing video: ${event.message}
-                            </p>
-                        `;
-                    },
-                    // This event fires when a video is loaded and ready to play.
-                    // We use this to get the available audio tracks.
-                    onReady: () => {
-                        console.log('JW Player is ready.');
-                        playerContainer.innerHTML = '';
-                        updateAudioTracksDropdown();
-                    },
+            setupEventListeners() {
+                this.video.addEventListener('loadedmetadata', () => this.updateAudioTracks());
+                this.video.addEventListener('loadstart', () => this.showLoading());
+                this.video.addEventListener('canplay', () => this.hideLoading());
+                this.video.addEventListener('error', (e) => this.handleVideoError(e));
+                
+                this.audioTrackSelect.addEventListener('change', (e) => this.changeAudioTrack(e));
+                this.loadBtn.addEventListener('click', () => this.loadNewVideo());
+                this.refreshBtn.addEventListener('click', () => this.refreshAudioTracks());
+                
+                this.urlInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.loadNewVideo();
+                });
+            }
+
+            showLoading() {
+                this.currentTrackInfo.innerHTML = '<span class="loading"></span>Loading video...';
+                this.loadBtn.innerHTML = '<span class="loading"></span>Loading...';
+                this.loadBtn.disabled = true;
+            }
+
+            hideLoading() {
+                this.loadBtn.innerHTML = 'Load Video';
+                this.loadBtn.disabled = false;
+                this.hideError();
+            }
+
+            showError(message) {
+                this.errorMessage.textContent = message;
+                this.errorMessage.style.display = 'block';
+                setTimeout(() => this.hideError(), 5000);
+            }
+
+            hideError() {
+                this.errorMessage.style.display = 'none';
+            }
+
+            handleVideoError(e) {
+                this.hideLoading();
+                const error = this.video.error;
+                let message = 'Failed to load video. ';
+                
+                if (error) {
+                    switch(error.code) {
+                        case error.MEDIA_ERR_ABORTED:
+                            message += 'Video loading was aborted.';
+                            break;
+                        case error.MEDIA_ERR_NETWORK:
+                            message += 'Network error occurred.';
+                            break;
+                        case error.MEDIA_ERR_DECODE:
+                            message += 'Video decoding failed.';
+                            break;
+                        case error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+                            message += 'Video format not supported.';
+                            break;
+                        default:
+                            message += 'Unknown error occurred.';
+                    }
                 }
-            });
-        };
-
-        // Function to load a new video URL
-        const loadVideo = (url) => {
-            if (!url) {
-                console.error('URL is empty. Please enter a valid URL.');
-                return;
+                
+                this.showError(message);
+                this.currentTrackInfo.textContent = 'Error loading video';
             }
-            if (!jwPlayerInstance) {
-                // If the player isn't initialized yet, do that first.
-                initializePlayer(url);
-                return;
-            }
-            // Use the JW Player API to load a new source
-            jwPlayerInstance.load([{ file: url }]);
-            console.log(`Loading new video from: ${url}`);
-            
-            // Disable the dropdown until new tracks are loaded
-            audioTracksSelect.innerHTML = '<option value="" disabled selected>Loading tracks...</option>';
-            audioTracksSelect.disabled = true;
-        };
 
-        // Function to update the audio tracks dropdown
-        const updateAudioTracksDropdown = () => {
-            // Wait for the player to have audio tracks
-            jwPlayerInstance.on('audioTracks', () => {
-                const tracks = jwPlayerInstance.getAudioTracks();
-                audioTracksSelect.innerHTML = '';
-                if (tracks.length === 0) {
-                    audioTracksSelect.innerHTML = '<option value="" disabled selected>No tracks available</option>';
-                    audioTracksSelect.disabled = true;
+            loadDefaultVideo() {
+                this.updateAudioTracks();
+            }
+
+            loadNewVideo() {
+                const url = this.urlInput.value.trim();
+                
+                if (!url) {
+                    this.showError('Please enter a valid video URL');
                     return;
                 }
 
-                audioTracksSelect.disabled = false;
-
-                // Populate the dropdown
-                tracks.forEach((track, index) => {
-                    const option = document.createElement('option');
-                    option.value = index;
-                    option.text = track.label || track.language || `Track ${index + 1}`;
-                    audioTracksSelect.appendChild(option);
-                });
-
-                // Set the current track as selected
-                const currentTrackIndex = jwPlayerInstance.getCurrentAudioTrack();
-                if (currentTrackIndex !== -1) {
-                    audioTracksSelect.value = currentTrackIndex;
+                if (!this.isValidUrl(url)) {
+                    this.showError('Please enter a valid URL (must start with http:// or https://)');
+                    return;
                 }
-            });
-        };
 
-        // Event listener for the "Load Video" button
-        loadButton.addEventListener('click', () => {
-            const url = videoUrlInput.value;
-            loadVideo(url);
-        });
-
-        // Event listener for the "Enter" key on the input field
-        videoUrlInput.addEventListener('keypress', (event) => {
-            if (event.key === 'Enter') {
-                loadButton.click();
+                this.video.src = url;
+                document.getElementById('videoSource').src = url;
+                this.video.load();
             }
-        });
 
-        // Event listener for when a new track is selected from the dropdown
-        audioTracksSelect.addEventListener('change', (event) => {
-            const selectedIndex = parseInt(event.target.value, 10);
-            if (jwPlayerInstance) {
-                jwPlayerInstance.setCurrentAudioTrack(selectedIndex);
+            isValidUrl(string) {
+                try {
+                    new URL(string);
+                    return string.startsWith('http://') || string.startsWith('https://');
+                } catch (_) {
+                    return false;
+                }
             }
-        });
-        
-        // Initialize the player on page load with the default URL
-        window.addEventListener('load', () => {
-            initializePlayer(videoUrlInput.value);
-        });
 
+            updateAudioTracks() {
+                const audioTracks = this.video.audioTracks;
+                this.audioTrackSelect.innerHTML = '';
+                
+                if (audioTracks && audioTracks.length > 0) {
+                    // Add default option
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = 'Default Audio Track';
+                    this.audioTrackSelect.appendChild(defaultOption);
+                    
+                    // Add each audio track
+                    for (let i = 0; i < audioTracks.length; i++) {
+                        const track = audioTracks[i];
+                        const option = document.createElement('option');
+                        option.value = i;
+                        option.textContent = `Track ${i + 1}: ${track.label || track.language || 'Unknown'}`;
+                        this.audioTrackSelect.appendChild(option);
+                        
+                        if (track.enabled) {
+                            option.selected = true;
+                        }
+                    }
+                    
+                    this.currentTrackInfo.innerHTML = `
+                        <span class="status-indicator"></span>
+                        Found ${audioTracks.length} audio track${audioTracks.length > 1 ? 's' : ''}
+                    `;
+                    
+                    this.updateTrackDetails();
+                } else {
+                    // Fallback for browsers that don't support audioTracks API
+                    this.audioTrackSelect.innerHTML = '<option value="">Default Audio (Track info not available)</option>';
+                    this.currentTrackInfo.innerHTML = `
+                        <span class="status-indicator"></span>
+                        Audio tracks detected (use browser controls if available)
+                    `;
+                    this.trackDetails.innerHTML = `
+                        <div class="track-detail">
+                            <strong>Note:</strong> This browser may not support the Audio Track API. 
+                            Try right-clicking on the video for additional audio options.
+                        </div>
+                    `;
+                }
+            }
+
+            updateTrackDetails() {
+                const audioTracks = this.video.audioTracks;
+                if (!audioTracks || audioTracks.length === 0) return;
+                
+                let detailsHTML = '';
+                for (let i = 0; i < audioTracks.length; i++) {
+                    const track = audioTracks[i];
+                    const isActive = track.enabled;
+                    
+                    detailsHTML += `
+                        <div class="track-detail" style="${isActive ? 'border-left: 3px solid #28a745;' : ''}">
+                            <strong>Track ${i + 1}:</strong> ${track.label || 'Unnamed'}
+                            ${track.language ? `<br><strong>Language:</strong> ${track.language}` : ''}
+                            ${isActive ? '<br><strong>Status:</strong> Active' : ''}
+                        </div>
+                    `;
+                }
+                
+                this.trackDetails.innerHTML = detailsHTML;
+            }
+
+            changeAudioTrack(event) {
+                const selectedIndex = event.target.value;
+                const audioTracks = this.video.audioTracks;
+                
+                if (!audioTracks || audioTracks.length === 0) {
+                    this.showError('Audio tracks not available in this browser');
+                    return;
+                }
+
+                // Disable all tracks first
+                for (let i = 0; i < audioTracks.length; i++) {
+                    audioTracks[i].enabled = false;
+                }
+
+                // Enable selected track
+                if (selectedIndex !== '') {
+                    const trackIndex = parseInt(selectedIndex);
+                    if (trackIndex >= 0 && trackIndex < audioTracks.length) {
+                        audioTracks[trackIndex].enabled = true;
+                        this.currentTrackInfo.innerHTML = `
+                            <span class="status-indicator"></span>
+                            Switched to Track ${trackIndex + 1}
+                        `;
+                    }
+                } else {
+                    // Enable first track as default
+                    if (audioTracks.length > 0) {
+                        audioTracks[0].enabled = true;
+                    }
+                    this.currentTrackInfo.innerHTML = `
+                        <span class="status-indicator"></span>
+                        Using default audio track
+                    `;
+                }
+                
+                this.updateTrackDetails();
+            }
+
+            refreshAudioTracks() {
+                this.currentTrackInfo.innerHTML = '<span class="loading"></span>Refreshing tracks...';
+                setTimeout(() => {
+                    this.updateAudioTracks();
+                }, 500);
+            }
+        }
+
+        // Initialize the video player when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new VideoPlayer();
+        });
     </script>
 </body>
 </html>
-

@@ -1,154 +1,76 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Video Player with Audio Track Selection</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* Overlay styling for the selector menu */
-        #audioTrackModal {
-            display: none;
-            position: fixed;
-            z-index: 2000;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0,0,0,0.5);
-            align-items: center; justify-content: center;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Universal Video Player</title>
+  <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.8"></script>
+  <script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
 </head>
-<body class="bg-gray-900 text-gray-100 flex items-center justify-center min-h-screen p-4">
+<body>
+  <h3>Streaming URL:</h3>
+  <input type="text" id="urlInput"
+         value="https://xenophobic-hali-school1660440-2ed04e4c.koyeb.app/dl/689740fb0dc4ac1ee4952470"
+         style="width:90%;" />
+  <button onclick="loadVideo()">Play</button>
 
-<div class="w-full max-w-4xl bg-gray-800 rounded-2xl shadow-2xl overflow-hidden p-6 space-y-6">
-    <header class="text-center">
-        <h1 class="text-4xl font-extrabold text-blue-400">Web Video Player</h1>
-        <p class="mt-2 text-lg text-gray-400">Streaming content directly from the URL</p>
-    </header>
+  <video
+    id="player"
+    class="video-js vjs-default-skin"
+    width="640"
+    height="360"
+    controls
+    preload="auto"></video>
 
-    <!-- Video & Audio -->
-    <div class="relative w-full pb-[56.25%] rounded-xl overflow-hidden">
-        <video id="myVideoPlayer"
-               controls
-               autoplay
-               playsinline
-               class="absolute top-0 left-0 w-full h-full object-cover rounded-xl">
-            <source src="https://xenophobic-hali-school1660440-2ed04e4c.koyeb.app/dl/689740fb0dc4ac1ee4952470" type="video/mp4">
-            Your browser does not support the video tag.
-        </video>
-        <!-- External audio, hidden from view -->
-        <audio id="myAudioTrack"></audio>
-    </div>
+  <label for="audioTracksSelect">Audio Track:</label>
+  <select id="audioTracksSelect"></select>
 
-    <!-- Track selector button -->
-    <div class="text-center mt-4">
-        <button onclick="showAudioTrackModal()"
-            class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded text-white font-bold">
-            Select Audio Track
-        </button>
-    </div>
+  <script>
+    let player = videojs('player', {
+      techOrder: ['html5'],
+    });
 
-    <div class="text-center text-gray-400 mt-4">
-        <p>If the video does not play, it may be due to a network error, an unsupported format, or a server issue with the provided URL.</p>
-    </div>
-</div>
-
-<!-- Audio Track Selection Modal -->
-<div id="audioTrackModal" class="flex">
-    <div class="bg-gray-700 rounded-xl p-6 w-80 mx-auto my-auto space-y-4">
-        <h2 class="text-xl font-bold text-white mb-2">Select Audio Track</h2>
-        <form id="audioSelectionForm" class="space-y-2">
-            <label class="flex items-center space-x-2">
-                <input type="radio" name="audioTrack" value="auto" checked>
-                <span>Auto (Default video audio)</span>
-            </label>
-            <label class="flex items-center space-x-2">
-                <input type="radio" name="audioTrack" value="tamil">
-                <span>Tamil, Stereo</span>
-            </label>
-            <label class="flex items-center space-x-2">
-                <input type="radio" name="audioTrack" value="telugu">
-                <span>Telugu, Stereo</span>
-            </label>
-            <label class="flex items-center space-x-2">
-                <input type="radio" name="audioTrack" value="hindi">
-                <span>Hindi, Stereo</span>
-            </label>
-            <label class="flex items-center space-x-2">
-                <input type="radio" name="audioTrack" value="english">
-                <span>English, Stereo</span>
-            </label>
-        </form>
-        <div class="flex justify-end space-x-2">
-            <button onclick="hideAudioTrackModal()" class="bg-gray-500 hover:bg-gray-600 px-4 py-2 rounded text-white">Cancel</button>
-            <button onclick="changeAudioTrack()" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded text-white">OK</button>
-        </div>
-    </div>
-</div>
-
-<script>
-    // Provide actual audio URLs here
-    const audioURLs = {
-        tamil:   "https://your-tamil-audio-url.m4a",
-        telugu:  "https://your-telugu-audio-url.m4a",
-        hindi:   "https://your-hindi-audio-url.m4a",
-        english: "https://your-english-audio-url.m4a"
-    };
-
-    const video = document.getElementById('myVideoPlayer');
-    const audio = document.getElementById('myAudioTrack');
-    let currentTrack = "auto";
-
-    // Modal logic
-    function showAudioTrackModal() {
-        document.getElementById("audioTrackModal").style.display = "flex";
-    }
-    function hideAudioTrackModal() {
-        document.getElementById("audioTrackModal").style.display = "none";
-    }
-
-    // Audio track change logic
-    function changeAudioTrack() {
-        const selection = document.querySelector('input[name="audioTrack"]:checked').value;
-        hideAudioTrackModal();
-        currentTrack = selection;
-
-        if (selection === "auto") {
-            // Use the video's default audio
-            audio.pause();
-            audio.src = "";
-            audio.currentTime = 0;
-            video.muted = false;
+    function loadVideo() {
+      let url = document.getElementById('urlInput').value;
+      // Reset player
+      player.reset();
+      if (url.endsWith('.m3u8')) {
+        // HLS.js integration for m3u8
+        if (Hls.isSupported()) {
+          let hls = new Hls();
+          hls.loadSource(url);
+          hls.attachMedia(player.el().querySelector('video'));
+          hls.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
+            loadAudioTracks(hls.audioTracks);
+            player.play();
+          });
+          // Listen for audio track changes
+          document.getElementById('audioTracksSelect').onchange = function(e) {
+            hls.audioTrack = e.target.value;
+          };
+        } else if (player.el().querySelector('video').canPlayType('application/vnd.apple.mpegurl')) {
+          player.src({type: 'application/x-mpegURL', src: url});
+          player.play();
         } else {
-            video.muted = true;
-            audio.src = audioURLs[selection] || "";
-            audio.currentTime = video.currentTime;
-            audio.play();
+          alert('HLS not supported.');
         }
+      } else {
+        // Standard video formats (mp4, mkv, ts)
+        player.src({type: 'video/mp4', src: url});
+        player.play();
+      }
     }
 
-    // Sync audio with video pause/play/seeking
-    video.addEventListener('play', () => {
-        if (currentTrack !== "auto") audio.play();
-    });
-    video.addEventListener('pause', () => {
-        if (currentTrack !== "auto") audio.pause();
-    });
-    video.addEventListener('seeked', () => {
-        if (currentTrack !== "auto") audio.currentTime = video.currentTime;
-    });
-    video.addEventListener('timeupdate', () => {
-        if (currentTrack !== "auto") {
-            // Sync audio to video (best-effort)
-            if (Math.abs(video.currentTime - audio.currentTime) > 0.3) {
-                audio.currentTime = video.currentTime;
-            }
-        }
-    });
-
-    // Prevent double playback on initial load
-    video.addEventListener('loadedmetadata', () => { audio.currentTime = video.currentTime; });
-
-</script>
-
+    function loadAudioTracks(tracks) {
+      let select = document.getElementById('audioTracksSelect');
+      select.innerHTML = '';
+      tracks.forEach((track, idx) => {
+        let opt = document.createElement('option');
+        opt.value = idx;
+        opt.text = track.name || track.lang || 'Track ' + (idx + 1);
+        select.appendChild(opt);
+      });
+    }
+  </script>
 </body>
 </html>

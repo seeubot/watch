@@ -3,180 +3,198 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exo Video Player</title>
+    <title>JW Player Dynamic</title>
+    <!-- Use Tailwind CSS for a modern, responsive design -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
-            font-family: 'Arial', sans-serif;
-            background-color: #121212;
-            color: #ffffff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
+            font-family: 'Inter', sans-serif;
         }
-        .player-container {
-            width: 80%;
-            max-width: 1200px;
-            background: #1e1e1e;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+        /* Custom styles for the player container */
+        .jwplayer-container {
+            width: 100%;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
             position: relative;
-        }
-        video {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-        .controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #2c2c2c;
-            padding: 15px;
-            position: absolute;
-            bottom: 0;
-            width: 100%;
-            opacity: 0.8;
-            transition: opacity 0.3s;
-        }
-        .controls:hover {
-            opacity: 1;
-        }
-        .controls button {
-            background: #e50914;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 0 5px;
-        }
-        .controls button:hover {
-            background: #c50914;
-        }
-        .url-input {
-            display: flex;
-            align-items: center;
-            margin-top: 20px;
-            padding: 15px;
-            background: #2c2c2c;
-            border-radius: 10px;
-        }
-        .url-input input {
-            width: 80%;
-            padding: 10px;
-            border: 1px solid #333;
-            border-radius: 5px 0 0 5px;
-            color: #fff;
-            background: #1e1e1e;
-        }
-        .url-input button {
-            padding: 10px 20px;
-            border: 1px solid #333;
-            border-radius: 0 5px 5px 0;
-            background: #e50914;
-            color: white;
-            cursor: pointer;
-        }
-        .url-input button:hover {
-            background: #c50914;
-        }
-        .seek-bar {
-            width: 100%;
-            height: 5px;
-            background: #333;
-            border-radius: 5px;
-            position: relative;
-            cursor: pointer;
-            margin: 10px 0;
-        }
-        .seek-bar .progress {
-            height: 100%;
-            background: #e50914;
-            border-radius: 5px;
-            width: 0;
-        }
-        .seek-bar .thumb {
-            width: 15px;
-            height: 15px;
-            background: #e50914;
-            border-radius: 50%;
-            position: absolute;
-            top: -5px;
-            left: 0;
-            cursor: pointer;
         }
     </style>
+    <!-- JW Player Library via CDN. Note: A valid license key is typically required for production use. -->
+    <script src="https://cdn.jsdelivr.net/npm/jwplayer@8.29.0/jwplayer.js"></script>
 </head>
-<body>
-    <div class="player-container">
-        <video id="videoPlayer" controls>
-            Your browser does not support the video tag.
-        </video>
-        <div class="controls">
-            <button id="playPause">Play</button>
-            <button id="muteUnmute">Mute</button>
-            <div class="seek-bar">
-                <div class="progress"></div>
-                <div class="thumb"></div>
-            </div>
+<body class="bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <!-- Main container for the video player -->
+    <div class="w-full max-w-5xl bg-gray-900 border border-gray-700 rounded-3xl shadow-xl overflow-hidden p-8 space-y-8">
+
+        <header class="text-center">
+            <h1 class="text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-500">
+                JW Media Player
+            </h1>
+            <p class="mt-2 text-lg text-gray-400">Stream your content with multi-track audio support using JW Player.</p>
+        </header>
+
+        <!-- Section for URL input and load button -->
+        <div class="flex flex-col sm:flex-row gap-4">
+            <input
+                id="videoUrlInput"
+                type="text"
+                placeholder="Paste video URL here..."
+                value="https://xenophobic-hali-school1660440-2ed04e4c.koyeb.app/dl/689740fb0dc4ac1ee4952470"
+                class="flex-1 px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
+            />
+            <button
+                id="loadButton"
+                class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200 transform hover:scale-105 active:scale-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+            >
+                Load Video
+            </button>
         </div>
-        <div class="url-input">
-            <input type="text" id="videoUrl" placeholder="Enter video URL">
-            <button onclick="loadVideo()">Load Video</button>
+
+        <!-- Container where JW Player will be initialized -->
+        <div id="jwplayer-container" class="jwplayer-container rounded-2xl overflow-hidden shadow-lg">
+            <p class="absolute inset-0 flex items-center justify-center bg-black text-gray-400 font-bold">
+                Loading player...
+            </p>
+        </div>
+
+        <!-- Controls section for audio tracks -->
+        <div class="flex flex-col sm:flex-row items-center justify-between p-4 bg-gray-800 rounded-xl border border-gray-700">
+            <label for="audioTracks" class="text-lg font-medium text-gray-300 mb-2 sm:mb-0">
+                Audio Track:
+            </label>
+            <select id="audioTracks" class="w-full sm:w-auto px-4 py-2 rounded-lg bg-gray-700 border border-gray-600 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200" disabled>
+                <option value="" disabled selected>No tracks available</option>
+            </select>
         </div>
     </div>
 
+    <!-- JavaScript for handling JW Player's API and dynamic functionality -->
     <script>
-        const videoPlayer = document.getElementById('videoPlayer');
-        const playPauseButton = document.getElementById('playPause');
-        const muteUnmuteButton = document.getElementById('muteUnmute');
-        const seekBar = document.querySelector('.seek-bar');
-        const progress = document.querySelector('.progress');
-        const thumb = document.querySelector('.thumb');
+        // Store the JW Player instance
+        let jwPlayerInstance;
 
-        playPauseButton.addEventListener('click', () => {
-            if (videoPlayer.paused) {
-                videoPlayer.play();
-                playPauseButton.textContent = 'Pause';
-            } else {
-                videoPlayer.pause();
-                playPauseButton.textContent = 'Play';
+        const videoUrlInput = document.getElementById('videoUrlInput');
+        const loadButton = document.getElementById('loadButton');
+        const audioTracksSelect = document.getElementById('audioTracks');
+        const playerContainer = document.getElementById('jwplayer-container');
+
+        // Function to initialize JW Player
+        const initializePlayer = (url) => {
+            // Remove any existing JW Player instance to prevent issues
+            if (jwPlayerInstance) {
+                jwPlayerInstance.remove();
+            }
+
+            // A placeholder for the JW Player license key.
+            // A key is needed to unlock full features and remove the watermark.
+            // For a free developer license, you can sign up on the JW Player website.
+            const licenseKey = "YOUR_JWPLAYER_LICENSE_KEY";
+
+            // Initialize JW Player with configuration
+            jwPlayerInstance = jwplayer('jwplayer-container').setup({
+                file: url,
+                width: '100%',
+                aspectratio: '16:9',
+                autostart: true,
+                controls: true,
+                key: licenseKey,
+                // Add an error handler for the player
+                events: {
+                    onError: (event) => {
+                        console.error('JW Player Error:', event.message);
+                        playerContainer.innerHTML = `
+                            <p class="absolute inset-0 flex items-center justify-center bg-black text-red-400 text-xl font-bold">
+                                Error playing video: ${event.message}
+                            </p>
+                        `;
+                    },
+                    // This event fires when a video is loaded and ready to play.
+                    // We use this to get the available audio tracks.
+                    onReady: () => {
+                        console.log('JW Player is ready.');
+                        playerContainer.innerHTML = '';
+                        updateAudioTracksDropdown();
+                    },
+                }
+            });
+        };
+
+        // Function to load a new video URL
+        const loadVideo = (url) => {
+            if (!url) {
+                console.error('URL is empty. Please enter a valid URL.');
+                return;
+            }
+            if (!jwPlayerInstance) {
+                // If the player isn't initialized yet, do that first.
+                initializePlayer(url);
+                return;
+            }
+            // Use the JW Player API to load a new source
+            jwPlayerInstance.load([{ file: url }]);
+            console.log(`Loading new video from: ${url}`);
+            
+            // Disable the dropdown until new tracks are loaded
+            audioTracksSelect.innerHTML = '<option value="" disabled selected>Loading tracks...</option>';
+            audioTracksSelect.disabled = true;
+        };
+
+        // Function to update the audio tracks dropdown
+        const updateAudioTracksDropdown = () => {
+            // Wait for the player to have audio tracks
+            jwPlayerInstance.on('audioTracks', () => {
+                const tracks = jwPlayerInstance.getAudioTracks();
+                audioTracksSelect.innerHTML = '';
+                if (tracks.length === 0) {
+                    audioTracksSelect.innerHTML = '<option value="" disabled selected>No tracks available</option>';
+                    audioTracksSelect.disabled = true;
+                    return;
+                }
+
+                audioTracksSelect.disabled = false;
+
+                // Populate the dropdown
+                tracks.forEach((track, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.text = track.label || track.language || `Track ${index + 1}`;
+                    audioTracksSelect.appendChild(option);
+                });
+
+                // Set the current track as selected
+                const currentTrackIndex = jwPlayerInstance.getCurrentAudioTrack();
+                if (currentTrackIndex !== -1) {
+                    audioTracksSelect.value = currentTrackIndex;
+                }
+            });
+        };
+
+        // Event listener for the "Load Video" button
+        loadButton.addEventListener('click', () => {
+            const url = videoUrlInput.value;
+            loadVideo(url);
+        });
+
+        // Event listener for the "Enter" key on the input field
+        videoUrlInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                loadButton.click();
             }
         });
 
-        muteUnmuteButton.addEventListener('click', () => {
-            if (videoPlayer.muted) {
-                videoPlayer.muted = false;
-                muteUnmuteButton.textContent = 'Mute';
-            } else {
-                videoPlayer.muted = true;
-                muteUnmuteButton.textContent = 'Unmute';
+        // Event listener for when a new track is selected from the dropdown
+        audioTracksSelect.addEventListener('change', (event) => {
+            const selectedIndex = parseInt(event.target.value, 10);
+            if (jwPlayerInstance) {
+                jwPlayerInstance.setCurrentAudioTrack(selectedIndex);
             }
         });
-
-        videoPlayer.addEventListener('timeupdate', () => {
-            const progressPercent = (videoPlayer.currentTime / videoPlayer.duration) * 100;
-            progress.style.width = `${progressPercent}%`;
-            thumb.style.left = `calc(${progressPercent}% - 7.5px)`;
+        
+        // Initialize the player on page load with the default URL
+        window.addEventListener('load', () => {
+            initializePlayer(videoUrlInput.value);
         });
 
-        seekBar.addEventListener('click', (e) => {
-            const seekBarWidth = seekBar.clientWidth;
-            const clickX = e.offsetX;
-            const duration = videoPlayer.duration;
-            videoPlayer.currentTime = (clickX / seekBarWidth) * duration;
-        });
-
-        function loadVideo() {
-            const url = document.getElementById('videoUrl').value;
-            videoPlayer.src = url;
-            videoPlayer.load();
-            videoPlayer.play();
-            playPauseButton.textContent = 'Pause';
-        }
     </script>
 </body>
 </html>
+

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Custom Video Player</title>
+    <title>Advanced HLS Video Player</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,8 +12,10 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
-        /* Custom scrollbar for the modal */
+        /* Custom scrollbar for the modals */
         .scrollbar-hide::-webkit-scrollbar {
             display: none;
         }
@@ -23,30 +25,36 @@
         }
     </style>
 </head>
-<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen p-4">
+<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen p-4 sm:p-6">
 
-    <div class="w-full max-w-4xl bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+    <div class="w-full max-w-4xl bg-gray-800 rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-300 scale-100">
         
-        <!-- Video Player -->
-        <div class="relative w-full">
-            <video id="video" controls class="w-full h-auto rounded-t-lg bg-black"></video>
-            <!-- Overlay for error messages -->
-            <div id="error-message" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 text-red-400 text-lg font-semibold hidden">
-                <p>Error loading video. Please check the URL.</p>
+        <!-- Video Player Container -->
+        <div class="relative w-full aspect-video bg-black rounded-t-2xl">
+            <video id="video" controls class="w-full h-full object-contain rounded-t-2xl"></video>
+            <!-- Error/Loading Overlay -->
+            <div id="overlay" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 transition-opacity duration-300">
+                <p id="overlay-text" class="text-white text-lg font-semibold text-center p-4">Loading video...</p>
             </div>
         </div>
 
         <!-- Controls Section -->
-        <div class="p-4 space-y-4">
+        <div class="p-4 sm:p-6 space-y-4">
+            
             <!-- URL Input and Load Button -->
             <div class="flex flex-col sm:flex-row gap-2">
-                <input type="text" id="url-input" placeholder="Enter a video URL" class="flex-grow p-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <button id="load-btn" class="p-3 rounded-lg bg-blue-600 hover:bg-blue-700 transition-colors duration-200 font-semibold">Load</button>
+                <input type="text" id="url-input" placeholder="Enter a video URL (e.g., HLS .m3u8)" class="flex-grow p-3 rounded-xl bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button id="load-btn" class="p-3 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors duration-200 font-semibold shadow-md">
+                    Load Video
+                </button>
             </div>
             
-            <!-- Audio Track Button -->
-            <div class="flex justify-center">
-                <button id="audio-track-btn" class="w-full sm:w-1/2 p-3 rounded-lg bg-green-600 hover:bg-green-700 transition-colors duration-200 font-semibold">
+            <!-- Quality and Audio Track Buttons -->
+            <div class="flex flex-row gap-2 justify-center">
+                <button id="quality-btn" class="w-1/2 p-3 rounded-xl bg-purple-600 hover:bg-purple-700 transition-colors duration-200 font-semibold shadow-md disabled:bg-gray-600 disabled:cursor-not-allowed" disabled>
+                    Select Quality
+                </button>
+                <button id="audio-btn" class="w-1/2 p-3 rounded-xl bg-green-600 hover:bg-green-700 transition-colors duration-200 font-semibold shadow-md disabled:bg-gray-600 disabled:cursor-not-allowed" disabled>
                     Select Audio Track
                 </button>
             </div>
@@ -54,16 +62,31 @@
 
     </div>
 
+    <!-- Modals -->
+    <!-- Quality Selection Modal -->
+    <div id="quality-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto scrollbar-hide border border-gray-700">
+            <h2 class="text-2xl font-bold mb-4 border-b border-gray-700 pb-2">Select Quality</h2>
+            <ul id="quality-list" class="space-y-2 mb-4">
+                <!-- Quality options will be dynamically inserted here -->
+            </ul>
+            <div class="flex justify-end gap-2 border-t border-gray-700 pt-4">
+                <button id="quality-cancel-btn" class="p-2 px-4 rounded-xl bg-gray-600 hover:bg-gray-700 transition-colors duration-200">Cancel</button>
+                <button id="quality-ok-btn" class="p-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors duration-200">OK</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Audio Track Selection Modal -->
-    <div id="audio-track-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden">
-        <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto scrollbar-hide">
+    <div id="audio-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto scrollbar-hide border border-gray-700">
             <h2 class="text-2xl font-bold mb-4 border-b border-gray-700 pb-2">Select Audio Track</h2>
-            <ul id="audio-track-list" class="space-y-2 mb-4">
+            <ul id="audio-list" class="space-y-2 mb-4">
                 <!-- Audio tracks will be dynamically inserted here -->
             </ul>
             <div class="flex justify-end gap-2 border-t border-gray-700 pt-4">
-                <button id="modal-cancel-btn" class="p-2 px-4 rounded-lg bg-gray-600 hover:bg-gray-700 transition-colors duration-200">Cancel</button>
-                <button id="modal-ok-btn" class="p-2 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 transition-colors duration-200">OK</button>
+                <button id="audio-cancel-btn" class="p-2 px-4 rounded-xl bg-gray-600 hover:bg-gray-700 transition-colors duration-200">Cancel</button>
+                <button id="audio-ok-btn" class="p-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors duration-200">OK</button>
             </div>
         </div>
     </div>
@@ -73,87 +96,141 @@
         const video = document.getElementById('video');
         const urlInput = document.getElementById('url-input');
         const loadBtn = document.getElementById('load-btn');
-        const audioTrackBtn = document.getElementById('audio-track-btn');
-        const audioTrackModal = document.getElementById('audio-track-modal');
-        const audioTrackList = document.getElementById('audio-track-list');
-        const modalCancelBtn = document.getElementById('modal-cancel-btn');
-        const modalOkBtn = document.getElementById('modal-ok-btn');
-        const errorMessage = document.getElementById('error-message');
+        const overlay = document.getElementById('overlay');
+        const overlayText = document.getElementById('overlay-text');
+
+        const qualityBtn = document.getElementById('quality-btn');
+        const qualityModal = document.getElementById('quality-modal');
+        const qualityList = document.getElementById('quality-list');
+        const qualityOkBtn = document.getElementById('quality-ok-btn');
+        const qualityCancelBtn = document.getElementById('quality-cancel-btn');
+
+        const audioBtn = document.getElementById('audio-btn');
+        const audioModal = document.getElementById('audio-modal');
+        const audioList = document.getElementById('audio-list');
+        const audioOkBtn = document.getElementById('audio-ok-btn');
+        const audioCancelBtn = document.getElementById('audio-cancel-btn');
         
         let hls;
-        let selectedTrackIndex = -1;
+        let selectedQualityIndex = -1;
+        let selectedAudioIndex = -1;
 
-        // Function to hide error message
-        const hideError = () => {
-            errorMessage.classList.add('hidden');
+        // Function to show/hide the loading overlay
+        const showOverlay = (text) => {
+            overlayText.textContent = text;
+            overlay.classList.remove('hidden');
         };
 
-        // Function to show error message
-        const showError = () => {
-            errorMessage.classList.remove('hidden');
+        const hideOverlay = () => {
+            overlay.classList.add('hidden');
         };
 
-        // Function to load the video stream
+        // Function to disable control buttons
+        const disableControls = () => {
+            qualityBtn.disabled = true;
+            audioBtn.disabled = true;
+        };
+
+        // Function to enable control buttons
+        const enableControls = () => {
+            qualityBtn.disabled = hls.levels.length <= 1;
+            audioBtn.disabled = hls.audioTracks.length <= 1;
+        };
+
+        // Function to load and play the HLS video
         const loadVideo = (url) => {
-            hideError();
+            showOverlay('Loading video...');
+            disableControls();
+            
+            // Destroy existing Hls instance if it exists
+            if (hls) {
+                hls.destroy();
+                hls = null;
+            }
+
             if (Hls.isSupported()) {
-                if (hls) {
-                    hls.destroy(); // Destroy previous instance if it exists
-                }
                 hls = new Hls();
                 hls.attachMedia(video);
                 hls.loadSource(url);
-                
+
                 hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-                    console.log('Manifest parsed. Available audio tracks:', data.audioTracks);
-                    audioTrackBtn.disabled = false;
-                    audioTrackBtn.classList.remove('bg-gray-600');
-                    audioTrackBtn.classList.add('bg-green-600', 'hover:bg-green-700');
-                    populateAudioTrackModal(data.audioTracks);
+                    console.log('Manifest parsed. Video has been loaded successfully.');
+                    hideOverlay();
+                    enableControls();
+                    video.play();
+                    populateQualityModal(data.levels);
+                    populateAudioModal(data.audioTracks);
                 });
 
                 hls.on(Hls.Events.ERROR, (event, data) => {
                     console.error('HLS.js error:', data);
                     if (data.fatal) {
-                        showError();
+                        showOverlay('Error loading video. Please check the URL or try again.');
+                        // Try to recover from a fatal error
+                        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                             hls.startLoad();
+                        } else {
+                            hls.destroy();
+                        }
                     }
                 });
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                // Fallback for native HLS support (Safari)
+                // Fallback for native HLS support (e.g., Safari)
                 video.src = url;
-                audioTrackBtn.disabled = true; // Disable track selection as it's not supported natively
-                audioTrackBtn.classList.add('bg-gray-600');
-                audioTrackBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                video.addEventListener('loadedmetadata', () => {
+                    hideOverlay();
+                    video.play();
+                });
+                video.addEventListener('error', () => {
+                    showOverlay('Error loading video. Native HLS playback failed.');
+                });
             } else {
-                showError();
-                console.error('HLS is not supported on this browser.');
+                showOverlay('HLS is not supported on this browser.');
             }
         };
 
-        // Function to populate the modal with audio tracks
-        const populateAudioTrackModal = (tracks) => {
-            audioTrackList.innerHTML = '';
+        // Populate the quality selection modal
+        const populateQualityModal = (levels) => {
+            qualityList.innerHTML = '';
+            // Add 'Auto' quality option
+            const autoLi = document.createElement('li');
+            autoLi.innerHTML = `
+                <label class="flex items-center space-x-3 p-3 cursor-pointer rounded-xl hover:bg-gray-700 transition-colors duration-200">
+                    <input type="radio" name="quality" value="-1" ${hls.currentLevel === -1 ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 focus:ring-blue-500">
+                    <span class="text-sm font-medium">Auto</span>
+                </label>
+            `;
+            qualityList.appendChild(autoLi);
+
+            // Add other quality levels
+            levels.forEach((level, index) => {
+                const li = document.createElement('li');
+                const resolution = level.height ? `${level.height}p` : 'Unknown';
+                const isSelected = index === hls.currentLevel;
+                li.innerHTML = `
+                    <label class="flex items-center space-x-3 p-3 cursor-pointer rounded-xl hover:bg-gray-700 transition-colors duration-200">
+                        <input type="radio" name="quality" value="${index}" ${isSelected ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 focus:ring-blue-500">
+                        <span class="text-sm font-medium">${resolution}</span>
+                    </label>
+                `;
+                qualityList.appendChild(li);
+            });
+        };
+
+        // Populate the audio track selection modal
+        const populateAudioModal = (tracks) => {
+            audioList.innerHTML = '';
             tracks.forEach((track, index) => {
-                const isSelected = index === (hls ? hls.audioTrack : 0);
+                const isSelected = index === hls.audioTrack;
                 const li = document.createElement('li');
                 li.innerHTML = `
-                    <label class="flex items-center space-x-3 p-3 cursor-pointer rounded-lg hover:bg-gray-700 transition-colors duration-200">
+                    <label class="flex items-center space-x-3 p-3 cursor-pointer rounded-xl hover:bg-gray-700 transition-colors duration-200">
                         <input type="radio" name="audio-track" value="${index}" ${isSelected ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 focus:ring-blue-500">
                         <span class="text-sm font-medium">${track.name || 'Track ' + (index + 1)}</span>
                     </label>
                 `;
-                audioTrackList.appendChild(li);
+                audioList.appendChild(li);
             });
-        };
-
-        // Function to show the modal
-        const showModal = () => {
-            audioTrackModal.classList.remove('hidden');
-        };
-
-        // Function to hide the modal
-        const hideModal = () => {
-            audioTrackModal.classList.add('hidden');
         };
 
         // Event listeners
@@ -169,31 +246,46 @@
             }
         });
 
-        audioTrackBtn.addEventListener('click', () => {
-            if (hls && hls.audioTracks.length > 1) {
-                populateAudioTrackModal(hls.audioTracks);
-                selectedTrackIndex = hls.audioTrack;
-                showModal();
-            } else {
-                console.warn('No HLS instance or only one audio track available.');
-            }
+        qualityBtn.addEventListener('click', () => {
+            selectedQualityIndex = hls.currentLevel;
+            qualityModal.classList.remove('hidden');
         });
 
-        modalCancelBtn.addEventListener('click', () => {
-            hideModal();
+        qualityCancelBtn.addEventListener('click', () => {
+            qualityModal.classList.add('hidden');
         });
 
-        modalOkBtn.addEventListener('click', () => {
-            const selectedRadio = audioTrackList.querySelector('input[name="audio-track"]:checked');
+        qualityOkBtn.addEventListener('click', () => {
+            const selectedRadio = qualityList.querySelector('input[name="quality"]:checked');
             if (selectedRadio && hls) {
-                const newTrackIndex = parseInt(selectedRadio.value, 10);
-                if (hls.audioTrack !== newTrackIndex) {
-                    hls.audioTrack = newTrackIndex;
+                const newQualityIndex = parseInt(selectedRadio.value, 10);
+                if (hls.currentLevel !== newQualityIndex) {
+                    hls.currentLevel = newQualityIndex;
                 }
             }
-            hideModal();
+            qualityModal.classList.add('hidden');
         });
 
+        audioBtn.addEventListener('click', () => {
+            selectedAudioIndex = hls.audioTrack;
+            audioModal.classList.remove('hidden');
+        });
+
+        audioCancelBtn.addEventListener('click', () => {
+            audioModal.classList.add('hidden');
+        });
+
+        audioOkBtn.addEventListener('click', () => {
+            const selectedRadio = audioList.querySelector('input[name="audio-track"]:checked');
+            if (selectedRadio && hls) {
+                const newAudioIndex = parseInt(selectedRadio.value, 10);
+                if (hls.audioTrack !== newAudioIndex) {
+                    hls.audioTrack = newAudioIndex;
+                }
+            }
+            audioModal.classList.add('hidden');
+        });
+        
     </script>
 
 </body>

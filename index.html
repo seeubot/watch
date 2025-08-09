@@ -3,575 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Audio Track Video Player</title>
+    <title>Custom Video Player</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+            font-family: 'Inter', sans-serif;
         }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-            padding: 30px;
-            backdrop-filter: blur(10px);
-        }
-
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 30px;
-            font-size: 2.5rem;
-            font-weight: 300;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .url-input-section {
-            margin-bottom: 30px;
-            padding: 25px;
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 15px;
-            border: 2px solid #e0e0e0;
-            transition: all 0.3s ease;
-        }
-
-        .url-input-section:hover {
-            border-color: #667eea;
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-        }
-
-        .url-input-section h3 {
-            color: #555;
-            margin-bottom: 15px;
-            font-size: 1.2rem;
-        }
-
-        .input-group {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        #urlInput {
-            flex: 1;
-            padding: 15px 20px;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            min-width: 300px;
-        }
-
-        #urlInput:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 15px rgba(102, 126, 234, 0.2);
-        }
-
-        #loadBtn {
-            padding: 15px 30px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            white-space: nowrap;
-        }
-
-        #loadBtn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
-        }
-
-        #loadBtn:active {
-            transform: translateY(0);
-        }
-
-        .player-section {
-            background: #000;
-            border-radius: 15px;
-            overflow: hidden;
-            margin-bottom: 30px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
-            position: relative;
-        }
-
-        #videoPlayer {
-            width: 100%;
-            height: auto;
-            min-height: 400px;
-            background: #000;
-            display: block;
-        }
-
-        .controls-section {
-            padding: 25px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            border: 2px solid #e0e0e0;
-            backdrop-filter: blur(10px);
-        }
-
-        .controls-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-        }
-
-        .control-group {
-            background: rgba(255, 255, 255, 0.7);
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid #ddd;
-            transition: all 0.3s ease;
-        }
-
-        .control-group:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-            border-color: #667eea;
-        }
-
-        .control-group h4 {
-            color: #333;
-            margin-bottom: 15px;
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .control-group h4::before {
-            content: "🎵";
-            font-size: 1.2rem;
-        }
-
-        .audio-track-info h4::before {
-            content: "📊";
-        }
-
-        select, button {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            background: white;
-        }
-
-        select:focus, button:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 10px rgba(102, 126, 234, 0.2);
-        }
-
-        button {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            cursor: pointer;
-            font-weight: 600;
-            border: none;
-            margin-top: 10px;
-        }
-
-        button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-        }
-
-        .audio-track-info {
-            margin-top: 15px;
-            padding: 15px;
-            background: rgba(102, 126, 234, 0.1);
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
-        }
-
-        .track-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .track-detail {
-            background: rgba(255, 255, 255, 0.7);
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 13px;
-            color: #555;
-        }
-
-        .track-detail strong {
-            color: #333;
-        }
-
-        .status-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #28a745;
-            margin-right: 8px;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-
-        .error-message {
-            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
-            color: white;
-            padding: 15px 20px;
-            border-radius: 10px;
-            margin: 15px 0;
+        /* Custom scrollbar for the modal */
+        .scrollbar-hide::-webkit-scrollbar {
             display: none;
-            animation: slideIn 0.3s ease;
         }
-
-        @keyframes slideIn {
-            from { transform: translateY(-10px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 20px;
-                margin: 10px;
-            }
-            
-            h1 {
-                font-size: 2rem;
-            }
-            
-            .input-group {
-                flex-direction: column;
-            }
-            
-            #urlInput {
-                min-width: auto;
-            }
-            
-            .controls-grid {
-                grid-template-columns: 1fr;
-            }
+        .scrollbar-hide {
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <h1>🎬 Multi-Audio Track Video Player</h1>
+<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-4xl bg-gray-800 rounded-lg shadow-lg overflow-hidden">
         
-        <div class="url-input-section">
-            <h3>Video URL Input</h3>
-            <div class="input-group">
-                <input type="url" id="urlInput" placeholder="Enter video URL here..." 
-                       value="https://xenophobic-hali-school1660440-2ed04e4c.koyeb.app/dl/689740fb0dc4ac1ee4952470">
-                <button id="loadBtn">Load Video</button>
+        <!-- Video Player -->
+        <div class="relative w-full">
+            <video id="video" controls class="w-full h-auto rounded-t-lg bg-black"></video>
+            <!-- Overlay for error messages -->
+            <div id="error-message" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 text-red-400 text-lg font-semibold hidden">
+                <p>Error loading video. Please check the URL.</p>
             </div>
-            <div id="errorMessage" class="error-message"></div>
         </div>
 
-        <div class="player-section">
-            <video id="videoPlayer" controls preload="metadata">
-                <source id="videoSource" src="https://xenophobic-hali-school1660440-2ed04e4c.koyeb.app/dl/689740fb0dc4ac1ee4952470" type="video/mp4">
-                Your browser does not support the video tag.
-            </video>
+        <!-- Controls Section -->
+        <div class="p-4 space-y-4">
+            <!-- URL Input and Load Button -->
+            <div class="flex flex-col sm:flex-row gap-2">
+                <input type="text" id="url-input" placeholder="Enter a video URL" class="flex-grow p-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button id="load-btn" class="p-3 rounded-lg bg-blue-600 hover:bg-blue-700 transition-colors duration-200 font-semibold">Load</button>
+            </div>
+            
+            <!-- Audio Track Button -->
+            <div class="flex justify-center">
+                <button id="audio-track-btn" class="w-full sm:w-1/2 p-3 rounded-lg bg-green-600 hover:bg-green-700 transition-colors duration-200 font-semibold">
+                    Select Audio Track
+                </button>
+            </div>
         </div>
 
-        <div class="controls-section">
-            <div class="controls-grid">
-                <div class="control-group">
-                    <h4>Audio Track Selection</h4>
-                    <select id="audioTrackSelect">
-                        <option value="">Loading audio tracks...</option>
-                    </select>
-                    <button id="refreshTracksBtn">Refresh Audio Tracks</button>
-                </div>
+    </div>
 
-                <div class="control-group audio-track-info">
-                    <h4>Current Track Info</h4>
-                    <div id="currentTrackInfo">
-                        <span class="status-indicator"></span>
-                        <span id="trackStatus">Loading video...</span>
-                    </div>
-                    <div id="trackDetails" class="track-details"></div>
-                </div>
+    <!-- Audio Track Selection Modal -->
+    <div id="audio-track-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden">
+        <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto scrollbar-hide">
+            <h2 class="text-2xl font-bold mb-4 border-b border-gray-700 pb-2">Select Audio Track</h2>
+            <ul id="audio-track-list" class="space-y-2 mb-4">
+                <!-- Audio tracks will be dynamically inserted here -->
+            </ul>
+            <div class="flex justify-end gap-2 border-t border-gray-700 pt-4">
+                <button id="modal-cancel-btn" class="p-2 px-4 rounded-lg bg-gray-600 hover:bg-gray-700 transition-colors duration-200">Cancel</button>
+                <button id="modal-ok-btn" class="p-2 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 transition-colors duration-200">OK</button>
             </div>
         </div>
     </div>
 
     <script>
-        class VideoPlayer {
-            constructor() {
-                this.video = document.getElementById('videoPlayer');
-                this.audioTrackSelect = document.getElementById('audioTrackSelect');
-                this.currentTrackInfo = document.getElementById('trackStatus');
-                this.trackDetails = document.getElementById('trackDetails');
-                this.urlInput = document.getElementById('urlInput');
-                this.loadBtn = document.getElementById('loadBtn');
-                this.refreshBtn = document.getElementById('refreshTracksBtn');
-                this.errorMessage = document.getElementById('errorMessage');
-                
-                this.init();
-            }
+        const defaultUrl = 'https://xenophobic-hali-school1660440-2ed04e4c.koyeb.app/dl/689740fb0dc4ac1ee4952470';
+        const video = document.getElementById('video');
+        const urlInput = document.getElementById('url-input');
+        const loadBtn = document.getElementById('load-btn');
+        const audioTrackBtn = document.getElementById('audio-track-btn');
+        const audioTrackModal = document.getElementById('audio-track-modal');
+        const audioTrackList = document.getElementById('audio-track-list');
+        const modalCancelBtn = document.getElementById('modal-cancel-btn');
+        const modalOkBtn = document.getElementById('modal-ok-btn');
+        const errorMessage = document.getElementById('error-message');
+        
+        let hls;
+        let selectedTrackIndex = -1;
 
-            init() {
-                this.setupEventListeners();
-                this.loadDefaultVideo();
-            }
+        // Function to hide error message
+        const hideError = () => {
+            errorMessage.classList.add('hidden');
+        };
 
-            setupEventListeners() {
-                this.video.addEventListener('loadedmetadata', () => this.updateAudioTracks());
-                this.video.addEventListener('loadstart', () => this.showLoading());
-                this.video.addEventListener('canplay', () => this.hideLoading());
-                this.video.addEventListener('error', (e) => this.handleVideoError(e));
+        // Function to show error message
+        const showError = () => {
+            errorMessage.classList.remove('hidden');
+        };
+
+        // Function to load the video stream
+        const loadVideo = (url) => {
+            hideError();
+            if (Hls.isSupported()) {
+                if (hls) {
+                    hls.destroy(); // Destroy previous instance if it exists
+                }
+                hls = new Hls();
+                hls.attachMedia(video);
+                hls.loadSource(url);
                 
-                this.audioTrackSelect.addEventListener('change', (e) => this.changeAudioTrack(e));
-                this.loadBtn.addEventListener('click', () => this.loadNewVideo());
-                this.refreshBtn.addEventListener('click', () => this.refreshAudioTracks());
-                
-                this.urlInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') this.loadNewVideo();
+                hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+                    console.log('Manifest parsed. Available audio tracks:', data.audioTracks);
+                    audioTrackBtn.disabled = false;
+                    audioTrackBtn.classList.remove('bg-gray-600');
+                    audioTrackBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                    populateAudioTrackModal(data.audioTracks);
                 });
-            }
 
-            showLoading() {
-                this.currentTrackInfo.innerHTML = '<span class="loading"></span>Loading video...';
-                this.loadBtn.innerHTML = '<span class="loading"></span>Loading...';
-                this.loadBtn.disabled = true;
-            }
-
-            hideLoading() {
-                this.loadBtn.innerHTML = 'Load Video';
-                this.loadBtn.disabled = false;
-                this.hideError();
-            }
-
-            showError(message) {
-                this.errorMessage.textContent = message;
-                this.errorMessage.style.display = 'block';
-                setTimeout(() => this.hideError(), 5000);
-            }
-
-            hideError() {
-                this.errorMessage.style.display = 'none';
-            }
-
-            handleVideoError(e) {
-                this.hideLoading();
-                const error = this.video.error;
-                let message = 'Failed to load video. ';
-                
-                if (error) {
-                    switch(error.code) {
-                        case error.MEDIA_ERR_ABORTED:
-                            message += 'Video loading was aborted.';
-                            break;
-                        case error.MEDIA_ERR_NETWORK:
-                            message += 'Network error occurred.';
-                            break;
-                        case error.MEDIA_ERR_DECODE:
-                            message += 'Video decoding failed.';
-                            break;
-                        case error.MEDIA_ERR_SRC_NOT_SUPPORTED:
-                            message += 'Video format not supported.';
-                            break;
-                        default:
-                            message += 'Unknown error occurred.';
+                hls.on(Hls.Events.ERROR, (event, data) => {
+                    console.error('HLS.js error:', data);
+                    if (data.fatal) {
+                        showError();
                     }
-                }
-                
-                this.showError(message);
-                this.currentTrackInfo.textContent = 'Error loading video';
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                // Fallback for native HLS support (Safari)
+                video.src = url;
+                audioTrackBtn.disabled = true; // Disable track selection as it's not supported natively
+                audioTrackBtn.classList.add('bg-gray-600');
+                audioTrackBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+            } else {
+                showError();
+                console.error('HLS is not supported on this browser.');
             }
+        };
 
-            loadDefaultVideo() {
-                this.updateAudioTracks();
-            }
+        // Function to populate the modal with audio tracks
+        const populateAudioTrackModal = (tracks) => {
+            audioTrackList.innerHTML = '';
+            tracks.forEach((track, index) => {
+                const isSelected = index === (hls ? hls.audioTrack : 0);
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <label class="flex items-center space-x-3 p-3 cursor-pointer rounded-lg hover:bg-gray-700 transition-colors duration-200">
+                        <input type="radio" name="audio-track" value="${index}" ${isSelected ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 focus:ring-blue-500">
+                        <span class="text-sm font-medium">${track.name || 'Track ' + (index + 1)}</span>
+                    </label>
+                `;
+                audioTrackList.appendChild(li);
+            });
+        };
 
-            loadNewVideo() {
-                const url = this.urlInput.value.trim();
-                
-                if (!url) {
-                    this.showError('Please enter a valid video URL');
-                    return;
-                }
+        // Function to show the modal
+        const showModal = () => {
+            audioTrackModal.classList.remove('hidden');
+        };
 
-                if (!this.isValidUrl(url)) {
-                    this.showError('Please enter a valid URL (must start with http:// or https://)');
-                    return;
-                }
+        // Function to hide the modal
+        const hideModal = () => {
+            audioTrackModal.classList.add('hidden');
+        };
 
-                this.video.src = url;
-                document.getElementById('videoSource').src = url;
-                this.video.load();
-            }
-
-            isValidUrl(string) {
-                try {
-                    new URL(string);
-                    return string.startsWith('http://') || string.startsWith('https://');
-                } catch (_) {
-                    return false;
-                }
-            }
-
-            updateAudioTracks() {
-                const audioTracks = this.video.audioTracks;
-                this.audioTrackSelect.innerHTML = '';
-                
-                if (audioTracks && audioTracks.length > 0) {
-                    // Add default option
-                    const defaultOption = document.createElement('option');
-                    defaultOption.value = '';
-                    defaultOption.textContent = 'Default Audio Track';
-                    this.audioTrackSelect.appendChild(defaultOption);
-                    
-                    // Add each audio track
-                    for (let i = 0; i < audioTracks.length; i++) {
-                        const track = audioTracks[i];
-                        const option = document.createElement('option');
-                        option.value = i;
-                        option.textContent = `Track ${i + 1}: ${track.label || track.language || 'Unknown'}`;
-                        this.audioTrackSelect.appendChild(option);
-                        
-                        if (track.enabled) {
-                            option.selected = true;
-                        }
-                    }
-                    
-                    this.currentTrackInfo.innerHTML = `
-                        <span class="status-indicator"></span>
-                        Found ${audioTracks.length} audio track${audioTracks.length > 1 ? 's' : ''}
-                    `;
-                    
-                    this.updateTrackDetails();
-                } else {
-                    // Fallback for browsers that don't support audioTracks API
-                    this.audioTrackSelect.innerHTML = '<option value="">Default Audio (Track info not available)</option>';
-                    this.currentTrackInfo.innerHTML = `
-                        <span class="status-indicator"></span>
-                        Audio tracks detected (use browser controls if available)
-                    `;
-                    this.trackDetails.innerHTML = `
-                        <div class="track-detail">
-                            <strong>Note:</strong> This browser may not support the Audio Track API. 
-                            Try right-clicking on the video for additional audio options.
-                        </div>
-                    `;
-                }
-            }
-
-            updateTrackDetails() {
-                const audioTracks = this.video.audioTracks;
-                if (!audioTracks || audioTracks.length === 0) return;
-                
-                let detailsHTML = '';
-                for (let i = 0; i < audioTracks.length; i++) {
-                    const track = audioTracks[i];
-                    const isActive = track.enabled;
-                    
-                    detailsHTML += `
-                        <div class="track-detail" style="${isActive ? 'border-left: 3px solid #28a745;' : ''}">
-                            <strong>Track ${i + 1}:</strong> ${track.label || 'Unnamed'}
-                            ${track.language ? `<br><strong>Language:</strong> ${track.language}` : ''}
-                            ${isActive ? '<br><strong>Status:</strong> Active' : ''}
-                        </div>
-                    `;
-                }
-                
-                this.trackDetails.innerHTML = detailsHTML;
-            }
-
-            changeAudioTrack(event) {
-                const selectedIndex = event.target.value;
-                const audioTracks = this.video.audioTracks;
-                
-                if (!audioTracks || audioTracks.length === 0) {
-                    this.showError('Audio tracks not available in this browser');
-                    return;
-                }
-
-                // Disable all tracks first
-                for (let i = 0; i < audioTracks.length; i++) {
-                    audioTracks[i].enabled = false;
-                }
-
-                // Enable selected track
-                if (selectedIndex !== '') {
-                    const trackIndex = parseInt(selectedIndex);
-                    if (trackIndex >= 0 && trackIndex < audioTracks.length) {
-                        audioTracks[trackIndex].enabled = true;
-                        this.currentTrackInfo.innerHTML = `
-                            <span class="status-indicator"></span>
-                            Switched to Track ${trackIndex + 1}
-                        `;
-                    }
-                } else {
-                    // Enable first track as default
-                    if (audioTracks.length > 0) {
-                        audioTracks[0].enabled = true;
-                    }
-                    this.currentTrackInfo.innerHTML = `
-                        <span class="status-indicator"></span>
-                        Using default audio track
-                    `;
-                }
-                
-                this.updateTrackDetails();
-            }
-
-            refreshAudioTracks() {
-                this.currentTrackInfo.innerHTML = '<span class="loading"></span>Refreshing tracks...';
-                setTimeout(() => {
-                    this.updateAudioTracks();
-                }, 500);
-            }
-        }
-
-        // Initialize the video player when page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            new VideoPlayer();
+        // Event listeners
+        window.addEventListener('load', () => {
+            urlInput.value = defaultUrl;
+            loadVideo(defaultUrl);
         });
+
+        loadBtn.addEventListener('click', () => {
+            const newUrl = urlInput.value.trim();
+            if (newUrl) {
+                loadVideo(newUrl);
+            }
+        });
+
+        audioTrackBtn.addEventListener('click', () => {
+            if (hls && hls.audioTracks.length > 1) {
+                populateAudioTrackModal(hls.audioTracks);
+                selectedTrackIndex = hls.audioTrack;
+                showModal();
+            } else {
+                console.warn('No HLS instance or only one audio track available.');
+            }
+        });
+
+        modalCancelBtn.addEventListener('click', () => {
+            hideModal();
+        });
+
+        modalOkBtn.addEventListener('click', () => {
+            const selectedRadio = audioTrackList.querySelector('input[name="audio-track"]:checked');
+            if (selectedRadio && hls) {
+                const newTrackIndex = parseInt(selectedRadio.value, 10);
+                if (hls.audioTrack !== newTrackIndex) {
+                    hls.audioTrack = newTrackIndex;
+                }
+            }
+            hideModal();
+        });
+
     </script>
+
 </body>
 </html>
+

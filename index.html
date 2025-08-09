@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Advanced HLS Video Player</title>
+    <!-- Use Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Include HLS.js for handling adaptive video streams -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,10 +14,7 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
-        /* Custom scrollbar for the modals */
         .scrollbar-hide::-webkit-scrollbar {
             display: none;
         }
@@ -25,22 +24,32 @@
         }
     </style>
 </head>
-<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen p-4 sm:p-6">
+<body class="bg-gray-900 text-gray-100 flex items-center justify-center min-h-screen p-4">
 
-    <div class="w-full max-w-4xl bg-gray-800 rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-300 scale-100">
-        
-        <!-- Video Player Container -->
-        <div class="relative w-full aspect-video bg-black rounded-t-2xl">
-            <video id="video" controls class="w-full h-full object-contain rounded-t-2xl"></video>
-            <!-- Error/Loading Overlay -->
+    <!-- Main container for the video player -->
+    <div class="w-full max-w-4xl bg-gray-800 rounded-2xl shadow-2xl overflow-hidden p-6 space-y-6">
+
+        <header class="text-center">
+            <h1 class="text-4xl font-extrabold text-blue-400">Web Video Player</h1>
+            <p class="mt-2 text-lg text-gray-400">Streaming content directly from the URL</p>
+        </header>
+
+        <!-- Video player container -->
+        <div class="relative w-full pb-[56.25%] rounded-xl overflow-hidden">
+            <video
+                id="myVideoPlayer"
+                controls
+                playsinline
+                class="absolute top-0 left-0 w-full h-full object-cover rounded-xl"
+            ></video>
+            <!-- Overlay for loading and error messages -->
             <div id="overlay" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 transition-opacity duration-300">
                 <p id="overlay-text" class="text-white text-lg font-semibold text-center p-4">Loading video...</p>
             </div>
         </div>
 
-        <!-- Controls Section -->
-        <div class="p-4 sm:p-6 space-y-4">
-            
+        <!-- Controls for URL, Quality, and Audio Tracks -->
+        <div class="space-y-4 mt-6">
             <!-- URL Input and Load Button -->
             <div class="flex flex-col sm:flex-row gap-2">
                 <input type="text" id="url-input" placeholder="Enter a video URL (e.g., HLS .m3u8)" class="flex-grow p-3 rounded-xl bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -62,14 +71,12 @@
 
     </div>
 
-    <!-- Modals -->
+    <!-- Modals for Selection -->
     <!-- Quality Selection Modal -->
     <div id="quality-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden z-50">
         <div class="bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto scrollbar-hide border border-gray-700">
             <h2 class="text-2xl font-bold mb-4 border-b border-gray-700 pb-2">Select Quality</h2>
-            <ul id="quality-list" class="space-y-2 mb-4">
-                <!-- Quality options will be dynamically inserted here -->
-            </ul>
+            <ul id="quality-list" class="space-y-2 mb-4"></ul>
             <div class="flex justify-end gap-2 border-t border-gray-700 pt-4">
                 <button id="quality-cancel-btn" class="p-2 px-4 rounded-xl bg-gray-600 hover:bg-gray-700 transition-colors duration-200">Cancel</button>
                 <button id="quality-ok-btn" class="p-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors duration-200">OK</button>
@@ -81,9 +88,7 @@
     <div id="audio-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden z-50">
         <div class="bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto scrollbar-hide border border-gray-700">
             <h2 class="text-2xl font-bold mb-4 border-b border-gray-700 pb-2">Select Audio Track</h2>
-            <ul id="audio-list" class="space-y-2 mb-4">
-                <!-- Audio tracks will be dynamically inserted here -->
-            </ul>
+            <ul id="audio-list" class="space-y-2 mb-4"></ul>
             <div class="flex justify-end gap-2 border-t border-gray-700 pt-4">
                 <button id="audio-cancel-btn" class="p-2 px-4 rounded-xl bg-gray-600 hover:bg-gray-700 transition-colors duration-200">Cancel</button>
                 <button id="audio-ok-btn" class="p-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors duration-200">OK</button>
@@ -93,7 +98,7 @@
 
     <script>
         const defaultUrl = 'https://xenophobic-hali-school1660440-2ed04e4c.koyeb.app/dl/689740fb0dc4ac1ee4952470';
-        const video = document.getElementById('video');
+        const video = document.getElementById('myVideoPlayer');
         const urlInput = document.getElementById('url-input');
         const loadBtn = document.getElementById('load-btn');
         const overlay = document.getElementById('overlay');
@@ -112,8 +117,6 @@
         const audioCancelBtn = document.getElementById('audio-cancel-btn');
         
         let hls;
-        let selectedQualityIndex = -1;
-        let selectedAudioIndex = -1;
 
         // Function to show/hide the loading overlay
         const showOverlay = (text) => {
@@ -156,22 +159,19 @@
                 hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
                     console.log('Manifest parsed. Video has been loaded successfully.');
                     hideOverlay();
-                    enableControls();
                     video.play();
+                    
+                    // Populate and enable buttons
                     populateQualityModal(data.levels);
                     populateAudioModal(data.audioTracks);
+                    enableControls();
                 });
 
                 hls.on(Hls.Events.ERROR, (event, data) => {
                     console.error('HLS.js error:', data);
                     if (data.fatal) {
                         showOverlay('Error loading video. Please check the URL or try again.');
-                        // Try to recover from a fatal error
-                        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-                             hls.startLoad();
-                        } else {
-                            hls.destroy();
-                        }
+                        hls.destroy();
                     }
                 });
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
@@ -247,7 +247,6 @@
         });
 
         qualityBtn.addEventListener('click', () => {
-            selectedQualityIndex = hls.currentLevel;
             qualityModal.classList.remove('hidden');
         });
 
@@ -267,7 +266,6 @@
         });
 
         audioBtn.addEventListener('click', () => {
-            selectedAudioIndex = hls.audioTrack;
             audioModal.classList.remove('hidden');
         });
 

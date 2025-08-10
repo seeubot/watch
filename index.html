@@ -1,76 +1,232 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Universal Video Player</title>
-  <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.8"></script>
-  <script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
-</head>
-<body>
-  <h3>Streaming URL:</h3>
-  <input type="text" id="urlInput"
-         value="https://xenophobic-hali-school1660440-2ed04e4c.koyeb.app/dl/689740fb0dc4ac1ee4952470"
-         style="width:90%;" />
-  <button onclick="loadVideo()">Play</button>
-
-  <video
-    id="player"
-    class="video-js vjs-default-skin"
-    width="640"
-    height="360"
-    controls
-    preload="auto"></video>
-
-  <label for="audioTracksSelect">Audio Track:</label>
-  <select id="audioTracksSelect"></select>
-
-  <script>
-    let player = videojs('player', {
-      techOrder: ['html5'],
-    });
-
-    function loadVideo() {
-      let url = document.getElementById('urlInput').value;
-      // Reset player
-      player.reset();
-      if (url.endsWith('.m3u8')) {
-        // HLS.js integration for m3u8
-        if (Hls.isSupported()) {
-          let hls = new Hls();
-          hls.loadSource(url);
-          hls.attachMedia(player.el().querySelector('video'));
-          hls.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
-            loadAudioTracks(hls.audioTracks);
-            player.play();
-          });
-          // Listen for audio track changes
-          document.getElementById('audioTracksSelect').onchange = function(e) {
-            hls.audioTrack = e.target.value;
-          };
-        } else if (player.el().querySelector('video').canPlayType('application/vnd.apple.mpegurl')) {
-          player.src({type: 'application/x-mpegURL', src: url});
-          player.play();
-        } else {
-          alert('HLS not supported.');
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Player with Dynamic Options</title>
+    <!-- Tailwind CSS for modern, responsive styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
         }
-      } else {
-        // Standard video formats (mp4, mkv, ts)
-        player.src({type: 'video/mp4', src: url});
-        player.play();
-      }
-    }
+        .shaka-player-container {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+        }
+        .shaka-player-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+    <!-- Shaka Player and UI library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.7/shaka-player.ui.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.7/controls.css">
+</head>
+<body class="bg-gray-900 text-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="w-full max-w-4xl bg-gray-800 rounded-lg shadow-2xl p-6 space-y-6">
+        <h1 class="text-3xl font-bold text-center text-red-500">Shaka Player Demo</h1>
 
-    function loadAudioTracks(tracks) {
-      let select = document.getElementById('audioTracksSelect');
-      select.innerHTML = '';
-      tracks.forEach((track, idx) => {
-        let opt = document.createElement('option');
-        opt.value = idx;
-        opt.text = track.name || track.lang || 'Track ' + (idx + 1);
-        select.appendChild(opt);
-      });
-    }
-  </script>
+        <!-- Status Message Box -->
+        <div id="status-message" class="bg-gray-700 text-center p-3 rounded-md text-sm transition-opacity duration-300 opacity-100">
+            Enter a manifest URL and press Load.
+        </div>
+
+        <!-- URL Input and Load Button -->
+        <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+            <input type="text" id="manifest-url-input" class="flex-grow p-3 rounded-md bg-gray-700 text-gray-100 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500" placeholder="Enter manifest URL here...">
+            <button id="load-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-md transition-colors duration-300">
+                Load
+            </button>
+        </div>
+
+        <!-- Video Player Container -->
+        <div class="player-container relative w-full rounded-lg overflow-hidden bg-black shadow-inner">
+            <video id="video-player" class="w-full h-full" poster="https://placehold.co/1280x720/1f2937/d1d5db?text=Shaka+Player"></video>
+            <!-- Shaka Player's built-in controls will be overlaid here -->
+        </div>
+
+        <!-- Dynamic Controls -->
+        <div class="flex flex-wrap items-center justify-center sm:justify-start gap-4">
+            <!-- Quality Selection Dropdown -->
+            <div class="relative group">
+                <button class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-red-500 flex items-center space-x-2">
+                    <span>Quality</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <div id="quality-menu" class="absolute hidden group-hover:block bg-gray-700 rounded-md shadow-lg min-w-[150px] z-10 bottom-full mb-2">
+                    <!-- Options will be populated here by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Audio Tracks Dropdown -->
+            <div class="relative group">
+                <button class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-red-500 flex items-center space-x-2">
+                    <span>Audio Tracks</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <div id="audio-menu" class="absolute hidden group-hover:block bg-gray-700 rounded-md shadow-lg min-w-[150px] z-10 bottom-full mb-2">
+                    <!-- Options will be populated here by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Use a self-executing function to avoid polluting the global scope.
+        (function() {
+            const defaultManifestUri = 'https://storage.googleapis.com/shaka-demo-assets/bbb-mp4-h264-multi-lang/bbb-mp4-h264-multi-lang.mpd';
+            const video = document.getElementById('video-player');
+            const urlInput = document.getElementById('manifest-url-input');
+            const loadBtn = document.getElementById('load-btn');
+            const statusMessage = document.getElementById('status-message');
+            const qualityMenu = document.getElementById('quality-menu');
+            const audioMenu = document.getElementById('audio-menu');
+
+            let player = null;
+
+            // Display status messages
+            function showStatus(message, isError = false) {
+                statusMessage.textContent = message;
+                statusMessage.className = `p-3 rounded-md text-sm transition-opacity duration-300 opacity-100 ${isError ? 'bg-red-800 text-white' : 'bg-gray-700 text-gray-100'}`;
+            }
+
+            // Initialize Shaka Player
+            async function initPlayer() {
+                // Install Shaka's polyfills for maximum browser compatibility
+                shaka.polyfill.installAll();
+
+                // Check if the browser supports Shaka Player
+                if (!shaka.Player.is){
+                     showStatus('Shaka Player is not supported by your browser.', true);
+                     return;
+                }
+
+                player = new shaka.Player(video);
+
+                // Use Shaka's built-in UI for controls, as it handles most of the logic.
+                const ui = new shaka.ui.Overlay(player, video, document.querySelector('.player-container'));
+
+                // Listen for player errors
+                player.addEventListener('error', onPlayerError);
+
+                // Populate quality and audio menus when the manifest is loaded
+                player.addEventListener('loaded', () => {
+                    populateAudioTracks(player);
+                    populateVideoQualities(player);
+                    showStatus('Video loaded successfully!');
+                });
+
+                // Load the default manifest on startup
+                urlInput.value = defaultManifestUri;
+                await loadManifest(defaultManifestUri);
+            }
+
+            // Handle player errors
+            function onPlayerError(event) {
+                const error = event.detail;
+                console.error('Shaka Player Error:', error);
+                showStatus(`Error: ${error.code} - ${error.severity}`, true);
+            }
+
+            // Function to load a manifest
+            async function loadManifest(manifestUri) {
+                try {
+                    showStatus('Loading video...');
+                    await player.load(manifestUri);
+                } catch (error) {
+                    onPlayerError(new shaka.util.FakeEvent('error', { detail: error }));
+                }
+            }
+
+            // Populate the audio track menu
+            function populateAudioTracks(player) {
+                const audioTracks = player.getAudioLanguagesAndRoles();
+                audioMenu.innerHTML = '';
+                
+                // Add a "None" or "Mute" option
+                const muteOption = document.createElement('a');
+                muteOption.href = '#';
+                muteOption.className = 'block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 rounded-md cursor-pointer';
+                muteOption.textContent = 'Mute';
+                muteOption.addEventListener('click', () => {
+                    video.muted = true;
+                });
+                audioMenu.appendChild(muteOption);
+
+                // Add each audio track as a menu item
+                audioTracks.forEach(track => {
+                    const trackOption = document.createElement('a');
+                    trackOption.href = '#';
+                    trackOption.className = 'block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 rounded-md cursor-pointer';
+                    trackOption.textContent = `${track.language.toUpperCase()} (${track.role || 'Main'})`;
+                    trackOption.addEventListener('click', () => {
+                        video.muted = false;
+                        player.selectAudioLanguage(track.language, track.role);
+                        showStatus(`Selected audio track: ${track.language}`);
+                    });
+                    audioMenu.appendChild(trackOption);
+                });
+            }
+
+            // Populate the video quality menu
+            function populateVideoQualities(player) {
+                const variantTracks = player.getVariantTracks();
+                qualityMenu.innerHTML = '';
+                
+                // Add an "Auto" option
+                const autoOption = document.createElement('a');
+                autoOption.href = '#';
+                autoOption.className = 'block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 rounded-md cursor-pointer';
+                autoOption.textContent = 'Auto';
+                autoOption.addEventListener('click', () => {
+                    player.configure({abr: {enabled: true}});
+                    showStatus('Automatic quality selection enabled.');
+                });
+                qualityMenu.appendChild(autoOption);
+                
+                // Sort tracks by resolution height
+                variantTracks.sort((a, b) => b.height - a.height);
+
+                // Add each quality as a menu item
+                variantTracks.forEach(track => {
+                    if (track.type === 'variant' && track.height) {
+                        const qualityOption = document.createElement('a');
+                        qualityOption.href = '#';
+                        qualityOption.className = 'block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 rounded-md cursor-pointer';
+                        qualityOption.textContent = `${track.height}p`;
+                        qualityOption.addEventListener('click', () => {
+                            player.configure({abr: {enabled: false}});
+                            player.selectVariantTrack(track, true);
+                            showStatus(`Selected quality: ${track.height}p`);
+                        });
+                        qualityMenu.appendChild(qualityOption);
+                    }
+                });
+            }
+
+            // Event listener for the Load button
+            loadBtn.addEventListener('click', () => {
+                const url = urlInput.value;
+                if (url) {
+                    loadManifest(url);
+                } else {
+                    showStatus('Please enter a valid URL.', true);
+                }
+            });
+
+            // Initialize on page load
+            document.addEventListener('DOMContentLoaded', initPlayer);
+        })();
+    </script>
 </body>
 </html>
+

@@ -3,230 +3,289 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Player with Dynamic Options</title>
-    <!-- Tailwind CSS for modern, responsive styling -->
+    <title>Advanced HLS Video Player</title>
+    <!-- Use Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Include HLS.js for handling adaptive video streams -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
         }
-        .shaka-player-container {
-            position: relative;
-            width: 100%;
-            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
         }
-        .shaka-player-video {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+        .scrollbar-hide {
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
         }
     </style>
-    <!-- Shaka Player and UI library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.7/shaka-player.ui.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.7/controls.css">
 </head>
 <body class="bg-gray-900 text-gray-100 flex items-center justify-center min-h-screen p-4">
-    <div class="w-full max-w-4xl bg-gray-800 rounded-lg shadow-2xl p-6 space-y-6">
-        <h1 class="text-3xl font-bold text-center text-red-500">Shaka Player Demo</h1>
 
-        <!-- Status Message Box -->
-        <div id="status-message" class="bg-gray-700 text-center p-3 rounded-md text-sm transition-opacity duration-300 opacity-100">
-            Enter a manifest URL and press Load.
-        </div>
+    <!-- Main container for the video player -->
+    <div class="w-full max-w-4xl bg-gray-800 rounded-2xl shadow-2xl overflow-hidden p-6 space-y-6">
 
-        <!-- URL Input and Load Button -->
-        <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-            <input type="text" id="manifest-url-input" class="flex-grow p-3 rounded-md bg-gray-700 text-gray-100 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500" placeholder="Enter manifest URL here...">
-            <button id="load-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-md transition-colors duration-300">
-                Load
-            </button>
-        </div>
+        <header class="text-center">
+            <h1 class="text-4xl font-extrabold text-blue-400">Web Video Player</h1>
+            <p class="mt-2 text-lg text-gray-400">Streaming content directly from the URL</p>
+        </header>
 
-        <!-- Video Player Container -->
-        <div class="player-container relative w-full rounded-lg overflow-hidden bg-black shadow-inner">
-            <video id="video-player" class="w-full h-full" poster="https://placehold.co/1280x720/1f2937/d1d5db?text=Shaka+Player"></video>
-            <!-- Shaka Player's built-in controls will be overlaid here -->
-        </div>
-
-        <!-- Dynamic Controls -->
-        <div class="flex flex-wrap items-center justify-center sm:justify-start gap-4">
-            <!-- Quality Selection Dropdown -->
-            <div class="relative group">
-                <button class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-red-500 flex items-center space-x-2">
-                    <span>Quality</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
-                <div id="quality-menu" class="absolute hidden group-hover:block bg-gray-700 rounded-md shadow-lg min-w-[150px] z-10 bottom-full mb-2">
-                    <!-- Options will be populated here by JavaScript -->
-                </div>
+        <!-- Video player container -->
+        <div class="relative w-full pb-[56.25%] rounded-xl overflow-hidden">
+            <video
+                id="myVideoPlayer"
+                controls
+                playsinline
+                class="absolute top-0 left-0 w-full h-full object-cover rounded-xl"
+            ></video>
+            <!-- Overlay for loading and error messages -->
+            <div id="overlay" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 transition-opacity duration-300">
+                <p id="overlay-text" class="text-white text-lg font-semibold text-center p-4">Loading video...</p>
             </div>
+        </div>
 
-            <!-- Audio Tracks Dropdown -->
-            <div class="relative group">
-                <button class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-red-500 flex items-center space-x-2">
-                    <span>Audio Tracks</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
+        <!-- Controls for URL, Quality, and Audio Tracks -->
+        <div class="space-y-4 mt-6">
+            <!-- URL Input and Load Button -->
+            <div class="flex flex-col sm:flex-row gap-2">
+                <input type="text" id="url-input" placeholder="Enter a video URL (e.g., HLS .m3u8)" class="flex-grow p-3 rounded-xl bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button id="load-btn" class="p-3 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors duration-200 font-semibold shadow-md">
+                    Load Video
                 </button>
-                <div id="audio-menu" class="absolute hidden group-hover:block bg-gray-700 rounded-md shadow-lg min-w-[150px] z-10 bottom-full mb-2">
-                    <!-- Options will be populated here by JavaScript -->
-                </div>
+            </div>
+            
+            <!-- Quality and Audio Track Buttons -->
+            <div class="flex flex-row gap-2 justify-center">
+                <button id="quality-btn" class="w-1/2 p-3 rounded-xl bg-purple-600 hover:bg-purple-700 transition-colors duration-200 font-semibold shadow-md disabled:bg-gray-600 disabled:cursor-not-allowed" disabled>
+                    Select Quality
+                </button>
+                <button id="audio-btn" class="w-1/2 p-3 rounded-xl bg-green-600 hover:bg-green-700 transition-colors duration-200 font-semibold shadow-md disabled:bg-gray-600 disabled:cursor-not-allowed" disabled>
+                    Select Audio Track
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modals for Selection -->
+    <!-- Quality Selection Modal -->
+    <div id="quality-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto scrollbar-hide border border-gray-700">
+            <h2 class="text-2xl font-bold mb-4 border-b border-gray-700 pb-2">Select Quality</h2>
+            <ul id="quality-list" class="space-y-2 mb-4"></ul>
+            <div class="flex justify-end gap-2 border-t border-gray-700 pt-4">
+                <button id="quality-cancel-btn" class="p-2 px-4 rounded-xl bg-gray-600 hover:bg-gray-700 transition-colors duration-200">Cancel</button>
+                <button id="quality-ok-btn" class="p-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors duration-200">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio Track Selection Modal -->
+    <div id="audio-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto scrollbar-hide border border-gray-700">
+            <h2 class="text-2xl font-bold mb-4 border-b border-gray-700 pb-2">Select Audio Track</h2>
+            <ul id="audio-list" class="space-y-2 mb-4"></ul>
+            <div class="flex justify-end gap-2 border-t border-gray-700 pt-4">
+                <button id="audio-cancel-btn" class="p-2 px-4 rounded-xl bg-gray-600 hover:bg-gray-700 transition-colors duration-200">Cancel</button>
+                <button id="audio-ok-btn" class="p-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors duration-200">OK</button>
             </div>
         </div>
     </div>
 
     <script>
-        // Use a self-executing function to avoid polluting the global scope.
-        (function() {
-            const defaultManifestUri = 'https://storage.googleapis.com/shaka-demo-assets/bbb-mp4-h264-multi-lang/bbb-mp4-h264-multi-lang.mpd';
-            const video = document.getElementById('video-player');
-            const urlInput = document.getElementById('manifest-url-input');
-            const loadBtn = document.getElementById('load-btn');
-            const statusMessage = document.getElementById('status-message');
-            const qualityMenu = document.getElementById('quality-menu');
-            const audioMenu = document.getElementById('audio-menu');
+        const defaultUrl = 'https://xenophobic-hali-school1660440-2ed04e4c.koyeb.app/dl/689740fb0dc4ac1ee4952470';
+        const video = document.getElementById('myVideoPlayer');
+        const urlInput = document.getElementById('url-input');
+        const loadBtn = document.getElementById('load-btn');
+        const overlay = document.getElementById('overlay');
+        const overlayText = document.getElementById('overlay-text');
 
-            let player = null;
+        const qualityBtn = document.getElementById('quality-btn');
+        const qualityModal = document.getElementById('quality-modal');
+        const qualityList = document.getElementById('quality-list');
+        const qualityOkBtn = document.getElementById('quality-ok-btn');
+        const qualityCancelBtn = document.getElementById('quality-cancel-btn');
 
-            // Display status messages
-            function showStatus(message, isError = false) {
-                statusMessage.textContent = message;
-                statusMessage.className = `p-3 rounded-md text-sm transition-opacity duration-300 opacity-100 ${isError ? 'bg-red-800 text-white' : 'bg-gray-700 text-gray-100'}`;
+        const audioBtn = document.getElementById('audio-btn');
+        const audioModal = document.getElementById('audio-modal');
+        const audioList = document.getElementById('audio-list');
+        const audioOkBtn = document.getElementById('audio-ok-btn');
+        const audioCancelBtn = document.getElementById('audio-cancel-btn');
+        
+        let hls;
+
+        // Function to show/hide the loading overlay
+        const showOverlay = (text) => {
+            overlayText.textContent = text;
+            overlay.classList.remove('hidden');
+        };
+
+        const hideOverlay = () => {
+            overlay.classList.add('hidden');
+        };
+
+        // Function to disable control buttons
+        const disableControls = () => {
+            qualityBtn.disabled = true;
+            audioBtn.disabled = true;
+        };
+
+        // Function to enable control buttons
+        const enableControls = () => {
+            qualityBtn.disabled = hls.levels.length <= 1;
+            audioBtn.disabled = hls.audioTracks.length <= 1;
+        };
+
+        // Function to load and play the HLS video
+        const loadVideo = (url) => {
+            showOverlay('Loading video...');
+            disableControls();
+            
+            // Destroy existing Hls instance if it exists
+            if (hls) {
+                hls.destroy();
+                hls = null;
             }
 
-            // Initialize Shaka Player
-            async function initPlayer() {
-                // Install Shaka's polyfills for maximum browser compatibility
-                shaka.polyfill.installAll();
+            if (Hls.isSupported()) {
+                hls = new Hls();
+                hls.attachMedia(video);
+                hls.loadSource(url);
 
-                // Check if the browser supports Shaka Player
-                if (!shaka.Player.is){
-                     showStatus('Shaka Player is not supported by your browser.', true);
-                     return;
-                }
-
-                player = new shaka.Player(video);
-
-                // Use Shaka's built-in UI for controls, as it handles most of the logic.
-                const ui = new shaka.ui.Overlay(player, video, document.querySelector('.player-container'));
-
-                // Listen for player errors
-                player.addEventListener('error', onPlayerError);
-
-                // Populate quality and audio menus when the manifest is loaded
-                player.addEventListener('loaded', () => {
-                    populateAudioTracks(player);
-                    populateVideoQualities(player);
-                    showStatus('Video loaded successfully!');
+                hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+                    console.log('Manifest parsed. Video has been loaded successfully.');
+                    hideOverlay();
+                    video.play();
+                    
+                    // Populate and enable buttons
+                    populateQualityModal(data.levels);
+                    populateAudioModal(data.audioTracks);
+                    enableControls();
                 });
 
-                // Load the default manifest on startup
-                urlInput.value = defaultManifestUri;
-                await loadManifest(defaultManifestUri);
-            }
-
-            // Handle player errors
-            function onPlayerError(event) {
-                const error = event.detail;
-                console.error('Shaka Player Error:', error);
-                showStatus(`Error: ${error.code} - ${error.severity}`, true);
-            }
-
-            // Function to load a manifest
-            async function loadManifest(manifestUri) {
-                try {
-                    showStatus('Loading video...');
-                    await player.load(manifestUri);
-                } catch (error) {
-                    onPlayerError(new shaka.util.FakeEvent('error', { detail: error }));
-                }
-            }
-
-            // Populate the audio track menu
-            function populateAudioTracks(player) {
-                const audioTracks = player.getAudioLanguagesAndRoles();
-                audioMenu.innerHTML = '';
-                
-                // Add a "None" or "Mute" option
-                const muteOption = document.createElement('a');
-                muteOption.href = '#';
-                muteOption.className = 'block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 rounded-md cursor-pointer';
-                muteOption.textContent = 'Mute';
-                muteOption.addEventListener('click', () => {
-                    video.muted = true;
-                });
-                audioMenu.appendChild(muteOption);
-
-                // Add each audio track as a menu item
-                audioTracks.forEach(track => {
-                    const trackOption = document.createElement('a');
-                    trackOption.href = '#';
-                    trackOption.className = 'block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 rounded-md cursor-pointer';
-                    trackOption.textContent = `${track.language.toUpperCase()} (${track.role || 'Main'})`;
-                    trackOption.addEventListener('click', () => {
-                        video.muted = false;
-                        player.selectAudioLanguage(track.language, track.role);
-                        showStatus(`Selected audio track: ${track.language}`);
-                    });
-                    audioMenu.appendChild(trackOption);
-                });
-            }
-
-            // Populate the video quality menu
-            function populateVideoQualities(player) {
-                const variantTracks = player.getVariantTracks();
-                qualityMenu.innerHTML = '';
-                
-                // Add an "Auto" option
-                const autoOption = document.createElement('a');
-                autoOption.href = '#';
-                autoOption.className = 'block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 rounded-md cursor-pointer';
-                autoOption.textContent = 'Auto';
-                autoOption.addEventListener('click', () => {
-                    player.configure({abr: {enabled: true}});
-                    showStatus('Automatic quality selection enabled.');
-                });
-                qualityMenu.appendChild(autoOption);
-                
-                // Sort tracks by resolution height
-                variantTracks.sort((a, b) => b.height - a.height);
-
-                // Add each quality as a menu item
-                variantTracks.forEach(track => {
-                    if (track.type === 'variant' && track.height) {
-                        const qualityOption = document.createElement('a');
-                        qualityOption.href = '#';
-                        qualityOption.className = 'block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 rounded-md cursor-pointer';
-                        qualityOption.textContent = `${track.height}p`;
-                        qualityOption.addEventListener('click', () => {
-                            player.configure({abr: {enabled: false}});
-                            player.selectVariantTrack(track, true);
-                            showStatus(`Selected quality: ${track.height}p`);
-                        });
-                        qualityMenu.appendChild(qualityOption);
+                hls.on(Hls.Events.ERROR, (event, data) => {
+                    console.error('HLS.js error:', data);
+                    if (data.fatal) {
+                        showOverlay('Error loading video. Please check the URL or try again.');
+                        hls.destroy();
                     }
                 });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                // Fallback for native HLS support (e.g., Safari)
+                video.src = url;
+                video.addEventListener('loadedmetadata', () => {
+                    hideOverlay();
+                    video.play();
+                });
+                video.addEventListener('error', () => {
+                    showOverlay('Error loading video. Native HLS playback failed.');
+                });
+            } else {
+                showOverlay('HLS is not supported on this browser.');
             }
+        };
 
-            // Event listener for the Load button
-            loadBtn.addEventListener('click', () => {
-                const url = urlInput.value;
-                if (url) {
-                    loadManifest(url);
-                } else {
-                    showStatus('Please enter a valid URL.', true);
-                }
+        // Populate the quality selection modal
+        const populateQualityModal = (levels) => {
+            qualityList.innerHTML = '';
+            // Add 'Auto' quality option
+            const autoLi = document.createElement('li');
+            autoLi.innerHTML = `
+                <label class="flex items-center space-x-3 p-3 cursor-pointer rounded-xl hover:bg-gray-700 transition-colors duration-200">
+                    <input type="radio" name="quality" value="-1" ${hls.currentLevel === -1 ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 focus:ring-blue-500">
+                    <span class="text-sm font-medium">Auto</span>
+                </label>
+            `;
+            qualityList.appendChild(autoLi);
+
+            // Add other quality levels
+            levels.forEach((level, index) => {
+                const li = document.createElement('li');
+                const resolution = level.height ? `${level.height}p` : 'Unknown';
+                const isSelected = index === hls.currentLevel;
+                li.innerHTML = `
+                    <label class="flex items-center space-x-3 p-3 cursor-pointer rounded-xl hover:bg-gray-700 transition-colors duration-200">
+                        <input type="radio" name="quality" value="${index}" ${isSelected ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 focus:ring-blue-500">
+                        <span class="text-sm font-medium">${resolution}</span>
+                    </label>
+                `;
+                qualityList.appendChild(li);
             });
+        };
 
-            // Initialize on page load
-            document.addEventListener('DOMContentLoaded', initPlayer);
-        })();
+        // Populate the audio track selection modal
+        const populateAudioModal = (tracks) => {
+            audioList.innerHTML = '';
+            tracks.forEach((track, index) => {
+                const isSelected = index === hls.audioTrack;
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <label class="flex items-center space-x-3 p-3 cursor-pointer rounded-xl hover:bg-gray-700 transition-colors duration-200">
+                        <input type="radio" name="audio-track" value="${index}" ${isSelected ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 focus:ring-blue-500">
+                        <span class="text-sm font-medium">${track.name || 'Track ' + (index + 1)}</span>
+                    </label>
+                `;
+                audioList.appendChild(li);
+            });
+        };
+
+        // Event listeners
+        window.addEventListener('load', () => {
+            urlInput.value = defaultUrl;
+            loadVideo(defaultUrl);
+        });
+
+        loadBtn.addEventListener('click', () => {
+            const newUrl = urlInput.value.trim();
+            if (newUrl) {
+                loadVideo(newUrl);
+            }
+        });
+
+        qualityBtn.addEventListener('click', () => {
+            qualityModal.classList.remove('hidden');
+        });
+
+        qualityCancelBtn.addEventListener('click', () => {
+            qualityModal.classList.add('hidden');
+        });
+
+        qualityOkBtn.addEventListener('click', () => {
+            const selectedRadio = qualityList.querySelector('input[name="quality"]:checked');
+            if (selectedRadio && hls) {
+                const newQualityIndex = parseInt(selectedRadio.value, 10);
+                if (hls.currentLevel !== newQualityIndex) {
+                    hls.currentLevel = newQualityIndex;
+                }
+            }
+            qualityModal.classList.add('hidden');
+        });
+
+        audioBtn.addEventListener('click', () => {
+            audioModal.classList.remove('hidden');
+        });
+
+        audioCancelBtn.addEventListener('click', () => {
+            audioModal.classList.add('hidden');
+        });
+
+        audioOkBtn.addEventListener('click', () => {
+            const selectedRadio = audioList.querySelector('input[name="audio-track"]:checked');
+            if (selectedRadio && hls) {
+                const newAudioIndex = parseInt(selectedRadio.value, 10);
+                if (hls.audioTrack !== newAudioIndex) {
+                    hls.audioTrack = newAudioIndex;
+                }
+            }
+            audioModal.classList.add('hidden');
+        });
+        
     </script>
+
 </body>
 </html>
 

@@ -244,17 +244,13 @@
                     <div class="content-section">
                         <h4>Quality</h4>
                         <div id="quality-options" class="option-list">
-                            <!-- Quality options will be dynamically added here, with a placeholder for now -->
-                            <button class="quality-btn active" data-quality="1080">1080p</button>
-                            <button class="quality-btn" data-quality="720">720p</button>
-                            <button class="quality-btn" data-quality="480">480p</button>
+                            <!-- Quality options will be dynamically added here -->
                         </div>
                     </div>
                     <div class="content-section">
                         <h4>Audio Tracks</h4>
                         <div id="audio-tracks" class="option-list">
                             <!-- Audio tracks will be dynamically populated -->
-                            <button class="audio-track-btn active" data-lang="en">English</button>
                         </div>
                     </div>
                 </div>
@@ -304,6 +300,13 @@
       const settingsPanel = document.getElementById('settings-panel');
       const qualityOptions = document.getElementById('quality-options');
       const audioTracksList = document.getElementById('audio-tracks');
+
+      // Placeholder for dynamic quality URLs (in a real-world scenario, these would be real files)
+      const availableQualities = [
+          { label: '1080p', url: 'https://dl.dropbox.com/s/l90y72zm97ayzhx/my%20video.mp4?raw=1' },
+          { label: '720p', url: 'https://dl.dropbox.com/s/l90y72zm97ayzhx/my%20video.mp4?raw=1' },
+          { label: '480p', url: 'https://dl.dropbox.com/s/l90y72zm97ayzhx/my%20video.mp4?raw=1' }
+      ];
 
       // Object to handle different event types for mouse and touch
       const events = {
@@ -422,7 +425,8 @@
 
       const updateVolumeSlider = () => {
         const valPercent = (volumeRange.value / volumeRange.max) * 100;
-        volumeRange.style.background = `linear-gradient(to right, #3b82f6 ${valPercent}%, #4a5568 ${valPercent}%)`;
+        volumeRange.style.background = `linear-gradient(to right, #3b82f6 ${valPercent}%, #4a5568 ${valPercent})
+`;
       };
 
       // Fullscreen functionality
@@ -484,6 +488,7 @@
               myVideo.pause();
               pauseVideo();
               // Re-populate settings for new video
+              populateQualityOptions();
               populateAudioTracks();
           };
       };
@@ -495,21 +500,42 @@
       });
 
       // Handle Quality Selection
-      qualityOptions.addEventListener('click', (e) => {
-          if (e.target.classList.contains('quality-btn')) {
-              // Remove active class from all buttons
-              document.querySelectorAll('.quality-btn').forEach(btn => btn.classList.remove('active'));
-              // Add active class to the clicked button
-              e.target.classList.add('active');
-              // In a real application, you would change the video source here
-              console.log(`Setting video quality to ${e.target.dataset.quality}p`);
-          }
-      });
+      const populateQualityOptions = () => {
+        qualityOptions.innerHTML = ''; // Clear existing buttons
+        availableQualities.forEach((quality, index) => {
+            const button = document.createElement('button');
+            button.textContent = quality.label;
+            button.dataset.quality = quality.label;
+            button.classList.add('quality-btn');
+            if (index === 0) { // Set the first option as active by default
+                button.classList.add('active');
+            }
+            button.addEventListener('click', () => {
+                // Remove active class from all buttons and add to the clicked one
+                document.querySelectorAll('.quality-btn').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                // This is where you would actually swap the video source in a real app
+                // For this example, we just log the change.
+                const newQualityUrl = quality.url;
+                if (newQualityUrl !== myVideo.src) {
+                    const wasPlaying = !myVideo.paused;
+                    const currentTime = myVideo.currentTime;
+                    myVideo.src = newQualityUrl;
+                    myVideo.load();
+                    myVideo.currentTime = currentTime;
+                    if (wasPlaying) {
+                        myVideo.play();
+                    }
+                }
+            });
+            qualityOptions.appendChild(button);
+        });
+      };
 
       // Handle Audio Track Selection
       const populateAudioTracks = () => {
-          // Clear existing tracks
-          audioTracksList.innerHTML = '';
+          audioTracksList.innerHTML = ''; // Clear existing tracks
           const audioTracks = myVideo.audioTracks;
           if (audioTracks && audioTracks.length > 0) {
               for (let i = 0; i < audioTracks.length; i++) {
@@ -517,6 +543,7 @@
                   const button = document.createElement('button');
                   button.textContent = track.label || `Track ${i + 1}`;
                   button.dataset.index = i;
+                  button.classList.add('audio-track-btn');
                   if (track.enabled) {
                       button.classList.add('active');
                   }
@@ -532,7 +559,6 @@
                   audioTracksList.appendChild(button);
               }
           } else {
-              // Placeholder for when no audio tracks are available
               audioTracksList.innerHTML = '<p class="text-xs text-gray-400 p-2">No alternate audio tracks found.</p>';
           }
       };

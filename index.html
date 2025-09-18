@@ -18,6 +18,7 @@
         }
     </script>
     <style>
+        /* General Styles */
         .video-container {
             position: relative;
             padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
@@ -41,11 +42,65 @@
             text-decoration: none;
             word-break: break-all;
         }
+
+        /* Fullscreen Video Player Styles */
+        .fullscreen-player {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: black;
+            padding: 1rem;
+            z-index: 1000;
+        }
+        
+        .fullscreen-player .video-container {
+            width: 100%;
+            height: auto;
+            max-width: 100vw;
+            max-height: 100vh;
+            padding-bottom: 0;
+            border-radius: 0;
+            box-shadow: none;
+        }
+        
+        .fullscreen-player .video-container video {
+            object-fit: contain; /* Start with contain for fullscreen */
+        }
+        
+        .player-controls {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 40rem;
+            background: rgba(31, 41, 55, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            padding: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        /* Hide the controls when the mouse is idle */
+        .player-controls-container:hover .player-controls {
+            opacity: 1;
+        }
     </style>
 </head>
-<body class="bg-gradient-to-br from-blue-900 to-blue-950 min-h-screen p-4 sm:p-8 font-sans text-white">
+<body class="bg-gradient-to-br from-blue-900 to-blue-950 min-h-screen p-4 sm:p-8 font-sans text-white transition-all duration-300">
 
-    <div class="container max-w-5xl mx-auto bg-gray-800/30 backdrop-blur-md rounded-2xl p-6 sm:p-10 shadow-2xl space-y-8">
+    <!-- Initial Input Screen -->
+    <div id="initialScreen" class="container max-w-5xl mx-auto bg-gray-800/30 backdrop-blur-md rounded-2xl p-6 sm:p-10 shadow-2xl space-y-8">
         <!-- Header Section -->
         <div class="text-center space-y-2">
             <h1 class="text-3xl sm:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-rose-500 to-cyan-400">
@@ -69,7 +124,6 @@
             <button
                 class="btn bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 active:from-rose-700 active:to-orange-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 w-full sm:w-auto mt-2 sm:mt-7"
                 id="fetchBtn"
-                onclick="fetchVideoData()"
             >
                 🚀 Load Video
             </button>
@@ -83,56 +137,53 @@
 
         <div id="error" class="bg-red-900/40 border-2 border-red-600 text-red-300 rounded-xl p-4 text-center hidden transition-all duration-300"></div>
         <div id="status" class="bg-emerald-900/40 border-2 border-emerald-600 text-emerald-300 rounded-xl p-4 text-center hidden transition-all duration-300"></div>
+    </div>
 
-        <!-- Video Player Section -->
-        <div id="videoSection" class="hidden transition-all duration-300 space-y-6">
-            <!-- Video Player Wrapper -->
+    <!-- Fullscreen Video Player Section -->
+    <div id="videoSection" class="hidden transition-all duration-300 fullscreen-player">
+        <div class="player-controls-container relative w-full h-full flex items-center justify-center">
+             <!-- Video Player Wrapper -->
             <div class="video-container">
-                <video id="videoPlayer" class="bg-black rounded-lg w-full h-full" controls>
+                <video id="videoPlayer" class="bg-black w-full h-full" controls autoplay>
                     Your browser does not support the video tag.
                 </video>
             </div>
-            
-            <!-- Player Options & Controls -->
-            <div class="bg-gray-800/40 rounded-2xl p-6 shadow-inner space-y-6">
-                <!-- Sizing Options -->
-                <div>
-                    <h3 class="text-lg font-bold mb-2 text-gray-200">Screen Size Options:</h3>
-                    <div class="flex flex-wrap justify-center gap-4">
-                        <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="setVideoSize('contain')">
-                            📺 Fit
-                        </button>
-                        <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="setVideoSize('cover')">
-                            🎦 Fill
-                        </button>
-                        <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="setVideoSize('scale-down')">
-                            🖼️ Crop
-                        </button>
-                    </div>
-                </div>
 
-                <!-- Video Info Panel -->
-                <div id="videoInfo" class="grid sm:grid-cols-2 md:grid-cols-3 gap-6 pt-4 border-t border-gray-700"></div>
+            <!-- Player Options & Controls Overlay -->
+            <div class="player-controls opacity-0 md:opacity-100 transition-opacity duration-300">
+                <!-- Back Button -->
+                <button
+                    class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md"
+                    onclick="resetPlayer()"
+                >
+                    ⬅️ Back
+                </button>
                 
-                <!-- Control Buttons -->
-                <div class="flex flex-wrap justify-center gap-4 pt-4 border-t border-gray-700">
-                    <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="downloadVideo()">
-                        ⬇️ Download
-                    </button>
-                    <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="copyDirectLink()">
-                        📋 Copy Link
-                    </button>
-                    <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="openExternalPlayer()">
-                        ▶️ Play in NS Player
-                    </button>
-                    <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="resetPlayer()">
-                        🔄 Reset
-                    </button>
-                </div>
+                <!-- Sizing Options -->
+                <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="setVideoSize('contain')">
+                    📺 Fit
+                </button>
+                <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="setVideoSize('cover')">
+                    🎦 Fill
+                </button>
+                <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="setVideoSize('scale-down')">
+                    🖼️ Crop
+                </button>
+                
+                <!-- Other Controls -->
+                <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="downloadVideo()">
+                    ⬇️ Download
+                </button>
+                <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="copyDirectLink()">
+                    📋 Copy Link
+                </button>
+                <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="openExternalPlayer()">
+                    ▶️ Play in NS Player
+                </button>
             </div>
         </div>
     </div>
-
+    
     <!-- HLS.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.12"></script>
 
@@ -141,6 +192,9 @@
         const API_BASE = 'https://my-noor-queen-api.woodmirror.workers.dev/api?url=';
         let currentVideoData = null;
         let hls = null;
+        const initialScreen = document.getElementById('initialScreen');
+        const videoSection = document.getElementById('videoSection');
+        const videoPlayer = document.getElementById('videoPlayer');
 
         /**
          * Formats file size from bytes to a human-readable string (e.g., KB, MB, GB).
@@ -161,7 +215,6 @@
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('error').classList.add('hidden');
             document.getElementById('status').classList.add('hidden');
-            document.getElementById('videoSection').classList.add('hidden');
             document.getElementById('fetchBtn').disabled = true;
         }
 
@@ -197,6 +250,20 @@
                  statusDiv.classList.add('bg-emerald-900/40', 'border-emerald-600', 'text-emerald-300');
             } else if (type === 'info') {
                  statusDiv.classList.add('bg-blue-900/40', 'border-blue-600', 'text-blue-300');
+            }
+        }
+        
+        /**
+         * Toggles between the initial screen and the fullscreen video player.
+         * @param {'initial' | 'player'} view The view to show.
+         */
+        function togglePlayerView(view) {
+            if (view === 'player') {
+                initialScreen.classList.add('hidden');
+                videoSection.classList.remove('hidden');
+            } else {
+                videoSection.classList.add('hidden');
+                initialScreen.classList.remove('hidden');
             }
         }
 
@@ -254,37 +321,9 @@
             }
             
             showStatus(`✅ Video details loaded successfully!`);
-            document.getElementById('videoSection').classList.remove('hidden');
 
-            // Update info panel
-            const videoInfo = document.getElementById('videoInfo');
-            videoInfo.innerHTML = `
-                <div class="flex items-center space-x-4">
-                    <span class="text-2xl opacity-80">📄</span>
-                    <div>
-                        <div class="text-sm opacity-60">File Name</div>
-                        <div class="font-semibold break-words">${data.file_name || 'Unknown'}</div>
-                    </div>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <span class="text-2xl opacity-80">📏</span>
-                    <div>
-                        <div class="text-sm opacity-60">File Size</div>
-                        <div class="font-semibold">${formatFileSize(data.size_bytes)}</div>
-                    </div>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <span class="text-2xl opacity-80">👨‍💻</span>
-                    <div>
-                        <div class="text-sm opacity-60">Developer</div>
-                        <div class="font-semibold">${data.developer || 'Unknown'}</div>
-                    </div>
-                </div>
-                ${data.thumbnail ? `<div class="col-span-full mt-4"><img src="${data.thumbnail}" alt="Thumbnail" class="w-24 h-auto rounded-lg shadow-lg"></div>` : ''}
-            `;
-            
-            // Get video element
-            const video = document.getElementById('videoPlayer');
+            // Hide initial screen and show video player
+            togglePlayerView('player');
             
             // Check if HLS.js is supported and if the link is an HLS playlist
             if (Hls.isSupported() && data.download_link.endsWith('.m3u8')) {
@@ -295,7 +334,7 @@
                 
                 // Create and load HLS.js
                 hls = new Hls();
-                hls.attachMedia(video);
+                hls.attachMedia(videoPlayer);
                 hls.on(Hls.Events.MEDIA_ATTACHED, function () {
                     hls.loadSource(data.download_link);
                 });
@@ -312,16 +351,16 @@
                     hls.destroy();
                     hls = null;
                 }
-                video.src = data.download_link;
+                videoPlayer.src = data.download_link;
             }
 
             // Set the poster if a thumbnail exists
             if (data.thumbnail) {
-                video.poster = data.thumbnail;
+                videoPlayer.poster = data.thumbnail;
             }
 
             // Load the video
-            video.load();
+            videoPlayer.load();
         }
 
         /**
@@ -329,8 +368,7 @@
          * @param {string} fitType The type of fit: 'contain', 'cover', or 'scale-down'.
          */
         function setVideoSize(fitType) {
-            const video = document.getElementById('videoPlayer');
-            video.style.objectFit = fitType;
+            videoPlayer.style.objectFit = fitType;
         }
 
         /**
@@ -382,28 +420,27 @@
          */
         function resetPlayer() {
             document.getElementById('videoUrl').value = '';
-            document.getElementById('videoSection').classList.add('hidden');
             document.getElementById('error').classList.add('hidden');
             document.getElementById('status').classList.add('hidden');
             currentVideoData = null;
-            const video = document.getElementById('videoPlayer');
-            video.src = '';
-            video.poster = '';
-            // Reset object-fit property to default
-            video.style.objectFit = 'contain';
+            videoPlayer.src = '';
+            videoPlayer.poster = '';
+            videoPlayer.style.objectFit = 'contain';
             if (hls) {
                 hls.destroy();
                 hls = null;
             }
+            togglePlayerView('initial');
         }
 
-        // Add event listener for Enter key on the URL input
+        // Add event listeners
+        document.getElementById('fetchBtn').addEventListener('click', fetchVideoData);
         document.getElementById('videoUrl').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 fetchVideoData();
             }
         });
-
     </script>
 </body>
 </html>
+

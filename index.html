@@ -126,41 +126,42 @@
             
             <!-- Player Options & Controls -->
             <div class="bg-gray-800/40 rounded-2xl p-6 shadow-inner space-y-6">
-                <!-- Sizing Options -->
-                <div>
-                    <h3 class="text-lg font-bold mb-2 text-gray-200">Screen Size Options:</h3>
-                    <div class="flex flex-wrap justify-center gap-4">
-                        <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="setVideoSize('contain')">
-                            📺 Fit
-                        </button>
-                        <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="setVideoSize('cover')">
-                            🎦 Fill
-                        </button>
-                        <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="setVideoSize('scale-down')">
-                            🖼️ Crop
-                        </button>
-                    </div>
-                </div>
-
                 <!-- Video Info Panel -->
                 <div id="videoInfo" class="grid sm:grid-cols-2 md:grid-cols-3 gap-6 pt-4 border-t border-gray-700"></div>
                 
-                <!-- Control Buttons -->
-                <div class="flex flex-wrap justify-center gap-4 pt-4 border-t border-gray-700">
-                    <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="downloadVideo()">
-                        ⬇️ Download
-                    </button>
-                    <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="copyDirectLink()">
-                        📋 Copy Link
-                    </button>
-                    <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="openExternalPlayer()">
-                        ▶️ Play in NS Player
-                    </button>
+                <!-- Reset Button -->
+                <div class="flex justify-center gap-4 pt-4 border-t border-gray-700">
                     <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="resetPlayer()">
-                        🔄 Reset
+                        🔄 Reset Player
                     </button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Floating controls dialog for fullscreen mode -->
+    <div id="fullscreenControlsDialog" class="fixed bottom-4 right-4 z-50 p-2 rounded-2xl shadow-xl space-y-2 bg-gray-800/70 backdrop-blur-sm hidden transition-all duration-300">
+        <div class="flex justify-center gap-2">
+            <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-2 px-4 rounded-full transition-all duration-300 transform hover:scale-105" onclick="setVideoSize('contain')">
+                📺 Fit
+            </button>
+            <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-2 px-4 rounded-full transition-all duration-300 transform hover:scale-105" onclick="setVideoSize('cover')">
+                🎦 Fill
+            </button>
+            <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-2 px-4 rounded-full transition-all duration-300 transform hover:scale-105" onclick="setVideoSize('scale-down')">
+                🖼️ Crop
+            </button>
+        </div>
+        <div class="flex justify-center gap-2">
+            <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-2 px-4 rounded-full transition-all duration-300 transform hover:scale-105" onclick="downloadVideo()">
+                ⬇️ Download
+            </button>
+            <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-2 px-4 rounded-full transition-all duration-300 transform hover:scale-105" onclick="copyDirectLink()">
+                📋 Copy Link
+            </button>
+            <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-2 px-4 rounded-full transition-all duration-300 transform hover:scale-105" onclick="openExternalPlayer()">
+                ▶️ Play in NS Player
+            </button>
         </div>
     </div>
 
@@ -195,6 +196,7 @@
             document.getElementById('videoSection').classList.add('hidden');
             document.getElementById('fetchBtn').disabled = true;
             document.body.classList.remove('fullscreen-active');
+            hideFullscreenControls();
         }
 
         /**
@@ -230,6 +232,20 @@
             } else if (type === 'info') {
                  statusDiv.classList.add('bg-blue-900/40', 'border-blue-600', 'text-blue-300');
             }
+        }
+
+        /**
+         * Shows the floating controls dialog.
+         */
+        function showFullscreenControls() {
+            document.getElementById('fullscreenControlsDialog').classList.remove('hidden');
+        }
+
+        /**
+         * Hides the floating controls dialog.
+         */
+        function hideFullscreenControls() {
+            document.getElementById('fullscreenControlsDialog').classList.add('hidden');
         }
 
         /**
@@ -365,6 +381,11 @@
                     video.msRequestFullscreen();
                 }
             }, { once: true }); // Use { once: true } to ensure it only runs once
+
+            // Event listeners to show/hide controls in full-screen
+            video.addEventListener('play', showFullscreenControls);
+            video.addEventListener('pause', hideFullscreenControls);
+            video.addEventListener('ended', hideFullscreenControls);
         }
 
         /**
@@ -452,6 +473,11 @@
                 hls.destroy();
                 hls = null;
             }
+
+            // Remove event listeners on reset to prevent duplicates
+            video.removeEventListener('play', showFullscreenControls);
+            video.removeEventListener('pause', hideFullscreenControls);
+            video.removeEventListener('ended', hideFullscreenControls);
         }
 
         // Add event listener for Enter key on the URL input
@@ -466,6 +492,7 @@
             if (!document.fullscreenElement) {
                 // If fullscreen is no longer active, reset the UI
                 document.body.classList.remove('fullscreen-active');
+                hideFullscreenControls();
             }
         });
 

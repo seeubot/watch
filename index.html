@@ -75,7 +75,7 @@
         
         .player-controls {
             position: absolute;
-            bottom: 1rem;
+            top: 1rem;
             left: 50%;
             transform: translateX(-50%);
             width: 90%;
@@ -83,7 +83,7 @@
             background: rgba(31, 41, 55, 0.7);
             backdrop-filter: blur(10px);
             border-radius: 1rem;
-            padding: 1rem;
+            padding: 0.5rem 1rem;
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
@@ -160,25 +160,13 @@
                 </button>
                 
                 <!-- Sizing Options -->
-                <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="setVideoSize('contain')">
-                    📺 Fit
-                </button>
                 <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="setVideoSize('cover')">
                     🎦 Fill
                 </button>
-                <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="setVideoSize('scale-down')">
-                    🖼️ Crop
-                </button>
                 
                 <!-- Other Controls -->
-                <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="downloadVideo()">
-                    ⬇️ Download
-                </button>
                 <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="copyDirectLink()">
                     📋 Copy Link
-                </button>
-                <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="openExternalPlayer()">
-                    ▶️ Play in NS Player
                 </button>
             </div>
         </div>

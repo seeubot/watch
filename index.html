@@ -3,459 +3,407 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Series Streamer</title>
+    <title>Advanced Video Stream Player</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        
-        body {
-            font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #0a0a0a;
-            color: #ffffff;
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            height: 0;
             overflow: hidden;
-            height: 100vh;
+            border-radius: 1rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
         }
-        
-        /* Layout */
-        .app-container {
-            display: flex;
-            height: 100vh;
-            transition: transform 0.3s ease;
+
+        .video-container video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100% !important;
+            height: 100% !important;
+            transition: object-fit 0.3s ease-in-out;
         }
-        
-        .series-list-container {
-            width: 300px;
-            background: #1a1a1a;
-            overflow-y: auto;
-            padding: 20px;
-            border-right: 2px solid #333;
-        }
-        
-        .player-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background: #000;
-        }
-        
-        /* Series List */
-        .series-item {
-            padding: 15px;
-            margin: 10px 0;
-            background: #2a2a2a;
-            border-radius: 8px;
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: all 0.2s ease;
-        }
-        
-        .series-item:focus,
-        .series-item.focused {
-            border-color: #ff5722;
-            background: #333;
-            outline: none;
-            transform: scale(1.02);
-        }
-        
-        .series-item:hover {
-            background: #333;
-        }
-        
-        .series-title {
-            font-size: 16px;
-            font-weight: 500;
-            color: #ff5722;
-            margin-bottom: 5px;
-        }
-        
-        .series-thumbnail {
-            width: 100%;
-            border-radius: 4px;
-            margin-top: 10px;
-        }
-        
-        /* Player */
-        #video-player {
-            width: 100%;
-            height: 100%;
-            background: #000;
-        }
-        
-        .player-controls {
-            padding: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            border-top: 1px solid #333;
-        }
-        
-        .episode-selector {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-            overflow-x: auto;
-            padding: 10px 0;
-        }
-        
-        .episode-btn {
-            padding: 10px 15px;
-            background: #333;
-            border: 2px solid transparent;
-            border-radius: 6px;
-            color: white;
-            cursor: pointer;
-            min-width: 120px;
-            text-align: center;
-            transition: all 0.2s ease;
-        }
-        
-        .episode-btn:focus,
-        .episode-btn.focused {
-            border-color: #ff5722;
-            background: #444;
-            outline: none;
-        }
-        
-        .episode-btn:hover {
-            background: #444;
-        }
-        
-        .episode-btn.active {
-            background: #ff5722;
-            border-color: #ff8a65;
-        }
-        
-        .control-buttons {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-        }
-        
-        .control-btn {
-            padding: 12px 25px;
-            background: #ff5722;
-            border: none;
-            border-radius: 6px;
-            color: white;
-            cursor: pointer;
-            font-weight: 500;
-            transition: background 0.2s ease;
-        }
-        
-        .control-btn:focus {
-            outline: 2px solid #ff8a65;
-            outline-offset: 2px;
-        }
-        
-        .control-btn:hover {
-            background: #ff7043;
-        }
-        
-        /* Loading States */
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100%;
-            font-size: 18px;
-            color: #aaa;
-        }
-        
-        .error-message {
-            padding: 20px;
-            background: #d32f2f;
-            color: white;
-            border-radius: 6px;
-            margin: 20px;
-            text-align: center;
-        }
-        
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .app-container {
-                flex-direction: column;
-            }
-            
-            .series-list-container {
-                width: 100%;
-                height: 200px;
-                border-right: none;
-                border-bottom: 2px solid #333;
-            }
-        }
-        
-        /* Focus indicators for accessibility */
-        *:focus {
-            outline: 2px solid #ff5722;
-            outline-offset: 2px;
-        }
-        
-        /* Scrollbar styling */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: #2a2a2a;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: #ff5722;
-            border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: #ff7043;
+
+        .info-value a {
+            color: #4ecdc4;
+            text-decoration: none;
+            word-break: break-all;
         }
     </style>
 </head>
-<body>
-    <div class="app-container">
-        <div class="series-list-container">
-            <div id="series-list">
-                <div class="loading">Loading series...</div>
-            </div>
+<body class="bg-gradient-to-br from-blue-900 to-blue-950 min-h-screen p-4 sm:p-8 font-sans text-white">
+
+    <div class="container max-w-5xl mx-auto bg-gray-800/30 backdrop-blur-md rounded-2xl p-6 sm:p-10 shadow-2xl space-y-8">
+        <!-- Header Section -->
+        <div class="text-center space-y-2">
+            <h1 class="text-3xl sm:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-rose-500 to-cyan-400">
+                🎬 Advanced Video Stream Player
+            </h1>
+            <p class="text-gray-300 text-lg opacity-90">Enter a video URL to fetch and stream with HLS support</p>
         </div>
-        
-        <div class="player-container">
-            <div id="video-player"></div>
-            <div class="player-controls" style="display: none;">
-                <div class="episode-selector" id="episode-selector"></div>
-                <div class="control-buttons">
-                    <button class="control-btn" onclick="playPause()" id="play-pause-btn">Play</button>
-                    <button class="control-btn" onclick="stopPlayback()">Stop</button>
-                    <button class="control-btn" onclick="toggleFullscreen()">Fullscreen</button>
+
+        <!-- Input & Load Section -->
+        <div class="flex flex-col sm:flex-row items-center gap-4">
+            <div class="flex-grow w-full">
+                <label for="videoUrl" class="block text-gray-200 font-semibold mb-2">📎 Video URL:</label>
+                <input
+                    type="url"
+                    id="videoUrl"
+                    class="w-full px-6 py-4 bg-gray-700/50 text-white rounded-xl focus:outline-none focus:ring-4 focus:ring-cyan-500/50 transition-all duration-300 placeholder:text-gray-400"
+                    placeholder="e.g., https://example.com/video.mp4 or video.m3u8"
+                    autocomplete="off"
+                >
+            </div>
+            <button
+                class="btn bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 active:from-rose-700 active:to-orange-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 w-full sm:w-auto mt-2 sm:mt-7"
+                id="fetchBtn"
+                onclick="fetchVideoData()"
+            >
+                🚀 Load Video
+            </button>
+        </div>
+
+        <!-- Dynamic Status Messages -->
+        <div id="loading" class="text-center hidden transition-all duration-300">
+            <div class="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-white border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite] opacity-80" role="status"></div>
+            <span class="ml-2 text-white">Fetching video data...</span>
+        </div>
+
+        <div id="error" class="bg-red-900/40 border-2 border-red-600 text-red-300 rounded-xl p-4 text-center hidden transition-all duration-300"></div>
+        <div id="status" class="bg-emerald-900/40 border-2 border-emerald-600 text-emerald-300 rounded-xl p-4 text-center hidden transition-all duration-300"></div>
+
+        <!-- Video Player Section -->
+        <div id="videoSection" class="hidden transition-all duration-300 space-y-6">
+            <!-- Video Player Wrapper -->
+            <div class="video-container">
+                <video id="videoPlayer" class="bg-black rounded-lg w-full h-full" controls>
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+            
+            <!-- Player Options & Controls -->
+            <div class="bg-gray-800/40 rounded-2xl p-6 shadow-inner space-y-6">
+                <!-- Sizing Options -->
+                <div>
+                    <h3 class="text-lg font-bold mb-2 text-gray-200">Screen Size Options:</h3>
+                    <div class="flex flex-wrap justify-center gap-4">
+                        <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="setVideoSize('contain')">
+                            📺 Fit
+                        </button>
+                        <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="setVideoSize('cover')">
+                            🎦 Fill
+                        </button>
+                        <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="setVideoSize('scale-down')">
+                            🖼️ Crop
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Video Info Panel -->
+                <div id="videoInfo" class="grid sm:grid-cols-2 md:grid-cols-3 gap-6 pt-4 border-t border-gray-700"></div>
+                
+                <!-- Control Buttons -->
+                <div class="flex flex-wrap justify-center gap-4 pt-4 border-t border-gray-700">
+                    <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="downloadVideo()">
+                        ⬇️ Download
+                    </button>
+                    <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="copyDirectLink()">
+                        📋 Copy Link
+                    </button>
+                    <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="openExternalPlayer()">
+                        ▶️ Play in NS Player
+                    </button>
+                    <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="resetPlayer()">
+                        🔄 Reset
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
-        let currentSeries = null;
-        let currentEpisode = null;
-        let player = null;
-        let apiBaseUrl = '';
-        let focusedElement = null;
+    <!-- HLS.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.12"></script>
 
-        // Initialize the application
-        function initApp() {
-            setupKeyboardNavigation();
-            if (window.AndroidInterface) {
-                setApiEndpoint(window.AndroidInterface.getApiUrl());
+    <script>
+        // API endpoint and global variables
+        const API_BASE = 'https://my-noor-queen-api.woodmirror.workers.dev/api?url=';
+        let currentVideoData = null;
+        let hls = null;
+
+        /**
+         * Formats file size from bytes to a human-readable string (e.g., KB, MB, GB).
+         * @param {number} bytes The file size in bytes.
+         * @returns {string} The formatted file size.
+         */
+        function formatFileSize(bytes) {
+            if (bytes === null || bytes === undefined) return 'Unknown';
+            const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${units[i]}`;
+        }
+
+        /**
+         * Displays a loading state and disables the fetch button.
+         */
+        function showLoading() {
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('error').classList.add('hidden');
+            document.getElementById('status').classList.add('hidden');
+            document.getElementById('videoSection').classList.add('hidden');
+            document.getElementById('fetchBtn').disabled = true;
+        }
+
+        /**
+         * Hides the loading state and enables the fetch button.
+         */
+        function hideLoading() {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('fetchBtn').disabled = false;
+        }
+
+        /**
+         * Displays an error message to the user.
+         * @param {string} message The error message to display.
+         */
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.innerHTML = `❌ Error: ${message}`;
+            errorDiv.classList.remove('hidden');
+        }
+
+        /**
+         * Displays a status message to the user.
+         * @param {string} message The status message to display.
+         * @param {string} type The type of status ('success' or 'info').
+         */
+        function showStatus(message, type = 'success') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = message;
+            statusDiv.classList.remove('hidden');
+            statusDiv.className = `bg-gray-800/40 border-2 rounded-xl p-4 text-center transition-all duration-300`;
+            if (type === 'success') {
+                 statusDiv.classList.add('bg-emerald-900/40', 'border-emerald-600', 'text-emerald-300');
+            } else if (type === 'info') {
+                 statusDiv.classList.add('bg-blue-900/40', 'border-blue-600', 'text-blue-300');
             }
         }
 
-        // Set API endpoint and fetch data
-        function setApiEndpoint(url) {
-            apiBaseUrl = url;
-            fetchSeriesData();
-        }
+        /**
+         * Fetches video metadata from the API based on the input URL.
+         */
+        async function fetchVideoData() {
+            const urlInput = document.getElementById('videoUrl');
+            const url = urlInput.value.trim();
 
-        // Fetch series data from API
-        async function fetchSeriesData() {
+            if (!url) {
+                showError('Please enter a valid URL.');
+                return;
+            }
+
             try {
-                const response = await fetch(apiBaseUrl);
-                if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+                new URL(url); // Simple URL validation
+            } catch (e) {
+                showError('Please enter a valid URL format.');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const apiUrl = API_BASE + encodeURIComponent(url);
+                const response = await fetch(apiUrl);
                 
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
                 const data = await response.json();
-                renderSeriesList(data);
+                currentVideoData = data;
+                
+                hideLoading();
+                displayVideoData(data);
                 
             } catch (error) {
-                document.getElementById('series-list').innerHTML = `
-                    <div class="error-message">
-                        Failed to load series: ${error.message}
-                        <button class="control-btn" onclick="fetchSeriesData()" style="margin-top: 10px;">Retry</button>
+                hideLoading();
+                showError(error.message);
+                console.error('Error fetching video data:', error);
+            }
+        }
+
+        /**
+         * Displays video information and loads the video.
+         * @param {object} data The video data from the API.
+         */
+        function displayVideoData(data) {
+            // Check for valid video source
+            if (!data.download_link) {
+                showError('No streamable link found in the API response.');
+                return;
+            }
+            
+            showStatus(`✅ Video details loaded successfully!`);
+            document.getElementById('videoSection').classList.remove('hidden');
+
+            // Update info panel
+            const videoInfo = document.getElementById('videoInfo');
+            videoInfo.innerHTML = `
+                <div class="flex items-center space-x-4">
+                    <span class="text-2xl opacity-80">📄</span>
+                    <div>
+                        <div class="text-sm opacity-60">File Name</div>
+                        <div class="font-semibold break-words">${data.file_name || 'Unknown'}</div>
                     </div>
-                `;
-            }
-        }
-
-        // Render series list
-        function renderSeriesList(seriesData) {
-            const container = document.getElementById('series-list');
-            container.innerHTML = '';
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-2xl opacity-80">📏</span>
+                    <div>
+                        <div class="text-sm opacity-60">File Size</div>
+                        <div class="font-semibold">${formatFileSize(data.size_bytes)}</div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-2xl opacity-80">👨‍💻</span>
+                    <div>
+                        <div class="text-sm opacity-60">Developer</div>
+                        <div class="font-semibold">${data.developer || 'Unknown'}</div>
+                    </div>
+                </div>
+                ${data.thumbnail ? `<div class="col-span-full mt-4"><img src="${data.thumbnail}" alt="Thumbnail" class="w-24 h-auto rounded-lg shadow-lg"></div>` : ''}
+            `;
             
-            seriesData.forEach(series => {
-                const seriesElement = document.createElement('div');
-                seriesElement.className = 'series-item';
-                seriesElement.tabIndex = 0;
-                seriesElement.innerHTML = `
-                    <div class="series-title">${escapeHtml(series.name)}</div>
-                    ${series.thumbnail ? `<img src="${escapeHtml(series.thumbnail)}" alt="${escapeHtml(series.name)}" class="series-thumbnail">` : ''}
-                `;
-                
-                seriesElement.addEventListener('click', () => playSeries(series));
-                seriesElement.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        playSeries(series);
-                    }
-                });
-                
-                container.appendChild(seriesElement);
-            });
+            // Get video element
+            const video = document.getElementById('videoPlayer');
             
-            // Set focus to first series
-            if (container.firstChild) {
-                setFocus(container.firstChild);
-            }
-        }
-
-        // Play a series (automatically plays first episode)
-        function playSeries(series) {
-            currentSeries = series;
-            const firstSeason = series.seasons[0];
-            const firstEpisode = firstSeason.episodes[0];
-            
-            playEpisode(firstEpisode);
-            renderEpisodeSelector();
-            document.querySelector('.player-controls').style.display = 'block';
-        }
-
-        // Play specific episode
-        function playEpisode(episode) {
-            currentEpisode = episode;
-            
-            if (window.AndroidInterface) {
-                window.AndroidInterface.playVideo(episode.streamingUrl);
-            } else {
-                // Fallback for browser testing
-                alert(`Would play: ${episode.title}\nURL: ${episode.streamingUrl}`);
-            }
-            
-            updateEpisodeSelector();
-        }
-
-        // Render episode selector
-        function renderEpisodeSelector() {
-            const container = document.getElementById('episode-selector');
-            container.innerHTML = '';
-            
-            currentSeries.seasons.forEach(season => {
-                season.episodes.forEach(episode => {
-                    const btn = document.createElement('button');
-                    btn.className = 'episode-btn';
-                    btn.textContent = `S${season.seasonNumber}E${episode.episodeNumber}`;
-                    btn.title = episode.title;
-                    btn.onclick = () => playEpisode(episode);
-                    btn.onkeypress = (e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                            playEpisode(episode);
-                        }
-                    };
-                    container.appendChild(btn);
-                });
-            });
-        }
-
-        // Update episode selector highlighting
-        function updateEpisodeSelector() {
-            document.querySelectorAll('.episode-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            if (currentEpisode) {
-                const episodeBtns = document.querySelectorAll('.episode-btn');
-                episodeBtns.forEach((btn, index) => {
-                    if (btn.title === currentEpisode.title) {
-                        btn.classList.add('active');
-                        setFocus(btn);
-                    }
-                });
-            }
-        }
-
-        // Player control functions
-        function playPause() {
-            if (window.AndroidInterface) {
-                window.AndroidInterface.playPause();
-            }
-        }
-
-        function stopPlayback() {
-            if (window.AndroidInterface) {
-                window.AndroidInterface.stopPlayback();
-            }
-            document.querySelector('.player-controls').style.display = 'none';
-        }
-
-        function toggleFullscreen() {
-            if (window.AndroidInterface) {
-                window.AndroidInterface.toggleFullscreen();
-            }
-        }
-
-        // Keyboard navigation for remote control
-        function setupKeyboardNavigation() {
-            document.addEventListener('keydown', (e) => {
-                switch(e.key) {
-                    case 'ArrowUp':
-                    case 'ArrowDown':
-                    case 'ArrowLeft':
-                    case 'ArrowRight':
-                        navigateFocus(e.key);
-                        e.preventDefault();
-                        break;
-                    case 'Enter':
-                        if (focusedElement) focusedElement.click();
-                        break;
-                    case 'Backspace':
-                        stopPlayback();
-                        break;
+            // Check if HLS.js is supported and if the link is an HLS playlist
+            if (Hls.isSupported() && data.download_link.endsWith('.m3u8')) {
+                // If an existing HLS instance is running, destroy it first
+                if (hls) {
+                    hls.destroy();
                 }
-            });
-        }
-
-        function navigateFocus(direction) {
-            const focusableElements = Array.from(document.querySelectorAll('button, [tabindex="0"], .series-item'));
-            if (!focusableElements.length) return;
-
-            let currentIndex = focusedElement ? focusableElements.indexOf(focusedElement) : -1;
-
-            switch(direction) {
-                case 'ArrowRight':
-                    currentIndex = (currentIndex + 1) % focusableElements.length;
-                    break;
-                case 'ArrowLeft':
-                    currentIndex = (currentIndex - 1 + focusableElements.length) % focusableElements.length;
-                    break;
-                case 'ArrowDown':
-                    // Implement grid-based navigation if needed
-                    currentIndex = Math.min(currentIndex + 1, focusableElements.length - 1);
-                    break;
-                case 'ArrowUp':
-                    currentIndex = Math.max(currentIndex - 1, 0);
-                    break;
+                
+                // Create and load HLS.js
+                hls = new Hls();
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MEDIA_ATTACHED, function () {
+                    hls.loadSource(data.download_link);
+                });
+                hls.on(Hls.Events.ERROR, function(event, data) {
+                    if (data.fatal) {
+                        showError('HLS streaming error. The video source might be corrupted or inaccessible.');
+                        console.error('HLS fatal error:', data);
+                    }
+                });
+                
+            } else {
+                // If not HLS, or HLS is not supported, just set the video source directly
+                if (hls) {
+                    hls.destroy();
+                    hls = null;
+                }
+                video.src = data.download_link;
             }
 
-            setFocus(focusableElements[currentIndex]);
-        }
-
-        function setFocus(element) {
-            if (focusedElement) {
-                focusedElement.classList.remove('focused');
+            // Set the poster if a thumbnail exists
+            if (data.thumbnail) {
+                video.poster = data.thumbnail;
             }
-            focusedElement = element;
-            if (focusedElement) {
-                focusedElement.classList.add('focused');
-                focusedElement.focus();
-                focusedElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            // Load the video
+            video.load();
+        }
+
+        /**
+         * Sets the video's object-fit property for different screen ratios.
+         * @param {string} fitType The type of fit: 'contain', 'cover', or 'scale-down'.
+         */
+        function setVideoSize(fitType) {
+            const video = document.getElementById('videoPlayer');
+            video.style.objectFit = fitType;
+        }
+
+        /**
+         * Downloads the video by opening the direct link in a new tab.
+         */
+        function downloadVideo() {
+            if (!currentVideoData || !currentVideoData.download_link) {
+                showError('No download link available.');
+                return;
+            }
+            window.open(currentVideoData.download_link, '_blank');
+        }
+
+        /**
+         * Copies the direct video link to the clipboard.
+         */
+        function copyDirectLink() {
+            if (!currentVideoData || !currentVideoData.download_link) {
+                showError('No direct link available.');
+                return;
+            }
+
+            // Use document.execCommand('copy') which works in the sandbox
+            const tempInput = document.createElement('input');
+            tempInput.value = currentVideoData.download_link;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            
+            showStatus('📋 Direct link copied to clipboard!', 'info');
+        }
+
+        /**
+         * Opens the video link in the NS Player app via an intent URI.
+         */
+        function openExternalPlayer() {
+            if (!currentVideoData || !currentVideoData.download_link) {
+                showError('No video URL to play in an external player.');
+                return;
+            }
+            // Construct the Android intent URI for NS Player
+            const intentUrl = `intent:${encodeURIComponent(currentVideoData.download_link)}#Intent;package=com.genuine.leone;S.title=${encodeURIComponent(currentVideoData.file_name || 'Video Stream')};end`;
+            window.open(intentUrl, '_self');
+        }
+
+        /**
+         * Resets the entire player interface.
+         */
+        function resetPlayer() {
+            document.getElementById('videoUrl').value = '';
+            document.getElementById('videoSection').classList.add('hidden');
+            document.getElementById('error').classList.add('hidden');
+            document.getElementById('status').classList.add('hidden');
+            currentVideoData = null;
+            const video = document.getElementById('videoPlayer');
+            video.src = '';
+            video.poster = '';
+            // Reset object-fit property to default
+            video.style.objectFit = 'contain';
+            if (hls) {
+                hls.destroy();
+                hls = null;
             }
         }
 
-        // Utility function to escape HTML
-        function escapeHtml(unsafe) {
-            if (typeof unsafe !== 'string') return unsafe;
-            return unsafe
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
+        // Add event listener for Enter key on the URL input
+        document.getElementById('videoUrl').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                fetchVideoData();
+            }
+        });
 
-        // Initialize app when DOM is loaded
-        document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>

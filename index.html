@@ -18,68 +18,65 @@
         }
     </script>
     <style>
-        /* General Styles */
-        body {
-            background-color: #0d1a2f; /* dark blue */
-        }
-        .container {
-            background-color: rgba(22, 29, 44, 0.5); /* Semi-transparent dark bg */
-        }
-        .btn {
+        /* General styling for the video player container */
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            height: 0;
+            overflow: hidden;
+            border-radius: 1rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
             transition: all 0.3s ease-in-out;
-            border-radius: 9999px; /* rounded-full */
-            font-weight: 600;
         }
         
-        .video-player-wrapper {
+        /* Styling for the video element itself */
+        .video-container video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100% !important;
+            height: 100% !important;
+            transition: object-fit 0.3s ease-in-out;
+        }
+
+        /* Styling for when the player is in full-screen mode */
+        body.fullscreen-active .main-container {
+            display: none;
+        }
+
+        body.fullscreen-active .video-section {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: black;
             z-index: 1000;
-        }
-
-        .video-player-wrapper video {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            transition: object-fit 0.3s ease-in-out;
-        }
-
-        .player-controls {
-            position: absolute;
-            top: 1rem;
-            left: 50%;
-            transform: translateX(-50%);
+            background-color: black;
             display: flex;
-            gap: 1rem;
-            background: rgba(31, 41, 55, 0.7);
-            backdrop-filter: blur(10px);
-            border-radius: 9999px;
-            padding: 0.75rem 1.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            margin: 0;
         }
-        .player-controls-button {
-            background-color: transparent;
-            color: white;
-            padding: 0.5rem 1rem;
-            border: 2px solid transparent;
-            transition: all 0.2s ease-in-out;
+
+        body.fullscreen-active .video-container {
+            padding-bottom: 0;
+            height: 100%;
+            width: 100%;
+            border-radius: 0;
+            box-shadow: none;
         }
-        .player-controls-button:hover {
-            background-color: rgba(255, 255, 255, 0.1);
+
+        .info-value a {
+            color: #4ecdc4;
+            text-decoration: none;
+            word-break: break-all;
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-blue-900 to-blue-950 min-h-screen p-4 sm:p-8 font-sans text-white transition-all duration-300">
+<body class="bg-gradient-to-br from-blue-900 to-blue-950 min-h-screen p-4 sm:p-8 font-sans text-white">
 
-    <!-- Initial Input Screen -->
-    <div id="initialScreen" class="container max-w-5xl mx-auto bg-gray-800/30 backdrop-blur-md rounded-2xl p-6 sm:p-10 shadow-2xl space-y-8">
+    <div id="main-container" class="container max-w-5xl mx-auto bg-gray-800/30 backdrop-blur-md rounded-2xl p-6 sm:p-10 shadow-2xl space-y-8">
         <!-- Header Section -->
         <div class="text-center space-y-2">
             <h1 class="text-3xl sm:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-rose-500 to-cyan-400">
@@ -103,6 +100,7 @@
             <button
                 class="btn bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 active:from-rose-700 active:to-orange-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 w-full sm:w-auto mt-2 sm:mt-7"
                 id="fetchBtn"
+                onclick="fetchVideoData()"
             >
                 🚀 Load Video
             </button>
@@ -115,30 +113,77 @@
         </div>
 
         <div id="error" class="bg-red-900/40 border-2 border-red-600 text-red-300 rounded-xl p-4 text-center hidden transition-all duration-300"></div>
-    </div>
+        <div id="status" class="bg-emerald-900/40 border-2 border-emerald-600 text-emerald-300 rounded-xl p-4 text-center hidden transition-all duration-300"></div>
 
-    <!-- Video Player Section -->
-    <div id="videoPlayerWrapper" class="hidden video-player-wrapper">
-        <video id="videoPlayer" controls autoplay></video>
-        
-        <div class="player-controls">
-            <button class="btn player-controls-button" onclick="resetPlayer()">⬅️ Back</button>
-            <button class="btn player-controls-button" onclick="setVideoSize('cover')">🎦 Fill</button>
-            <button class="btn player-controls-button" onclick="copyDirectLink()">📋 Copy Link</button>
+        <!-- Video Player Section -->
+        <div id="videoSection" class="hidden transition-all duration-300 space-y-6">
+            <!-- Video Player Wrapper -->
+            <div class="video-container">
+                <video id="videoPlayer" class="bg-black rounded-lg w-full h-full" controls>
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+            
+            <!-- Player Options & Controls -->
+            <div class="bg-gray-800/40 rounded-2xl p-6 shadow-inner space-y-6">
+                <!-- Sizing Options -->
+                <div>
+                    <h3 class="text-lg font-bold mb-2 text-gray-200">Screen Size Options:</h3>
+                    <div class="flex flex-wrap justify-center gap-4">
+                        <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="setVideoSize('contain')">
+                            📺 Fit
+                        </button>
+                        <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="setVideoSize('cover')">
+                            🎦 Fill
+                        </button>
+                        <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="setVideoSize('scale-down')">
+                            🖼️ Crop
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Video Info Panel -->
+                <div id="videoInfo" class="grid sm:grid-cols-2 md:grid-cols-3 gap-6 pt-4 border-t border-gray-700"></div>
+                
+                <!-- Control Buttons -->
+                <div class="flex flex-wrap justify-center gap-4 pt-4 border-t border-gray-700">
+                    <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="downloadVideo()">
+                        ⬇️ Download
+                    </button>
+                    <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="copyDirectLink()">
+                        📋 Copy Link
+                    </button>
+                    <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="openExternalPlayer()">
+                        ▶️ Play in NS Player
+                    </button>
+                    <button class="bg-gray-700/50 hover:bg-gray-600/60 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-md" onclick="resetPlayer()">
+                        🔄 Reset
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
-    
+
     <!-- HLS.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.12"></script>
 
     <script>
         // API endpoint and global variables
         const API_BASE = 'https://my-noor-queen-api.woodmirror.workers.dev/api?url=';
         let currentVideoData = null;
         let hls = null;
-        const initialScreen = document.getElementById('initialScreen');
-        const videoPlayerWrapper = document.getElementById('videoPlayerWrapper');
-        const videoPlayer = document.getElementById('videoPlayer');
+
+        /**
+         * Formats file size from bytes to a human-readable string (e.g., KB, MB, GB).
+         * @param {number} bytes The file size in bytes.
+         * @returns {string} The formatted file size.
+         */
+        function formatFileSize(bytes) {
+            if (bytes === null || bytes === undefined) return 'Unknown';
+            const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${units[i]}`;
+        }
 
         /**
          * Displays a loading state and disables the fetch button.
@@ -146,7 +191,10 @@
         function showLoading() {
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('error').classList.add('hidden');
+            document.getElementById('status').classList.add('hidden');
+            document.getElementById('videoSection').classList.add('hidden');
             document.getElementById('fetchBtn').disabled = true;
+            document.body.classList.remove('fullscreen-active');
         }
 
         /**
@@ -166,18 +214,21 @@
             errorDiv.innerHTML = `❌ Error: ${message}`;
             errorDiv.classList.remove('hidden');
         }
-        
+
         /**
-         * Toggles between the initial screen and the fullscreen video player.
-         * @param {boolean} showPlayer True to show player, false to show initial screen.
+         * Displays a status message to the user.
+         * @param {string} message The status message to display.
+         * @param {string} type The type of status ('success' or 'info').
          */
-        function togglePlayerView(showPlayer) {
-            if (showPlayer) {
-                initialScreen.classList.add('hidden');
-                videoPlayerWrapper.classList.remove('hidden');
-            } else {
-                videoPlayerWrapper.classList.add('hidden');
-                initialScreen.classList.remove('hidden');
+        function showStatus(message, type = 'success') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = message;
+            statusDiv.classList.remove('hidden');
+            statusDiv.className = `bg-gray-800/40 border-2 rounded-xl p-4 text-center transition-all duration-300`;
+            if (type === 'success') {
+                 statusDiv.classList.add('bg-emerald-900/40', 'border-emerald-600', 'text-emerald-300');
+            } else if (type === 'info') {
+                 statusDiv.classList.add('bg-blue-900/40', 'border-blue-600', 'text-blue-300');
             }
         }
 
@@ -214,66 +265,126 @@
                 currentVideoData = data;
                 
                 hideLoading();
-                loadVideo(data.download_link);
+                displayVideoData(data);
                 
             } catch (error) {
                 hideLoading();
-                showError(`Failed to load video: ${error.message}`);
+                showError(error.message);
                 console.error('Error fetching video data:', error);
             }
         }
 
         /**
-         * Loads and plays the video.
-         * @param {string} videoUrl The URL of the video stream.
+         * Displays video information and loads the video.
+         * @param {object} data The video data from the API.
          */
-        function loadVideo(videoUrl) {
-            // Destroy existing HLS instance if it exists
-            if (hls) {
-                hls.destroy();
-                hls = null;
+        function displayVideoData(data) {
+            // Check for valid video source
+            if (!data.download_link) {
+                showError('No streamable link found in the API response.');
+                return;
             }
+            
+            showStatus(`✅ Video details loaded successfully!`);
+            
+            // Get video element and container
+            const video = document.getElementById('videoPlayer');
+            const videoSection = document.getElementById('videoSection');
+            
+            // Show the video section
+            videoSection.classList.remove('hidden');
 
+            // Update info panel
+            const videoInfo = document.getElementById('videoInfo');
+            videoInfo.innerHTML = `
+                <div class="flex items-center space-x-4">
+                    <span class="text-2xl opacity-80">📄</span>
+                    <div>
+                        <div class="text-sm opacity-60">File Name</div>
+                        <div class="font-semibold break-words">${data.file_name || 'Unknown'}</div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-2xl opacity-80">📏</span>
+                    <div>
+                        <div class="text-sm opacity-60">File Size</div>
+                        <div class="font-semibold">${formatFileSize(data.size_bytes)}</div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-2xl opacity-80">👨‍💻</span>
+                    <div>
+                        <div class="text-sm opacity-60">Developer</div>
+                        <div class="font-semibold">${data.developer || 'Unknown'}</div>
+                    </div>
+                </div>
+                ${data.thumbnail ? `<div class="col-span-full mt-4"><img src="${data.thumbnail}" alt="Thumbnail" class="w-24 h-auto rounded-lg shadow-lg"></div>` : ''}
+            `;
+            
             // Check if HLS.js is supported and if the link is an HLS playlist
-            if (Hls.isSupported() && videoUrl.endsWith('.m3u8')) {
+            if (Hls.isSupported() && data.download_link.endsWith('.m3u8')) {
+                if (hls) {
+                    hls.destroy();
+                }
+                
                 hls = new Hls();
-                hls.attachMedia(videoPlayer);
+                hls.attachMedia(video);
                 hls.on(Hls.Events.MEDIA_ATTACHED, function () {
-                    hls.loadSource(videoUrl);
+                    hls.loadSource(data.download_link);
                 });
                 hls.on(Hls.Events.ERROR, function(event, data) {
                     if (data.fatal) {
-                        console.error('HLS fatal error:', data);
                         showError('HLS streaming error. The video source might be corrupted or inaccessible.');
-                        // Try to recover
-                        switch(data.details) {
-                            case Hls.ErrorDetails.MANIFEST_LOAD_ERROR:
-                            case Hls.ErrorDetails.MANIFEST_PARSE_ERROR:
-                            case Hls.ErrorDetails.LEVEL_LOAD_ERROR:
-                                // Retry loading the manifest or level
-                                hls.recoverMediaError();
-                                break;
-                            default:
-                                break;
-                        }
+                        console.error('HLS fatal error:', data);
                     }
                 });
+                
             } else {
-                // For non-HLS URLs, set the source directly
-                videoPlayer.src = videoUrl;
+                if (hls) {
+                    hls.destroy();
+                    hls = null;
+                }
+                video.src = data.download_link;
             }
 
-            togglePlayerView(true);
-            videoPlayer.load();
-            videoPlayer.play();
+            // Set the poster if a thumbnail exists
+            if (data.thumbnail) {
+                video.poster = data.thumbnail;
+            }
+
+            // Load the video and add event listener to go full screen on play
+            video.load();
+            video.addEventListener('canplay', () => {
+                // Once the video can play, hide the UI and go full screen
+                document.body.classList.add('fullscreen-active');
+                if (video.requestFullscreen) {
+                    video.requestFullscreen();
+                } else if (video.webkitRequestFullscreen) { /* Safari */
+                    video.webkitRequestFullscreen();
+                } else if (video.msRequestFullscreen) { /* IE11 */
+                    video.msRequestFullscreen();
+                }
+            }, { once: true }); // Use { once: true } to ensure it only runs once
         }
 
         /**
          * Sets the video's object-fit property for different screen ratios.
-         * @param {string} fitType The type of fit: 'contain' or 'cover'.
+         * @param {string} fitType The type of fit: 'contain', 'cover', or 'scale-down'.
          */
         function setVideoSize(fitType) {
-            videoPlayer.style.objectFit = fitType;
+            const video = document.getElementById('videoPlayer');
+            video.style.objectFit = fitType;
+        }
+
+        /**
+         * Downloads the video by opening the direct link in a new tab.
+         */
+        function downloadVideo() {
+            if (!currentVideoData || !currentVideoData.download_link) {
+                showError('No download link available.');
+                return;
+            }
+            window.open(currentVideoData.download_link, '_blank');
         }
 
         /**
@@ -281,7 +392,7 @@
          */
         function copyDirectLink() {
             if (!currentVideoData || !currentVideoData.download_link) {
-                console.error('No direct link available to copy.');
+                showError('No direct link available.');
                 return;
             }
 
@@ -293,34 +404,71 @@
             document.execCommand('copy');
             document.body.removeChild(tempInput);
             
-            // Log for confirmation in the console
-            console.log('Direct link copied to clipboard:', currentVideoData.download_link);
+            showStatus('📋 Direct link copied to clipboard!', 'info');
+        }
+
+        /**
+         * Opens the video link in the NS Player app via an intent URI.
+         */
+        function openExternalPlayer() {
+            if (!currentVideoData || !currentVideoData.download_link) {
+                showError('No video URL to play in an external player.');
+                return;
+            }
+            // Construct the Android intent URI for NS Player
+            const intentUrl = `intent:${encodeURIComponent(currentVideoData.download_link)}#Intent;package=com.genuine.leone;S.title=${encodeURIComponent(currentVideoData.file_name || 'Video Stream')};end`;
+            window.open(intentUrl, '_self');
         }
 
         /**
          * Resets the entire player interface.
          */
         function resetPlayer() {
+            // Exit fullscreen if active
+            if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement) {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) { /* Safari */
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) { /* IE11 */
+                    document.msExitFullscreen();
+                }
+            }
+            
+            // Remove full-screen class from body
+            document.body.classList.remove('fullscreen-active');
+            
             document.getElementById('videoUrl').value = '';
+            document.getElementById('videoSection').classList.add('hidden');
             document.getElementById('error').classList.add('hidden');
+            document.getElementById('status').classList.add('hidden');
             currentVideoData = null;
-            videoPlayer.pause();
-            videoPlayer.src = '';
-            videoPlayer.load();
+            const video = document.getElementById('videoPlayer');
+            video.src = '';
+            video.poster = '';
+            // Reset object-fit property to default
+            video.style.objectFit = 'contain';
             if (hls) {
                 hls.destroy();
                 hls = null;
             }
-            togglePlayerView(false);
         }
 
-        // Add event listeners
-        document.getElementById('fetchBtn').addEventListener('click', fetchVideoData);
+        // Add event listener for Enter key on the URL input
         document.getElementById('videoUrl').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 fetchVideoData();
             }
         });
+        
+        // Add event listener to handle when the user exits fullscreen manually (e.g., via ESC key)
+        document.addEventListener('fullscreenchange', (event) => {
+            if (!document.fullscreenElement) {
+                // If fullscreen is no longer active, reset the UI
+                document.body.classList.remove('fullscreen-active');
+            }
+        });
+
     </script>
 </body>
 </html>
